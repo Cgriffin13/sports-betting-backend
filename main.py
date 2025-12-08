@@ -127,10 +127,19 @@ def get_odds(req: OddsRequest):
     }
 
     # Default: query all priority sports if none specified
-    sports_to_query = req.sports or ["NFL", "NCAAB", "NBA", "NHL", "MLB", "WNBA"]
+    sports_to_query = req.sports or ["NFL", "NCAAB", "NBA", "NHL"]
 
-    # Default: broad set of markets, we'll filter in GPT
-    markets = req.markets or ["h2h", "spreads", "totals", "player_points"]
+    # Only allow markets that we know the Odds API is happy with (no props yet)
+    ALLOWED_MARKETS = {"h2h", "spreads", "totals"}
+
+    requested_markets = req.markets or ["h2h", "spreads", "totals"]
+    markets = [m for m in requested_markets if m in ALLOWED_MARKETS]
+
+    # Fallback safety: if GPT passes only unsupported markets, reset to defaults
+    if not markets:
+        markets = ["h2h", "spreads", "totals"]
+
+
 
     all_games: List[dict] = []
 
