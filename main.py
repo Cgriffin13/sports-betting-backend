@@ -3,6 +3,17 @@ from pydantic import BaseModel
 from typing import List, Optional, Literal
 from datetime import date
 from uuid import uuid4
+import os
+
+import requests
+from dotenv import load_dotenv
+
+# -------------------------------------------------------------------
+# Environment & app setup
+# -------------------------------------------------------------------
+
+load_dotenv()  # loads variables from .env locally
+ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 app = FastAPI(
     title="Sports Betting Portfolio Backend",
@@ -10,7 +21,9 @@ app = FastAPI(
     description="Simple backend for odds, stats, and bankroll tracking."
 )
 
-# --- In-memory "database" (resets when server restarts) ---
+# -------------------------------------------------------------------
+# In-memory "database" (resets when server restarts)
+# -------------------------------------------------------------------
 
 DB = {
     "portfolios": {
@@ -21,7 +34,9 @@ DB = {
     }
 }
 
-# --- Models ---
+# -------------------------------------------------------------------
+# Pydantic models
+# -------------------------------------------------------------------
 
 class OddsRequest(BaseModel):
     date: date
@@ -48,51 +63,104 @@ class BetResultIn(BaseModel):
     payout: float      # net profit/loss (e.g. +18.18, -10)
 
 
-# --- Helper functions ---
+# -------------------------------------------------------------------
+# Helper functions
+# -------------------------------------------------------------------
 
 def get_portfolio(portfolio_id: str):
+    """Get or initialize a portfolio."""
     if portfolio_id not in DB["portfolios"]:
-        # initialize new portfolio with 200 starting bankroll
         DB["portfolios"][portfolio_id] = {"bankroll": 200.0, "bets": []}
     return DB["portfolios"][portfolio_id]
 
 
-# --- Routes ---
+# -------------------------------------------------------------------
+# Routes
+# -------------------------------------------------------------------
 
 @app.post("/odds")
 def get_odds(req: OddsRequest):
     """
-    TEMPORARY: returns dummy odds data.
-    Later you can replace this with real sportsbook / data provider calls.
+    Fetch real odds from The Odds API (or similar) and normalize them.
     """
-    # Example dummy game
+    if not ODDS_API_KEY:
+        return {
+            "error": "Missing ODDS_API_KEY in server environment.",
+            "date": str(req.date),
+            "sports": req.sports or [],
+            "games": []
+        }
+
+    # Map our sport labels to The Odds API sport keys
+    sport_keys = {
+        "NBA": "basketball_nba",
+        "NFL": "americanfootball_nfl",
+        "MLB": "baseball_mlb",
+        "NHL": "icehockey_nhl",
+        # add more mappings if needed
+    }
+
+    sports_to_query = req.sports or ["NBA"]
+    markets = req.markets or ["h2h"]  # 'h2h' = moneyline
+    all_games: List[dict] = []
+
+    for sport in sports_to_query:
+        key = sport_keys.get(sport.upper())
+        if not key:
+            # skip unknown sports
+            continue
+
+        url = f"https://api.the-odds-api.com/v4/sports/{key}/odds"
+        params = {
+            "apiKey": ODDS_API_KEY,
+            "regions": "us",                 # US books
+            "markets": ",".join(markets),
+            "oddsFormat": "american"
+        }
+
+        try:
+            resp = requests.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            all_games.append({
+                "sport": sport,
+                "error": f"Failed to fetch odds: {e}"
+            })
+            continue
+
+        # Normalize into our internal structure
+        for game in data:
+            game_markets = []
+
+            for bookmaker in game.get("bookmakers", []):
+                book_name = bookmaker.get("title")
+
+                for market in bookmaker.get("markets", []):
+                    market_type = market.get("key")  # e.g. 'h2h'
+                    for outcome in market.get("outcomes", []):
+                        game_markets.append({
+                            "book": book_name,
+                            "market_type": market_type,
+                            "selection": outcome.get("name"),
+                            "odds": outcome.get("price")
+                        })
+
+            all_games.append({
+                "game_id": game.get("id"),
+                "sport": sport,
+                "league": sport,
+                "home_team": game.get("home_team"),
+                "away_team": game.get("away_team"),
+                "commence_time": game.get("commence_time"),
+                "markets": game_markets
+            })
+
     return {
         "date": str(req.date),
-        "sports": req.sports or ["NBA"],
-        "markets": req.markets or ["moneyline", "spread", "total"],
-        "games": [
-            {
-                "game_id": "nba_example_1",
-                "sport": "NBA",
-                "league": "NBA",
-                "home_team": "Suns",
-                "away_team": "Warriors",
-                "markets": [
-                    {
-                        "book": "DummyBook",
-                        "market_type": "moneyline",
-                        "selection": "Suns",
-                        "odds": -130
-                    },
-                    {
-                        "book": "DummyBook",
-                        "market_type": "moneyline",
-                        "selection": "Warriors",
-                        "odds": +110
-                    }
-                ]
-            }
-        ]
+        "sports": sports_to_query,
+        "markets": markets,
+        "games": all_games
     }
 
 
