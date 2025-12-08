@@ -17,7 +17,7 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 app = FastAPI(
     title="Sports Betting Portfolio Backend",
-    version="1.1.0",
+    version="1.2.0",
     description="Backend for odds, stats, bankroll tracking, and learning stats."
 )
 
@@ -106,6 +106,13 @@ def american_to_implied_prob(odds: int) -> float:
 def get_odds(req: OddsRequest):
     """
     Fetch real odds from The Odds API and normalize them.
+
+    Design goals:
+    - Only query in-season sports by default.
+    - Only allow safe markets (h2h, spreads, totals) to avoid API errors.
+    - Fetch one sport at a time to avoid oversized responses.
+    - Filter to a small set of primary books: DraftKings, FanDuel, BetMGM.
+    - Return a compact, GPT-friendly structure for EV modeling.
     """
     if not ODDS_API_KEY:
         return {
@@ -116,33 +123,33 @@ def get_odds(req: OddsRequest):
         }
 
     # Map our sport labels to The Odds API sport keys
-    # You can expand this mapping as needed.
     sport_keys = {
         "NFL": "americanfootball_nfl",
         "NCAAB": "basketball_ncaab",
+        "NCAAMB": "basketball_ncaab",  # alias
         "NBA": "basketball_nba",
         "NHL": "icehockey_nhl",
         "MLB": "baseball_mlb",
         "WNBA": "basketball_wnba",
     }
 
-    # Default: query all priority sports if none specified
+    # Default: only in-season / priority sports
+    # (GPT can still explicitly request others via req.sports)
     sports_to_query = req.sports or ["NFL", "NCAAB", "NBA", "NHL"]
 
     # Only allow markets that we know the Odds API is happy with (no props yet)
     ALLOWED_MARKETS = {"h2h", "spreads", "totals"}
-
     requested_markets = req.markets or ["h2h", "spreads", "totals"]
     markets = [m for m in requested_markets if m in ALLOWED_MARKETS]
-
-    # Fallback safety: if GPT passes only unsupported markets, reset to defaults
     if not markets:
         markets = ["h2h", "spreads", "totals"]
 
-
+    # We only care about these three primary books
+    PRIMARY_BOOKS = {"DraftKings", "FanDuel", "BetMGM"}
 
     all_games: List[dict] = []
 
+    # Fetch each sport sequentially to keep responses small and stable
     for sport in sports_to_query:
         key = sport_keys.get(sport.upper())
         if not key:
@@ -167,17 +174,23 @@ def get_odds(req: OddsRequest):
             })
             continue
 
-        # Normalize into our internal structure
+        # Normalize into a compact internal structure,
+        # only including DraftKings, FanDuel, BetMGM.
         for game in data:
-            game_markets = []
+            cleaned_markets = []
 
             for bookmaker in game.get("bookmakers", []):
                 book_name = bookmaker.get("title")
+                if book_name not in PRIMARY_BOOKS:
+                    continue
 
                 for market in bookmaker.get("markets", []):
-                    market_type = market.get("key")  # e.g. 'h2h', 'spreads', etc.
+                    market_type = market.get("key")  # 'h2h', 'spreads', 'totals'
+                    if market_type not in markets:
+                        continue
+
                     for outcome in market.get("outcomes", []):
-                        game_markets.append({
+                        cleaned_markets.append({
                             "book": book_name,
                             "market_type": market_type,
                             "selection": outcome.get("name"),
@@ -191,7 +204,7 @@ def get_odds(req: OddsRequest):
                 "home_team": game.get("home_team"),
                 "away_team": game.get("away_team"),
                 "commence_time": game.get("commence_time"),
-                "markets": game_markets
+                "markets": cleaned_markets
             })
 
     return {
@@ -279,7 +292,7 @@ def record_bet_result(data: BetResultIn):
         if bet["bet_id"] == data.bet_id:
             bet["result"] = data.result
             bet["payout"] = data.payout
-            bet["closing_odds"] = data.closing_odds
+            bet["closing_odds"] = data.cldsing_odds if hasattr(data, "cldsing_odds") else data.closing_odds
             bet["closing_book_prob"] = data.closing_book_prob
             portfolio["bankroll"] += data.payout
             return {
