@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List, Optional, Literal
-from datetime import date
+from typing import List, Optional, Literal, Dict, Tuple
+from datetime import date, datetime
 from uuid import uuid4
 import os
 
@@ -17,15 +17,15 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 app = FastAPI(
     title="Sports Betting Portfolio Backend",
-    version="1.0.0",
-    description="Simple backend for odds, stats, and bankroll tracking."
+    version="1.1.0",
+    description="Backend for odds, stats, bankroll tracking, and learning stats."
 )
 
 # -------------------------------------------------------------------
 # In-memory "database" (resets when server restarts)
 # -------------------------------------------------------------------
 
-DB = {
+DB: Dict[str, dict] = {
     "portfolios": {
         "main": {
             "bankroll": 200.0,
@@ -33,6 +33,8 @@ DB = {
         }
     }
 }
+
+STARTING_BANKROLL = 200.0
 
 # -------------------------------------------------------------------
 # Pydantic models
@@ -55,12 +57,20 @@ class BetIn(BaseModel):
     odds: int          # American odds, e.g. -110, +150
     stake: float       # amount in dollars
 
+    # Hybrid model metadata (GPT should fill these when placing a bet)
+    model_prob: Optional[float] = None       # p_model (0-1)
+    book_prob: Optional[float] = None        # p_book (0-1)
+    edge: Optional[float] = None             # p_model - p_book
+    ev_per_1: Optional[float] = None         # expected value per $1 staked
+
 
 class BetResultIn(BaseModel):
     portfolio_id: str
     bet_id: str
     result: Literal["win", "loss", "push"]
     payout: float      # net profit/loss (e.g. +18.18, -10)
+    closing_odds: Optional[int] = None       # optional for future CLV
+    closing_book_prob: Optional[float] = None
 
 
 # -------------------------------------------------------------------
@@ -70,8 +80,22 @@ class BetResultIn(BaseModel):
 def get_portfolio(portfolio_id: str):
     """Get or initialize a portfolio."""
     if portfolio_id not in DB["portfolios"]:
-        DB["portfolios"][portfolio_id] = {"bankroll": 200.0, "bets": []}
+        DB["portfolios"][portfolio_id] = {"bankroll": STARTING_BANKROLL, "bets": []}
     return DB["portfolios"][portfolio_id]
+
+
+def american_to_decimal(odds: int) -> float:
+    if odds > 0:
+        return 1 + odds / 100.0
+    else:
+        return 1 + 100.0 / (-odds)
+
+
+def american_to_implied_prob(odds: int) -> float:
+    if odds > 0:
+        return 100.0 / (odds + 100.0)
+    else:
+        return (-odds) / ((-odds) + 100.0)
 
 
 # -------------------------------------------------------------------
@@ -81,7 +105,7 @@ def get_portfolio(portfolio_id: str):
 @app.post("/odds")
 def get_odds(req: OddsRequest):
     """
-    Fetch real odds from The Odds API (or similar) and normalize them.
+    Fetch real odds from The Odds API and normalize them.
     """
     if not ODDS_API_KEY:
         return {
@@ -92,28 +116,33 @@ def get_odds(req: OddsRequest):
         }
 
     # Map our sport labels to The Odds API sport keys
+    # You can expand this mapping as needed.
     sport_keys = {
-        "NBA": "basketball_nba",
         "NFL": "americanfootball_nfl",
-        "MLB": "baseball_mlb",
+        "NCAAB": "basketball_ncaab",
+        "NBA": "basketball_nba",
         "NHL": "icehockey_nhl",
-        # add more mappings if needed
+        "MLB": "baseball_mlb",
+        "WNBA": "basketball_wnba",
     }
 
-    sports_to_query = req.sports or ["NBA"]
-    markets = req.markets or ["h2h"]  # 'h2h' = moneyline
+    # Default: query all priority sports if none specified
+    sports_to_query = req.sports or ["NFL", "NCAAB", "NBA", "NHL", "MLB", "WNBA"]
+
+    # Default: broad set of markets, we'll filter in GPT
+    markets = req.markets or ["h2h", "spreads", "totals", "player_points"]
+
     all_games: List[dict] = []
 
     for sport in sports_to_query:
         key = sport_keys.get(sport.upper())
         if not key:
-            # skip unknown sports
             continue
 
         url = f"https://api.the-odds-api.com/v4/sports/{key}/odds"
         params = {
             "apiKey": ODDS_API_KEY,
-            "regions": "us",                 # US books
+            "regions": "us",
             "markets": ",".join(markets),
             "oddsFormat": "american"
         }
@@ -137,7 +166,7 @@ def get_odds(req: OddsRequest):
                 book_name = bookmaker.get("title")
 
                 for market in bookmaker.get("markets", []):
-                    market_type = market.get("key")  # e.g. 'h2h'
+                    market_type = market.get("key")  # e.g. 'h2h', 'spreads', etc.
                     for outcome in market.get("outcomes", []):
                         game_markets.append({
                             "book": book_name,
@@ -205,6 +234,7 @@ def get_bankroll_and_bet_history(portfolio_id: str, limit: int = 200):
 def record_bet(bet: BetIn):
     """
     Record a new bet and reduce bankroll by the stake.
+    GPT should send model_prob, book_prob, edge, ev_per_1 if available.
     """
     portfolio = get_portfolio(bet.portfolio_id)
     bet_id = str(uuid4())
@@ -216,6 +246,9 @@ def record_bet(bet: BetIn):
     bet_dict["bet_id"] = bet_id
     bet_dict["result"] = None
     bet_dict["payout"] = 0.0
+    bet_dict["created_at"] = datetime.utcnow().isoformat()
+    bet_dict["closing_odds"] = None
+    bet_dict["closing_book_prob"] = None
 
     portfolio["bets"].append(bet_dict)
 
@@ -230,12 +263,15 @@ def record_bet(bet: BetIn):
 def record_bet_result(data: BetResultIn):
     """
     Update a bet with its result and adjust bankroll.
+    Optionally records closing odds for future CLV analysis.
     """
     portfolio = get_portfolio(data.portfolio_id)
     for bet in portfolio["bets"]:
         if bet["bet_id"] == data.bet_id:
             bet["result"] = data.result
             bet["payout"] = data.payout
+            bet["closing_odds"] = data.closing_odds
+            bet["closing_book_prob"] = data.closing_book_prob
             portfolio["bankroll"] += data.payout
             return {
                 "message": "Bet result recorded",
@@ -243,3 +279,87 @@ def record_bet_result(data: BetResultIn):
             }
 
     return {"error": "Bet not found"}
+
+
+@app.get("/portfolio/{portfolio_id}/stats")
+def get_portfolio_stats(portfolio_id: str):
+    """
+    Compute learning stats for a portfolio:
+    - Overall ROI, hit rate, etc.
+    - ROI by (sport, market_type) bucket.
+    """
+    portfolio = get_portfolio(portfolio_id)
+    bets = portfolio["bets"]
+
+    # Only consider bets that have been settled (win/loss/push)
+    settled = [b for b in bets if b.get("result") in ("win", "loss", "push")]
+
+    total_staked = sum(b["stake"] for b in settled)
+    total_profit = sum(b.get("payout", 0.0) for b in settled)
+    wins = sum(1 for b in settled if b["result"] == "win")
+    losses = sum(1 for b in settled if b["result"] == "loss")
+    pushes = sum(1 for b in settled if b["result"] == "push")
+    n_settled = len(settled)
+
+    hit_rate = (wins / n_settled) if n_settled > 0 else 0.0
+    roi = (total_profit / total_staked) if total_staked > 0 else 0.0
+
+    # Bucket-level stats by (sport, market_type)
+    bucket_map: Dict[Tuple[str, str], dict] = {}
+
+    for b in settled:
+        sport = b.get("sport", "UNKNOWN")
+        market_type = b.get("market_type", "UNKNOWN")
+        key = (sport, market_type)
+
+        if key not in bucket_map:
+            bucket_map[key] = {
+                "sport": sport,
+                "market_type": market_type,
+                "bets_settled": 0,
+                "wins": 0,
+                "losses": 0,
+                "pushes": 0,
+                "total_staked": 0.0,
+                "total_profit": 0.0,
+            }
+
+        bucket = bucket_map[key]
+        bucket["bets_settled"] += 1
+        bucket["total_staked"] += b["stake"]
+        bucket["total_profit"] += b.get("payout", 0.0)
+        if b["result"] == "win":
+            bucket["wins"] += 1
+        elif b["result"] == "loss":
+            bucket["losses"] += 1
+        elif b["result"] == "push":
+            bucket["pushes"] += 1
+
+    # finalize ROI for each bucket
+    buckets = []
+    for bucket in bucket_map.values():
+        ts = bucket["total_staked"]
+        bucket["roi"] = (bucket["total_profit"] / ts) if ts > 0 else 0.0
+        if bucket["bets_settled"] > 0:
+            bucket["hit_rate"] = bucket["wins"] / bucket["bets_settled"]
+        else:
+            bucket["hit_rate"] = 0.0
+        buckets.append(bucket)
+
+    return {
+        "portfolio_id": portfolio_id,
+        "starting_bankroll": STARTING_BANKROLL,
+        "current_bankroll": portfolio["bankroll"],
+        "net_pnl": portfolio["bankroll"] - STARTING_BANKROLL,
+        "overall": {
+            "bets_settled": n_settled,
+            "wins": wins,
+            "losses": losses,
+            "pushes": pushes,
+            "hit_rate": hit_rate,
+            "total_staked": total_staked,
+            "total_profit": total_profit,
+            "roi": roi,
+        },
+        "by_bucket": buckets,
+    }
