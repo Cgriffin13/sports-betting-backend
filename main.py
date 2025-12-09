@@ -4,6 +4,8 @@ from typing import List, Optional, Literal, Dict, Tuple
 from datetime import date, datetime
 from uuid import uuid4
 import os
+import json
+from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
@@ -17,24 +19,58 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 
 app = FastAPI(
     title="Sports Betting Portfolio Backend",
-    version="1.2.0",
+    version="1.1.0",
     description="Backend for odds, stats, bankroll tracking, and learning stats."
 )
 
 # -------------------------------------------------------------------
-# In-memory "database" (resets when server restarts)
+# Persistence: JSON-backed "database"
 # -------------------------------------------------------------------
 
-DB: Dict[str, dict] = {
-    "portfolios": {
-        "main": {
-            "bankroll": 200.0,
-            "bets": []  # list of bet dicts
+STARTING_BANKROLL = 200.0
+
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+DB_FILE = DATA_DIR / "portfolio_db.json"
+
+
+def load_db_from_file() -> Dict[str, dict]:
+    """
+    Load DB from JSON file if it exists, otherwise return default structure.
+    """
+    if DB_FILE.exists():
+        try:
+            with DB_FILE.open("r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            # If file is corrupted, fall back to default
+            pass
+
+    # Default structure (fresh portfolio)
+    return {
+        "portfolios": {
+            "main": {
+                "bankroll": STARTING_BANKROLL,
+                "bets": []
+            }
         }
     }
-}
 
-STARTING_BANKROLL = 200.0
+
+def save_db_to_file():
+    """
+    Persist current DB to JSON file.
+    """
+    try:
+        with DB_FILE.open("w", encoding="utf-8") as f:
+            json.dump(DB, f, indent=2, default=str)
+    except Exception:
+        # For now we silently ignore save errors; could log later.
+        pass
+
+
+# In-memory copy, backed by JSON file
+DB: Dict[str, dict] = load_db_from_file()
 
 # -------------------------------------------------------------------
 # Pydantic models
@@ -42,7 +78,9 @@ STARTING_BANKROLL = 200.0
 
 class OddsRequest(BaseModel):
     date: date
+    # Our high-level sport labels; backend maps them to The Odds API keys
     sports: Optional[List[str]] = None
+    # Requestable market types; backend will filter to allowed ones
     markets: Optional[List[str]] = None
 
 
@@ -57,7 +95,7 @@ class BetIn(BaseModel):
     odds: int          # American odds, e.g. -110, +150
     stake: float       # amount in dollars
 
-    # Hybrid model metadata (GPT should fill these when placing a bet)
+    # Hybrid model metadata (GPT fills these when placing a bet)
     model_prob: Optional[float] = None       # p_model (0-1)
     book_prob: Optional[float] = None        # p_book (0-1)
     edge: Optional[float] = None             # p_model - p_book
@@ -68,8 +106,8 @@ class BetResultIn(BaseModel):
     portfolio_id: str
     bet_id: str
     result: Literal["win", "loss", "push"]
-    payout: float      # net profit/loss (e.g. +18.18, -10)
-    closing_odds: Optional[int] = None       # optional for future CLV
+    payout: float               # net profit/loss (e.g. +18.18, -10)
+    closing_odds: Optional[int] = None       # optional for CLV
     closing_book_prob: Optional[float] = None
 
 
@@ -78,13 +116,20 @@ class BetResultIn(BaseModel):
 # -------------------------------------------------------------------
 
 def get_portfolio(portfolio_id: str):
-    """Get or initialize a portfolio."""
+    """
+    Get or initialize a portfolio. New portfolios start with STARTING_BANKROLL.
+    """
     if portfolio_id not in DB["portfolios"]:
-        DB["portfolios"][portfolio_id] = {"bankroll": STARTING_BANKROLL, "bets": []}
+        DB["portfolios"][portfolio_id] = {
+            "bankroll": STARTING_BANKROLL,
+            "bets": []
+        }
+        save_db_to_file()
     return DB["portfolios"][portfolio_id]
 
 
 def american_to_decimal(odds: int) -> float:
+    """Convert American odds to decimal."""
     if odds > 0:
         return 1 + odds / 100.0
     else:
@@ -92,6 +137,7 @@ def american_to_decimal(odds: int) -> float:
 
 
 def american_to_implied_prob(odds: int) -> float:
+    """Implied probability from American odds (before de-juicing)."""
     if odds > 0:
         return 100.0 / (odds + 100.0)
     else:
@@ -107,12 +153,9 @@ def get_odds(req: OddsRequest):
     """
     Fetch real odds from The Odds API and normalize them.
 
-    Design goals:
-    - Only query in-season sports by default.
-    - Only allow safe markets (h2h, spreads, totals) to avoid API errors.
-    - Fetch one sport at a time to avoid oversized responses.
-    - Filter to a small set of primary books: DraftKings, FanDuel, BetMGM.
-    - Return a compact, GPT-friendly structure for EV modeling.
+    GPT decides which sports to query and can control the markets list.
+    We only pass through markets The Odds API supports in this basic plan
+    (no player props yet; those are handled synthetically in the GPT logic).
     """
     if not ODDS_API_KEY:
         return {
@@ -126,30 +169,24 @@ def get_odds(req: OddsRequest):
     sport_keys = {
         "NFL": "americanfootball_nfl",
         "NCAAB": "basketball_ncaab",
-        "NCAAMB": "basketball_ncaab",  # alias
         "NBA": "basketball_nba",
         "NHL": "icehockey_nhl",
         "MLB": "baseball_mlb",
         "WNBA": "basketball_wnba",
     }
 
-    # Default: only in-season / priority sports
-    # (GPT can still explicitly request others via req.sports)
-    sports_to_query = req.sports or ["NFL", "NCAAB", "NBA", "NHL"]
+    # Default priority set if GPT doesn't specify sports
+    sports_to_query = req.sports or ["NFL", "NCAAB", "NBA", "NHL", "MLB", "WNBA"]
 
-    # Only allow markets that we know the Odds API is happy with (no props yet)
+    # Only allow markets that the Odds API supports in our plan (no props)
     ALLOWED_MARKETS = {"h2h", "spreads", "totals"}
     requested_markets = req.markets or ["h2h", "spreads", "totals"]
     markets = [m for m in requested_markets if m in ALLOWED_MARKETS]
     if not markets:
         markets = ["h2h", "spreads", "totals"]
 
-    # We only care about these three primary books
-    PRIMARY_BOOKS = {"DraftKings", "FanDuel", "BetMGM"}
-
     all_games: List[dict] = []
 
-    # Fetch each sport sequentially to keep responses small and stable
     for sport in sports_to_query:
         key = sport_keys.get(sport.upper())
         if not key:
@@ -161,6 +198,8 @@ def get_odds(req: OddsRequest):
             "regions": "us",
             "markets": ",".join(markets),
             "oddsFormat": "american"
+            # Free plan doesn’t support historical date filter; we still include
+            # req.date in the response for bookkeeping.
         }
 
         try:
@@ -174,23 +213,17 @@ def get_odds(req: OddsRequest):
             })
             continue
 
-        # Normalize into a compact internal structure,
-        # only including DraftKings, FanDuel, BetMGM.
+        # Normalize into our internal structure
         for game in data:
-            cleaned_markets = []
+            game_markets = []
 
             for bookmaker in game.get("bookmakers", []):
                 book_name = bookmaker.get("title")
-                if book_name not in PRIMARY_BOOKS:
-                    continue
 
                 for market in bookmaker.get("markets", []):
-                    market_type = market.get("key")  # 'h2h', 'spreads', 'totals'
-                    if market_type not in markets:
-                        continue
-
+                    market_type = market.get("key")  # 'h2h', 'spreads', 'totals', etc.
                     for outcome in market.get("outcomes", []):
-                        cleaned_markets.append({
+                        game_markets.append({
                             "book": book_name,
                             "market_type": market_type,
                             "selection": outcome.get("name"),
@@ -204,7 +237,7 @@ def get_odds(req: OddsRequest):
                 "home_team": game.get("home_team"),
                 "away_team": game.get("away_team"),
                 "commence_time": game.get("commence_time"),
-                "markets": cleaned_markets
+                "markets": game_markets
             })
 
     return {
@@ -261,7 +294,7 @@ def record_bet(bet: BetIn):
     portfolio = get_portfolio(bet.portfolio_id)
     bet_id = str(uuid4())
 
-    # reduce bankroll by stake
+    # Reduce bankroll by stake
     portfolio["bankroll"] -= bet.stake
 
     bet_dict = bet.model_dump()
@@ -273,6 +306,7 @@ def record_bet(bet: BetIn):
     bet_dict["closing_book_prob"] = None
 
     portfolio["bets"].append(bet_dict)
+    save_db_to_file()
 
     return {
         "message": "Bet recorded",
@@ -292,9 +326,12 @@ def record_bet_result(data: BetResultIn):
         if bet["bet_id"] == data.bet_id:
             bet["result"] = data.result
             bet["payout"] = data.payout
-            bet["closing_odds"] = data.cldsing_odds if hasattr(data, "cldsing_odds") else data.closing_odds
+            bet["closing_odds"] = data.closing_odds
             bet["closing_book_prob"] = data.closing_book_prob
             portfolio["bankroll"] += data.payout
+
+            save_db_to_file()
+
             return {
                 "message": "Bet result recorded",
                 "bankroll_after": portfolio["bankroll"]
@@ -357,7 +394,7 @@ def get_portfolio_stats(portfolio_id: str):
         elif b["result"] == "push":
             bucket["pushes"] += 1
 
-    # finalize ROI for each bucket
+    # Finalize ROI and hit rate per bucket
     buckets = []
     for bucket in bucket_map.values():
         ts = bucket["total_staked"]
