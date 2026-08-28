@@ -69,6 +69,8 @@ Goal: create reproducible, provider-neutral market snapshots.
 - Add freshness, quota, cache, retry, and rate-limit policies.
 - Support scheduled snapshots and closing-price capture.
 - Design for additional providers without requiring a second provider immediately.
+- Add NCAAF/College Football as a first-class league identifier and provider mapping; never alias it to NCAAB.
+- Prioritize NCAAF full-game moneyline, spreads, and totals, followed by equivalent NFL and NBA game-market coverage.
 
 Exit criteria:
 
@@ -78,26 +80,66 @@ Exit criteria:
 
 ## Phase 4 — Baseline pricing and EV engine
 
-Goal: generate transparent market-consensus opportunities without claiming a proprietary model.
+Goal: generate transparent market-consensus opportunities as a baseline and benchmark without claiming a proprietary model.
 
 - Implement and test American/decimal odds conversion.
 - Implement a versioned initial vig-removal method.
 - Build a transparent multi-book consensus policy with outlier and staleness handling.
-- Calculate offered implied probability, consensus/fair probability, probability edge, and EV.
+- Calculate offered implied probability, consensus probability, initial fair probability, probability edge, and EV.
 - Attach source, version, inputs, and uncertainty/data-quality indicators to every calculation.
 - Create deterministic fixtures and offline replay/backtest tooling.
+- Produce up to a configurable Top N qualified opportunities per selected league, normally capped at 10, without relaxing thresholds to fill the list.
+- Preserve the best executable price and every required recommendation field even before a proprietary model is available.
 
 Exit criteria:
 
 - Every recommendation can reproduce its fair price and EV from stored observations.
 - Market consensus is labeled accurately.
 - Numerical and market-identity edge cases are covered by tests.
+- Returning fewer than Top N, including zero, is tested as correct behavior.
 
-## Phase 5 — Portfolio risk, staking, and approval
+### Short-term milestone — Opening-weekend NCAAF paper-trading baseline
+
+As soon as Phases 2–4 provide the minimum reliable path, run an opening-weekend NCAAF paper-trading baseline that captures:
+
+- timestamped odds and normalized full-game markets;
+- no-vig and multi-book consensus calculations;
+- qualification decisions and up to the requested Top N recommendations;
+- best executable prices, initial fair probabilities, edge, EV, and uncertainty flags;
+- versioned paper stakes and portfolio-equity percentages;
+- explicit human approvals;
+- closing prices; and
+- outcomes, settlement, and basic ROI/CLV reconciliation.
+
+This milestone must proceed even if the first proprietary NCAAF model is not production-ready. In that case, label consensus as the final fair-probability source for that baseline and preserve an explicit null/not-available proprietary probability.
+
+## Phase 5 — NCAAF predictive-model track
+
+Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
+
+- Select structured NCAAF schedules, results, team statistics, injury/availability, weather, and other research-data sources.
+- Build reproducible, time-aware feature pipelines with provenance and leakage controls.
+- Define baseline model families and strict chronological train/validation/test splits.
+- Record consensus probability, proprietary model probability, and candidate final fair probability separately.
+- Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
+- Create a model registry/versioning and promotion process.
+- Keep model outputs experimental until predefined out-of-sample gates are met.
+- Ensure LLM-discovered research enters only through traceable structured signals; prohibit undocumented probability adjustments.
+
+Exit criteria:
+
+- Every prediction is reproducible from versioned data, features, and code.
+- Leakage and time-boundary tests exist.
+- The NCAAF model is compared directly with the consensus baseline.
+- Failure to beat or complement consensus results in no promotion, not forced blending.
+
+## Phase 6 — Portfolio risk, staking, and approval
 
 Goal: turn positive-EV observations into conservative, reviewable portfolio recommendations.
 
 - Define a fractional-Kelly candidate policy; never use full Kelly.
+- Scale stake recommendations from current portfolio equity rather than fixed dollars.
+- Define a versioned unit display policy tied to current equity.
 - Add per-bet, daily, aggregate, sport/market, event, and correlation exposure limits.
 - Add confidence/data-quality adjustments and drawdown-aware reductions.
 - Define ranking rules that consider EV, uncertainty, liquidity/freshness, and portfolio impact—not edge alone.
@@ -110,8 +152,26 @@ Exit criteria:
 - Risk invariants hold under deterministic scenario tests.
 - An analysis cannot become an official bet without recorded human approval.
 - Stake recommendations are explainable and reproducible.
+- Dollar stake, equity percentage, displayed units, and policy version reconcile.
 
-## Phase 6 — Closing, settlement, and analytics
+## Phase 7 — NFL and NBA model expansion
+
+Goal: reuse validated platform primitives while preserving league-specific modeling.
+
+- Extend the full-game market and predictive-model pipeline to NFL after NCAAF foundations stabilize.
+- Extend NBA game-market models using availability, projected minutes, usage, pace, rest, lineup, and matchup features.
+- Add alternate spread/total and half/quarter markets only after equivalent full-game pipelines are validated.
+- Design player-level data and projection architecture before implementing player props.
+- Treat NBA player props as the first likely prop expansion; NFL props follow only with adequate player-level projections and validation.
+- Keep league-specific model evaluation and calibration separate while sharing common pricing, risk, ledger, and approval infrastructure.
+
+Exit criteria:
+
+- NFL and NBA models are independently versioned and benchmarked against consensus.
+- Expanded markets have explicit identity, settlement, and test fixtures.
+- No player prop is recommended without a reproducible player-level projection path.
+
+## Phase 8 — Closing, settlement, and analytics
 
 Goal: measure outcomes without compromising the historical record.
 
@@ -127,13 +187,13 @@ Exit criteria:
 - Analytics are reproducible from immutable source records.
 - Metric definitions match `MODEL_LOGIC.md` and are covered by fixtures.
 
-## Phase 7 — Calibration and model experimentation
+## Phase 9 — Calibration and model improvement
 
 Goal: improve estimates through statistically defensible evidence.
 
 - Add Brier score, log loss, reliability plots/tables, uncertainty intervals, and sample-size reporting.
 - Establish time-based out-of-sample evaluation and model registries/versioning.
-- Compare proprietary sport-specific models against the market-consensus baseline.
+- Compare each proprietary sport-specific model against the market-consensus baseline and against its prior production version.
 - Define conservative promotion, rollback, and weight-change criteria.
 - Prevent small samples or recent streaks from automatically increasing confidence or stakes.
 
@@ -143,7 +203,7 @@ Exit criteria:
 - Historical predictions remain tied to the version that produced them.
 - No online “learning” silently mutates production policy.
 
-## Phase 8 — Paper-trading production hardening
+## Phase 10 — Paper-trading production hardening
 
 Goal: operate the research platform reliably over long observation periods.
 
@@ -160,5 +220,8 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 2. Add characterization tests before restructuring `main.py`.
 3. Extract provider and domain boundaries.
 4. Decide the database/ownership architecture.
-5. Build the durable ledger before implementing sophisticated pricing or staking.
+5. Build the durable ledger and normalized NCAAF market path.
+6. Implement the transparent consensus/EV baseline.
+7. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
+8. Add the conservative equity-scaled risk and approval engine before expanding scope.
 

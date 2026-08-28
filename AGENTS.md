@@ -15,9 +15,13 @@ The code is the source of truth for what is implemented. The documentation is th
 ## Product constraints
 
 - Treat this as an experimental paper-trading and portfolio-research platform, not a picks chatbot.
+- Immediate league priority is NCAAF/College Football, then NFL, then NBA. MLB, NHL, and WNBA are secondary. Never confuse NCAAF with the prototype's existing NCAAB support.
+- The product combines market pricing, sport-specific predictive models, structured sports data, traceable research signals, and portfolio risk. Market consensus is the baseline and benchmark, not necessarily the final long-term fair probability.
 - Official bets require explicit human approval. Do not add autonomous real-money sportsbook execution unless the product direction is explicitly changed and recorded.
 - Never use full Kelly staking. Historical stake ranges are context, not hard-coded rules.
 - Do not call a market-derived consensus probability a proprietary predictive model.
+- Return only qualified recommendations up to the requested Top N; never lower standards or manufacture bets to fill a quota.
+- LLM-derived research must remain traceable and must not create undocumented probability adjustments.
 - Do not let small samples directly drive large model-weight or staking changes.
 
 ## Engineering rules
@@ -27,6 +31,7 @@ The code is the source of truth for what is implemented. The documentation is th
 - Make financial and probability calculations deterministic, side-effect free, explicitly named, and covered by unit tests.
 - Validate numeric inputs as finite and within their valid domains. Define rounding and money semantics explicitly.
 - Preserve an auditable bet snapshot: event, market, line, price, probabilities, model/version, bankroll, approval, timestamps, closing data, result, and P&L.
+- Scale position sizing from current portfolio equity under a versioned risk policy. Treat units as a bankroll-relative display abstraction, not a fixed dollar constant.
 - Prefer database transactions, idempotency, and immutable ledger-style records over shared mutable state.
 - Update the relevant documentation and `docs/DECISIONS.md` when a change alters architecture, financial semantics, model terminology, or product boundaries.
 - Do not mix broad refactors with behavior changes unless the task requires both.

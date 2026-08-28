@@ -7,10 +7,12 @@ This document defines shared terminology and intended mathematical semantics. It
 | Capability | Current prototype | Planned V2 |
 | --- | --- | --- |
 | American odds retrieval | Implemented | Retain behind provider adapters |
+| First-class NCAAF support | Not implemented | Immediate league priority |
 | Implied-probability calculation | Not implemented | Deterministic pricing primitive |
 | Vig removal | Not implemented | Versioned method per market |
-| Multi-book consensus | Not implemented | Initial fair-price input |
-| Proprietary predictive model | Not implemented | Optional later supplement |
+| Multi-book consensus | Not implemented | Initial fair-price baseline and benchmark |
+| Proprietary predictive model | Not implemented | NCAAF track after baseline engine, then NFL/NBA |
+| Structured sports/news signals | Not implemented | Traceable league-specific inputs |
 | Edge calculation | Caller-supplied, unverified | Calculated and versioned |
 | EV calculation | Caller-supplied, unverified | Calculated and versioned |
 | Stake recommendation | Not implemented | Fractional-Kelly-informed, conservatively capped |
@@ -19,6 +21,20 @@ This document defines shared terminology and intended mathematical semantics. It
 | Calibration/learning | Not implemented | Offline, evidence-based, and versioned |
 
 The current `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields are passive metadata supplied by the caller. Their names do not prove that a model or calculation occurred.
+
+The prototype supports NCAAB but not NCAAF. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
+
+## League and market modeling sequence
+
+Development priority is NCAAF, NFL, then NBA; MLB, NHL, and WNBA are secondary.
+
+- **NCAAF:** begin with full-game moneyline, spreads, and totals. Candidate model inputs may include team strength, opponent adjustment, returning production, coaching/system continuity, tempo, efficiency, travel, venue, weather, injuries/availability, and other validated features.
+- **NFL:** follow the same initial game-market progression. Sport-specific inputs may include team efficiency, personnel/availability, rest, travel, weather, matchup, and market context.
+- **NBA:** support game markets first and later player props. Player availability, projected minutes, usage, pace, rest, lineup combinations, and matchup data are central candidates.
+
+Alternate spreads/totals and half/quarter markets follow only after the full-game pipeline is validated. Player props are later because they require player-level projections, market-specific settlement rules, and substantially more data/modeling.
+
+These are candidate feature domains, not permission to add them heuristically. Every historical variable must earn weight through reproducible out-of-sample evidence.
 
 ## Core terminology
 
@@ -61,7 +77,7 @@ A fair-price estimate derived from multiple market observations after normalizat
 
 Only equivalent markets may be combined. A spread at `-3.0` is not the same price object as a spread at `-3.5`; totals, periods, overtime rules, and participant identity also matter.
 
-A consensus probability is market-derived. It is not a proprietary predictive model.
+A consensus probability is market-derived. It is not a proprietary predictive model. It is the initial baseline and ongoing benchmark for measuring whether a proprietary model adds predictive or economic value.
 
 ### Proprietary/model probability
 
@@ -69,7 +85,7 @@ A probability produced by a separately defined predictive model using features b
 
 ### Fair probability
 
-The probability selected by a declared pricing policy for decision-making. Its source may initially be market consensus and later be a documented blend with a proprietary model. `fair_probability_source` and calculation version must accompany the value.
+The probability selected by a declared pricing policy for decision-making. Its source may initially be market consensus and later be a documented selection or blend of market consensus and a sport-specific proprietary model. Consensus is not assumed to remain the final estimate indefinitely. `fair_probability_source`, component probabilities, blend/selection policy, and calculation version must accompany the value.
 
 ### Edge
 
@@ -132,7 +148,23 @@ sportsbook odds
   -> recommend stake
 ```
 
-This provides a testable baseline. Sport-specific predictive models can later be evaluated against that baseline. They should be adopted only when out-of-sample evidence supports the change.
+This provides a testable baseline. An NCAAF predictive-model track should begin as soon as the baseline pricing engine is reproducible; it does not wait until the final roadmap phase. NFL and NBA follow. Proprietary models should be promoted into final-fair-probability decisions only when out-of-sample evidence shows value relative to the consensus benchmark.
+
+## Structured data and research signals
+
+The model platform should combine normalized market data with sport-specific structured statistics and traceable injury/news/research signals.
+
+Every non-market signal should preserve:
+
+- source and source URL or stable identifier;
+- publication and ingestion timestamps;
+- affected league, event, team, player, or market;
+- extracted fact and structured category;
+- confidence in extraction and any conflicting sources;
+- transformation/feature version; and
+- the model or policy version that consumed it.
+
+An LLM may discover sources, extract facts, summarize evidence, and generate a human-readable explanation. It must not silently convert prose into arbitrary probability points. A probability adjustment is permitted only through a documented, testable feature or explicit policy whose input and effect are reproducible.
 
 ## Ranking philosophy
 
@@ -149,7 +181,38 @@ Recommendations must not be ranked by edge alone. A ranking policy should consid
 
 The precise score is an open decision. Prefer explicit filters and interpretable components over an unexplained composite score.
 
+### Qualified Top N behavior
+
+The interface returns up to a configurable Top N opportunities for each selected league, with 10 as the normal display maximum. Qualification occurs before ranking and truncation.
+
+```text
+normalized candidates
+  -> data-quality and freshness gates
+  -> positive-EV and uncertainty gates
+  -> portfolio/risk eligibility
+  -> rank qualified opportunities
+  -> return first min(Top N, qualified_count)
+```
+
+The system must never reduce thresholds, duplicate markets, or manufacture recommendations to fill Top N. Zero recommendations is valid.
+
+Every returned recommendation must preserve and expose:
+
+- best executable sportsbook and American/decimal price;
+- offered implied probability;
+- no-vig market inputs where applicable;
+- market-consensus probability;
+- proprietary model probability when available;
+- final fair probability and source/policy version;
+- probability edge and EV per unit;
+- uncertainty/confidence and data-quality indicators;
+- recommended stake, portfolio-equity percentage, and displayed units;
+- pricing, model, and risk-policy versions; and
+- a human-readable explanation with traceable research sources/signals.
+
 ## Staking philosophy
+
+The objective is long-term risk-adjusted bankroll growth, not reaching a fixed bankroll target. Stakes should scale automatically from current portfolio equity rather than use static dollar amounts.
 
 Historical discussion used approximately 1–3% of bankroll for normal positions and 5–10% only for unusually strong opportunities. These are historical heuristics, not V2 constants or authorization to risk those amounts.
 
@@ -175,6 +238,17 @@ recommended_fraction = min(
 ```
 
 All multipliers and caps require paper-trading validation. The engine should also support “no bet” when EV is non-positive, uncertainty is too high, data is stale, limits are reached, or market identity is ambiguous.
+
+The equity base used for sizing must be defined consistently—likely cash plus reserved/open stake valued under a documented convention—and captured with the recommendation. The exact equity definition remains unresolved.
+
+One unit is a display abstraction derived from current equity under a versioned unit policy:
+
+```text
+unit_dollars_at_recommendation = portfolio_equity * unit_fraction(policy_version)
+display_units = recommended_stake / unit_dollars_at_recommendation
+```
+
+The formula is illustrative, not an accepted `unit_fraction`. Store both dollars and equity percentage so historical recommendations remain interpretable after bankroll changes.
 
 Required risk concepts include:
 
@@ -259,6 +333,8 @@ Track peak-to-trough decline on a clearly defined portfolio-equity series, with 
 ### Segmentation
 
 Eventually evaluate results by model/version, sport, league, market, sportsbook, edge bucket, probability bucket, confidence bucket, and time period. Multiple comparisons and small samples must be treated cautiously.
+
+Market-consensus and proprietary-model predictions should be scored separately against outcomes and closing markets. A model should not receive weight merely because a historical trend recently succeeded; promotion requires time-aware out-of-sample evaluation, calibration evidence, and sufficient sample size.
 
 ## Testing requirements
 

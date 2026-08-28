@@ -66,13 +66,14 @@ Consequences:
 - Date: 2026-08-28
 - Status: Accepted
 
-An initial V2 fair-price engine may use implied probabilities, vig removal, and normalized multi-book consensus. Sophisticated machine learning is not required for the first legitimate pricing engine.
+An initial V2 fair-price engine may use implied probabilities, vig removal, and normalized multi-book consensus. Sophisticated machine learning is not required for the first legitimate pricing engine. Consensus remains the baseline and benchmark against which proprietary models are evaluated, but it is not assumed to be the final long-term fair probability.
 
 Consequences:
 
 - Consensus methodology and inputs must be transparent and versioned.
 - A market-derived estimate must not be called a proprietary predictive model.
-- Proprietary models should later be evaluated against this reproducible baseline.
+- Proprietary models should be evaluated against this reproducible baseline, beginning with NCAAF after the baseline engine exists.
+- Consensus, proprietary-model, and final fair probabilities must remain separately observable.
 
 ## ADR-006 — Recommendations are not ranked by edge alone
 
@@ -153,6 +154,123 @@ Consequences:
 - Calculations should operate on explicit portfolio state.
 - Tests may use fixed bankroll fixtures but should not embed `$200` as a domain rule.
 
+## ADR-012 — League development priority is NCAAF, NFL, then NBA
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Immediate development priority is NCAAF/College Football, followed by NFL and NBA. MLB, NHL, and WNBA are secondary. The prototype's NCAAB support is college basketball and must not be confused with NCAAF.
+
+Consequences:
+
+- NCAAF becomes the first new first-class league and predictive-model track.
+- League identifiers, provider mappings, datasets, features, and evaluation remain explicit.
+- Shared platform components should not erase sport-specific modeling requirements.
+
+## ADR-013 — The product combines market, model, research, and portfolio evidence
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The ultimate product is a quantitative sports-wagering portfolio manager, not merely a market-consensus line scanner. It combines market pricing, sport-specific predictive models, structured sports/statistical data, traceable injury/news/research signals, and portfolio-risk controls.
+
+Consequences:
+
+- Market consensus is a baseline and benchmark, not necessarily the final estimate.
+- Final fair probability must expose its component probabilities and versioned policy.
+- Sport/statistical and research-data ingestion are architectural components, not informal prompt context.
+
+## ADR-014 — Top N is a maximum, never a quota
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The recommendation interface returns up to a configurable Top N qualified opportunities per selected league, with 10 as the normal display maximum. Qualification standards do not change to fill the display.
+
+Consequences:
+
+- Ranking and Top N truncation occur only after data, EV, uncertainty, and portfolio-risk qualification.
+- Fewer than Top N, including zero, is correct behavior.
+- Duplicate or marginal opportunities must not be manufactured to meet a count.
+
+## ADR-015 — Recommendations expose the complete decision basis
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Every recommendation preserves and exposes the best executable sportsbook price, implied probability, consensus probability, proprietary model probability when available, final fair probability, edge, EV, uncertainty/confidence, recommended stake, portfolio-equity percentage, and a human-readable research explanation.
+
+Consequences:
+
+- Probability sources and pricing/model/risk versions remain separately identifiable.
+- Explanations link to traceable structured research signals.
+- A missing proprietary model is represented explicitly, not fabricated or relabeled from consensus.
+
+## ADR-016 — Stakes scale with equity under versioned conservative risk policy
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The bankroll objective is long-term risk-adjusted growth rather than a fixed target. Position sizes scale with current portfolio equity under a conservative fractional-Kelly/risk-budget framework rather than static dollar bets. A unit is a display abstraction tied to current bankroll/equity.
+
+Consequences:
+
+- Store stake dollars, equity percentage, displayed units, equity basis, and policy version at recommendation time.
+- Full Kelly remains prohibited.
+- Exact unit fraction, equity definition, Kelly multiplier, and exposure budgets require empirical validation.
+
+## ADR-017 — Research signals are traceable; LLM adjustments are not arbitrary
+
+- Date: 2026-08-28
+- Status: Accepted
+
+News, injuries, and research are ingested as sourced, timestamped, structured signals. An LLM may discover, extract, summarize, and explain them but may not apply undocumented arbitrary probability adjustments.
+
+Consequences:
+
+- Every probability-affecting signal has provenance and enters through a versioned feature or policy.
+- Conflicts, freshness, and extraction confidence remain visible.
+- Human-readable explanations do not substitute for reproducible model inputs.
+
+## ADR-018 — Sport-specific modeling starts after the baseline engine
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Sport-specific modeling is not deferred until the final experimentation phase. After the market-pricing baseline is reproducible, an NCAAF predictive-model track begins, followed by NFL and NBA.
+
+Consequences:
+
+- NCAAF models are evaluated against consensus with chronological out-of-sample tests.
+- Historical variables earn weight only through reproducible evidence.
+- A model that does not beat or complement the baseline is not forced into final fair probability.
+
+## ADR-019 — Game markets precede expanded markets and player props
+
+- Date: 2026-08-28
+- Status: Accepted
+
+NCAAF and NFL initially prioritize full-game moneyline, spreads, and totals. Alternate spreads/totals and half/quarter markets follow core-pipeline validation. Player props are later because they require player-level projections and more extensive data/modeling. NBA ultimately supports game markets and player props.
+
+Consequences:
+
+- Market expansion requires explicit identity, settlement, data, and test support.
+- NBA player availability, minutes, usage, pace, rest, lineup, and matchup inputs are important model requirements.
+- No prop recommendation is produced without a reproducible player projection.
+
+## ADR-020 — Opening-weekend NCAAF baseline is an explicit milestone
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The project should capture an opening-weekend NCAAF paper-trading baseline with odds, consensus calculations, qualified recommendations, paper stakes, closing prices, and outcomes even if the first proprietary model is not production-ready.
+
+Consequences:
+
+- Consensus may serve as the explicitly labeled final fair source for this milestone.
+- Missing proprietary probability remains null/not available.
+- The milestone exercises the complete observable lifecycle and creates a benchmark dataset for later NCAAF models.
+
 ## Open decisions
 
 Create separate ADR entries when these are resolved:
@@ -161,10 +279,16 @@ Create separate ADR entries when these are resolved:
 - authentication and portfolio ownership;
 - money representation and rounding policy;
 - primary vig-removal method and consensus weighting;
-- uncertainty representation and recommendation ranking;
-- fractional-Kelly multiplier and exposure caps;
+- final fair-probability selection/blending and proprietary-model promotion gates;
+- NCAAF structured-data providers, feature set, model family, and evaluation windows;
+- NFL/NBA data providers and league-specific model scope;
+- injury/news/research sources, provenance schema, conflict handling, and signal freshness;
+- uncertainty representation, qualification thresholds, ranking, Top N tie-breaking, and per-league behavior;
+- portfolio-equity definition, unit display policy, fractional-Kelly multiplier, and exposure caps;
 - primary CLV definition and closing benchmark;
 - event matching and cross-provider identity;
 - scheduler/background-job technology; and
-- API versioning and migration policy.
+- API versioning and migration policy;
+- exact calendar/scope and operational readiness criteria for the NCAAF opening-weekend milestone; and
+- player-prop expansion gates and required projection quality.
 

@@ -19,9 +19,33 @@ The initial experimental bankroll was approximately $200. The code still default
 
 This is an experimental system. Its near- and medium-term purpose is extensive paper trading, methodology validation, and reliable measurement—not meaningful real-money deployment.
 
+## League and market priorities
+
+Immediate development priority is:
+
+1. **NCAAF / College Football**
+2. **NFL**
+3. **NBA**
+
+MLB, NHL, and WNBA are secondary. The current prototype supports NCAAB, which means men's college basketball. NCAAF is college football and is not currently a first-class supported league in code; V2 must add it explicitly rather than reusing or relabeling NCAAB behavior.
+
+Initial NCAAF and NFL scope should emphasize full-game moneyline, spreads, and totals. Alternate spreads/totals and half/quarter markets follow after the core pricing and modeling pipeline is validated. Player props are later work because they require materially more player-level data and modeling.
+
+NBA should ultimately support game markets and player props. Relevant NBA modeling inputs include player availability, projected minutes, usage, pace, rest, lineups, and matchup context.
+
 ## Product goal
 
-The desired product is a quantitative sports-betting portfolio-management platform, not a sports-picks chatbot.
+The desired product is a quantitative sports-wagering portfolio-management platform, not a sports-picks chatbot or merely a market-consensus line scanner.
+
+The intended platform combines:
+
+- a market-pricing engine;
+- sport-specific predictive models;
+- structured sports and statistical data;
+- injury, news, and research signals; and
+- a portfolio-risk and bankroll engine.
+
+Market consensus provides the initial pricing baseline and the benchmark against which proprietary models are evaluated. It is not assumed to be the final long-term fair probability for every sport or market.
 
 The complete product should be able to:
 
@@ -40,6 +64,8 @@ The complete product should be able to:
 - measure ROI/yield, CLV, drawdown, calibration, Brier score, log loss, hit rate, and sample size;
 - analyze performance by sport, market, model/version, edge bucket, probability bucket, sportsbook, and other stable dimensions; and
 - improve calibration and decision-making only when supported by sufficient evidence.
+
+The recommendation interface should return up to a configurable Top N qualified opportunities for each selected league, with 10 as the normal display maximum. Top N is a ceiling, not a target: the system must return fewer recommendations, including zero, when fewer opportunities pass pricing, confidence, data-quality, and portfolio-risk rules.
 
 ## What exists today
 
@@ -77,11 +103,37 @@ A large modeled probability difference on a highly uncertain event is not automa
 
 ### Market consensus is not a proprietary model
 
-An initial legitimate V2 pricing engine may derive a fair estimate from no-vig, multi-book market prices. That is a market-consensus estimate. It must not be labeled a proprietary predictive model. Sport-specific models may later supplement or replace the consensus estimate, with their source and version recorded.
+An initial legitimate V2 pricing engine may derive a fair estimate from no-vig, multi-book market prices. That is a market-consensus estimate. It must not be labeled a proprietary predictive model. Consensus is the baseline and benchmark; versioned sport-specific models should begin with NCAAF after the baseline engine exists and may supplement or outperform that baseline when reproducible out-of-sample evidence supports them.
+
+### Recommendations must be complete and sparse when appropriate
+
+Every recommendation should preserve and expose:
+
+- best executable sportsbook and price;
+- sportsbook implied probability;
+- market-consensus probability;
+- proprietary model probability when available;
+- final fair probability and its derivation/version;
+- probability edge and EV;
+- model uncertainty/confidence;
+- recommended stake and percentage of bankroll/equity; and
+- a human-readable, source-traceable research explanation.
+
+Qualification thresholds must remain independent of the requested Top N. The interface must never manufacture marginal bets merely to fill the display.
+
+### Bankroll growth and risk are core product functions
+
+The objective is long-term risk-adjusted bankroll growth, not reaching a fixed bankroll target. Position sizes should scale automatically with current portfolio equity through a conservative, versioned fractional-Kelly and risk-budget policy rather than static dollar bets.
+
+One unit is a display abstraction tied to current bankroll/equity. It is not a permanently fixed dollar amount. The exact unit definition, Kelly fraction, confidence adjustment, and exposure caps remain empirical policy decisions that require paper-trading validation.
+
+### Research signals must be traceable
+
+News, injuries, and research should be ingested as timestamped, sourced, structured signals. An LLM may discover, extract, summarize, and explain research, but it must not make undocumented arbitrary probability adjustments. Any signal that affects a probability or stake must enter through a defined, versioned model or policy feature with provenance.
 
 ### Learning must be statistical, not reactive
 
-The platform should improve through calibration analysis, controlled backtests, versioned models, and sufficient sample sizes. Recent wins alone are not evidence that confidence or stake sizes should increase. Small samples must not cause large automatic changes in weights or risk policy.
+The platform should improve through calibration analysis, controlled backtests, versioned models, and sufficient sample sizes. Recent wins alone are not evidence that confidence or stake sizes should increase. Historical trends and narratives should not influence predictions automatically; candidate historical variables must earn model weight through reproducible out-of-sample evidence. Small samples must not cause large automatic changes in weights or risk policy.
 
 ### Auditability matters
 
@@ -93,6 +145,8 @@ An official bet should eventually preserve enough information to reconstruct the
 - sportsbook and entry odds;
 - implied, no-vig, consensus, and/or proprietary probability as applicable;
 - edge, EV, uncertainty/confidence, and recommended stake;
+- bankroll/equity percentage, unit display value, and risk-policy version;
+- traceable research sources and structured signals used;
 - actual stake and bankroll before/after;
 - recommendation, pricing, model, and policy versions;
 - approval and entry timestamps;
@@ -116,10 +170,13 @@ The following are known current-state problems, not solved capabilities:
 - no idempotency;
 - no CLV calculation;
 - no pricing/fair-probability engine;
+- no first-class NCAAF support;
+- no structured sports/statistical or injury/news signal pipeline;
+- no proprietary sport-specific predictive models;
 - no staking or portfolio-risk engine; and
 - no genuine model-learning or calibration loop.
 
 ## Success for V2
 
-V2 should first become a trustworthy paper-trading system: reproducible prices, explicit financial semantics, durable data, conservative risk policy, human approval, deterministic tests, and honest measurement. Predictive sophistication is valuable only after those foundations make experiments auditable.
+V2 should first become a trustworthy paper-trading system: reproducible prices, explicit financial semantics, durable data, conservative risk policy, human approval, deterministic tests, and honest measurement. The first vertical target is a complete NCAAF paper-trading baseline, followed closely by an evidence-based NCAAF model track. Predictive sophistication is valuable only when the foundations make experiments auditable.
 
