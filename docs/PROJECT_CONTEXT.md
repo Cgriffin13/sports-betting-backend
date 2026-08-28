@@ -73,11 +73,14 @@ The current implementation is a single-file FastAPI prototype in `main.py`. It c
 
 - health information;
 - live/current odds retrieval from The Odds API;
-- basic sport, market, and sportsbook filtering;
+- first-class NCAAF mapping alongside NFL, NCAAB, NBA, MLB, NHL, and WNBA;
+- basic sport, market, sportsbook, and requested UTC calendar-date filtering;
 - JSON-backed portfolios;
 - manual bet recording and settlement;
 - bankroll accounting; and
 - basic ROI and hit-rate summaries overall and by sport/market bucket.
+
+Phase 0 adds a Python 3.12 development baseline, pinned direct dependencies, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, and finite/range validation for current financial metadata. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
 The backend accepts optional probability, edge, and EV fields, but it does not calculate or verify them. It stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 
@@ -157,20 +160,15 @@ An official bet should eventually preserve enough information to reconstruct the
 
 The following are known current-state problems, not solved capabilities:
 
-- committed virtual environment and bytecode;
-- no README, automated tests, or CI;
-- unpinned dependencies;
 - single-file architecture;
 - unsafe shared JSON persistence and silent I/O failures;
-- a request `date` that does not filter provider odds;
-- raw provider exceptions that may expose credential-bearing URLs;
 - no authentication or portfolio ownership;
-- caller-supplied and unverified probabilities, edge, EV, and payouts;
+- caller-supplied EV and probabilities that are range-validated but not independently calculated or verified;
+- caller-supplied win payouts that are sign-validated but not derived from entry odds;
 - insufficient event, selection, and line metadata in recorded bets;
 - no idempotency;
 - no CLV calculation;
 - no pricing/fair-probability engine;
-- no first-class NCAAF support;
 - no structured sports/statistical or injury/news signal pipeline;
 - no proprietary sport-specific predictive models;
 - no staking or portfolio-risk engine; and

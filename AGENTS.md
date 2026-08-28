@@ -48,5 +48,5 @@ Before completing a change:
 - For persistence changes, verify migrations, transactions, concurrent updates, and rollback behavior.
 - For documentation-only changes, check internal links, terminology, current-versus-planned labels, and consistency with the code.
 
-The prototype currently has no test or lint configuration. Do not claim validation that the repository cannot perform; state what was checked and add appropriate tooling as part of the relevant roadmap phase.
+The repository uses Python 3.12 with pinned development dependencies. Run `python -m ruff check .`, `python -m mypy main.py`, and `python -m pytest` before completing relevant changes, and report the exact results.
 

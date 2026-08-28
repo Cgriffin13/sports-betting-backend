@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional, Literal, Dict, Tuple, Any
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+from math import isclose
 from uuid import uuid4
 import os
 import json
@@ -80,17 +81,20 @@ DB: Dict[str, Any] = load_db_from_file()
 # Normalization helpers (this fixes your "GPT says no odds" mismatch)
 # -------------------------------------------------------------------
 
-SUPPORTED_SPORTS = {"NFL", "NCAAB", "NBA", "NHL", "MLB", "WNBA"}
+SUPPORTED_SPORTS = {"NCAAF", "NFL", "NCAAB", "NBA", "NHL", "MLB", "WNBA"}
 
 SPORT_ALIASES = {
     # common lowercase / variants
+    "NCAAF": "NCAAF",
+    "CFB": "NCAAF",
+    "COLLEGE_FOOTBALL": "NCAAF",
+    "COLLEGE FOOTBALL": "NCAAF",
     "NFL": "NFL",
     "NCAAB": "NCAAB",
     "NCAAM": "NCAAB",
     "NCAA": "NCAAB",
     "NCAA_M": "NCAAB",
     "NCCAMB": "NCAAB",  # <-- your earlier typo
-    "COLLEGE": "NCAAB",
     "COLLEGE_BASKETBALL": "NCAAB",
     "COLLEGE_MENS_BASKETBALL": "NCAAB",
     "NBA": "NBA",
@@ -101,6 +105,7 @@ SPORT_ALIASES = {
 
 # Odds API sport keys
 SPORT_KEYS = {
+    "NCAAF": "americanfootball_ncaaf",
     "NFL": "americanfootball_nfl",
     "NCAAB": "basketball_ncaab",
     "NBA": "basketball_nba",
@@ -170,22 +175,65 @@ class BetIn(BaseModel):
     selection: str
     book: str
     odds: int
-    stake: float
+    stake: float = Field(gt=0, allow_inf_nan=False)
 
     # model metadata
-    model_prob: Optional[float] = None
-    book_prob: Optional[float] = None
-    edge: Optional[float] = None
-    ev_per_1: Optional[float] = None
+    model_prob: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    book_prob: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    edge: Optional[float] = Field(default=None, ge=-1, le=1, allow_inf_nan=False)
+    ev_per_1: Optional[float] = Field(default=None, allow_inf_nan=False)
+
+    @field_validator("odds")
+    @classmethod
+    def validate_odds(cls, value: int) -> int:
+        return validate_american_odds(value)
 
 
 class BetResultIn(BaseModel):
     portfolio_id: str
     bet_id: str
     result: Literal["win", "loss", "push"]
-    payout: float  # NET profit/loss (e.g. +18.18, -10.00, 0.00 for push)
+    payout: float = Field(allow_inf_nan=False)  # NET profit/loss (e.g. +18.18, -10.00, 0.00 for push)
     closing_odds: Optional[int] = None
-    closing_book_prob: Optional[float] = None
+    closing_book_prob: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+
+    @field_validator("closing_odds")
+    @classmethod
+    def validate_closing_odds(cls, value: Optional[int]) -> Optional[int]:
+        return validate_american_odds(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def validate_result_payout(self) -> "BetResultIn":
+        if self.result == "win" and self.payout <= 0:
+            raise ValueError("Win payout must be positive net profit")
+        if self.result == "loss" and self.payout >= 0:
+            raise ValueError("Loss payout must be negative net profit")
+        if self.result == "push" and not isclose(self.payout, 0.0, abs_tol=1e-9):
+            raise ValueError("Push payout must be zero")
+        return self
+
+
+def validate_american_odds(value: int) -> int:
+    """Accept standard American prices: +100 or greater, or -100 or less."""
+    if -100 < value < 100:
+        raise ValueError("American odds must be <= -100 or >= 100")
+    return value
+
+
+def commence_date_utc(commence_time: Any) -> Optional[date]:
+    """Return the UTC calendar date for a timezone-aware provider timestamp."""
+    if not isinstance(commence_time, str):
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        return None
+
+    return parsed.astimezone(timezone.utc).date()
 
 
 # -------------------------------------------------------------------
@@ -214,7 +262,7 @@ def health():
         "has_odds_key": bool(ODDS_API_KEY),
         "db_file": str(DB_FILE),
         "data_dir": str(DATA_DIR),
-        "time_utc": datetime.utcnow().isoformat()
+        "time_utc": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -227,10 +275,15 @@ def get_odds(req: OddsRequest):
     - Books are filtered to keep responses small (default DK/FD/BetMGM).
     """
     if not ODDS_API_KEY:
-        return {"error": "Missing ODDS_API_KEY in server environment.", "date": str(req.date), "games": []}
+        return {
+            "error": "Missing ODDS_API_KEY in server environment.",
+            "date": str(req.date),
+            "date_timezone": "UTC",
+            "games": [],
+        }
 
     # normalize sports
-    raw_sports = req.sports or ["NFL", "NCAAB", "NBA", "NHL", "MLB", "WNBA"]
+    raw_sports = req.sports or ["NCAAF", "NFL", "NBA", "NCAAB", "MLB", "NHL", "WNBA"]
     sports_to_query = [normalize_sport(s) for s in raw_sports]
 
     # normalize markets
@@ -259,13 +312,27 @@ def get_odds(req: OddsRequest):
         try:
             resp = requests.get(url, params=params, timeout=12)
             resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            per_sport_errors.append({"sport": sport, "error": f"Failed to fetch odds: {e}"})
+        except requests.RequestException:
+            per_sport_errors.append({"sport": sport, "error": "Provider request failed"})
             continue
 
-        # cap games per sport (prevents ResponseTooLarge)
-        data = data[: req.max_games_per_sport]
+        try:
+            data = resp.json()
+        except (TypeError, ValueError):
+            per_sport_errors.append({"sport": sport, "error": "Provider returned an invalid response"})
+            continue
+
+        if not isinstance(data, list):
+            per_sport_errors.append({"sport": sport, "error": "Provider returned an invalid response"})
+            continue
+
+        # The provider endpoint is current/upcoming, not historical. Interpret the
+        # request date in UTC and filter the returned timezone-aware timestamps.
+        data = [
+            game
+            for game in data
+            if isinstance(game, dict) and commence_date_utc(game.get("commence_time")) == req.date
+        ][: req.max_games_per_sport]
 
         for game in data:
             offers: List[dict] = []
@@ -308,6 +375,7 @@ def get_odds(req: OddsRequest):
 
     return {
         "date": str(req.date),
+        "date_timezone": "UTC",
         "sports": sports_to_query,
         "markets": markets,
         "allowed_books": sorted(list(allowed_books)),
@@ -327,9 +395,6 @@ def get_bankroll_and_bet_history(portfolio_id: str, limit: int = 200):
 def record_bet(bet: BetIn):
     portfolio = get_portfolio(bet.portfolio_id)
 
-    if bet.stake <= 0:
-        raise HTTPException(status_code=400, detail="Stake must be > 0")
-
     if portfolio["bankroll"] < bet.stake:
         raise HTTPException(status_code=400, detail="Insufficient bankroll for this stake")
 
@@ -342,7 +407,7 @@ def record_bet(bet: BetIn):
     bet_dict["bet_id"] = bet_id
     bet_dict["result"] = None
     bet_dict["payout"] = 0.0  # NET payout (profit/loss). For wins, positive profit; for loss, -stake; for push, 0.
-    bet_dict["created_at"] = datetime.utcnow().isoformat()
+    bet_dict["created_at"] = datetime.now(timezone.utc).isoformat()
     bet_dict["closing_odds"] = None
     bet_dict["closing_book_prob"] = None
 
@@ -371,13 +436,16 @@ def record_bet_result(data: BetResultIn):
             if bet.get("result") in ("win", "loss", "push"):
                 raise HTTPException(status_code=400, detail="Bet already settled")
 
+            stake = float(bet.get("stake", 0.0))
+            if data.result == "loss" and not isclose(float(data.payout), -stake, abs_tol=0.01):
+                raise HTTPException(status_code=400, detail="Loss payout must equal the negative stake")
+
             bet["result"] = data.result
             bet["payout"] = float(data.payout)
             bet["closing_odds"] = data.closing_odds
             bet["closing_book_prob"] = data.closing_book_prob
-            bet["settled_at"] = datetime.utcnow().isoformat()
+            bet["settled_at"] = datetime.now(timezone.utc).isoformat()
 
-            stake = float(bet.get("stake", 0.0))
             bankroll_adjust = stake + float(data.payout)
             portfolio["bankroll"] += bankroll_adjust
 

@@ -271,6 +271,33 @@ Consequences:
 - Missing proprietary probability remains null/not available.
 - The milestone exercises the complete observable lifecycle and creates a benchmark dataset for later NCAAF models.
 
+## ADR-021 — `/odds` date semantics use UTC filtering
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The current The Odds API integration is a current/upcoming feed, not a historical query. The required `/odds` request date is interpreted as a UTC calendar date, and the backend retains only provider games whose timezone-aware `commence_time` falls on that UTC date.
+
+Consequences:
+
+- Responses expose `date_timezone: "UTC"`.
+- Naive, missing, or invalid provider timestamps are excluded because their calendar date is ambiguous.
+- Past dates normally produce no games and must not be described as historical-odds retrieval.
+- A future user-local or event-local date convention requires a superseding decision and an explicit timezone contract.
+
+## ADR-022 — Python 3.12 and pinned direct dependencies form the development baseline
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Python 3.12.x is the supported local and CI runtime. Runtime and development requirements use exact direct dependency pins, and CI runs Ruff, mypy, and pytest without live provider credentials.
+
+Consequences:
+
+- Runtime changes should remain compatible with Python 3.12 until a superseding decision.
+- Dependency updates are explicit reviewed changes rather than implicit floating upgrades.
+- Deterministic tests and mocked provider boundaries are required for critical behavior.
+
 ## Open decisions
 
 Create separate ADR entries when these are resolved:

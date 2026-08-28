@@ -6,15 +6,18 @@ The roadmap prioritizes a trustworthy paper-trading platform before predictive s
 
 Goal: make the prototype safe to change and honest about its behavior.
 
-- Add durable project documentation and a concise root README.
-- Remove the tracked virtual environment and bytecode from version control while retaining appropriate ignore rules.
-- Pin or lock dependencies and document the supported Python version.
-- Add formatting, linting, type-checking, and test configuration.
-- Add CI for deterministic checks.
-- Add characterization tests for current endpoints and bankroll settlement.
-- Sanitize provider failures so secrets and credential-bearing URLs cannot escape.
-- Validate finite numeric inputs, odds domains, probabilities, stake, and payout consistency where current contracts permit.
-- Correct or redesign the misleading odds `date` contract.
+Status: **Completed in Sprint 1 on 2026-08-28.** The remaining single-file architecture, JSON persistence, authentication, idempotency, and analytical/modeling gaps belong to later phases.
+
+- [x] Add durable project documentation and a concise root README.
+- [x] Remove the tracked virtual environment and bytecode from version control while retaining appropriate ignore rules.
+- [x] Pin direct dependencies and document Python 3.12 as the supported version.
+- [x] Add Ruff, mypy, and pytest configuration.
+- [x] Add CI for deterministic checks without live credentials.
+- [x] Add characterization tests for current endpoints, odds filtering, validation, bankroll, settlement, and statistics.
+- [x] Sanitize provider failures so secrets and credential-bearing URLs cannot escape.
+- [x] Validate finite numeric inputs, odds domains, probabilities, stake, and result/payout consistency where current contracts permit.
+- [x] Define `/odds` date semantics as UTC filtering over current/upcoming provider results.
+- [x] Add minimal first-class NCAAF aliases and The Odds API mapping without confusing NCAAF with NCAAB.
 
 Exit criteria:
 

@@ -7,7 +7,7 @@ This document defines shared terminology and intended mathematical semantics. It
 | Capability | Current prototype | Planned V2 |
 | --- | --- | --- |
 | American odds retrieval | Implemented | Retain behind provider adapters |
-| First-class NCAAF support | Not implemented | Immediate league priority |
+| First-class NCAAF support | Provider key, aliases, and core market retrieval implemented | Expand through normalized snapshots and modeling |
 | Implied-probability calculation | Not implemented | Deterministic pricing primitive |
 | Vig removal | Not implemented | Versioned method per market |
 | Multi-book consensus | Not implemented | Initial fair-price baseline and benchmark |

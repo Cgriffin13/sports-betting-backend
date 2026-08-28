@@ -26,17 +26,19 @@ Render is the intended host. `ODDS_API_KEY`, `STARTING_BANKROLL`, and `DATA_DIR`
 ### Current modules and files
 
 - `main.py`: application creation, environment loading, models, normalization, provider calls, persistence, bankroll logic, settlement, and statistics.
-- `requirements.txt`: unpinned runtime dependencies.
+- `requirements.txt` and `requirements-dev.txt`: pinned direct runtime and validation dependencies.
+- `tests/`: deterministic FastAPI and domain characterization tests with mocked provider requests.
+- `pyproject.toml`: pytest, Ruff, and mypy configuration.
+- `.github/workflows/ci.yml`: Python 3.12 lint, type-check, and test workflow.
 - `data/.gitkeep`: placeholder for runtime data.
 - `.gitignore`: ignores local secrets, virtual environments, and bytecode.
-- `venv/` and root `__pycache__/`: tracked development artifacts that should not be repository source.
 
 ### Current API surface
 
 | Endpoint | Current behavior |
 | --- | --- |
 | `GET /health` | Reports service status, whether an odds key exists, storage paths, and UTC time. |
-| `POST /odds` | Fetches current/upcoming odds for configured sports, markets, and books. The request date is echoed but not sent to the provider. |
+| `POST /odds` | Fetches current/upcoming odds and filters timezone-aware provider events to the requested UTC calendar date. It does not query historical odds. |
 | `GET /portfolio/{portfolio_id}` | Auto-creates missing portfolios and returns bankroll plus recent bets. |
 | `POST /bets` | Records a caller-provided bet and deducts its stake. |
 | `POST /bet-result` | Records a caller-provided result and net payout, then updates bankroll. |
@@ -48,9 +50,10 @@ Odds retrieval:
 
 1. Normalize requested sport and market labels.
 2. Query The Odds API sequentially for each supported sport.
-3. Keep US-region American odds from allowed books.
-4. Flatten provider events into games and offers.
-5. Return results without persisting a market snapshot.
+3. Filter provider events to the requested UTC calendar date.
+4. Keep US-region American odds from allowed books.
+5. Flatten provider events into games and offers.
+6. Return results without persisting a market snapshot.
 
 Bet lifecycle:
 
@@ -69,13 +72,13 @@ Load and save exceptions are swallowed. An invalid file can silently produce a n
 
 ### Current external integration
 
-The Odds API is directly embedded in route logic. The integration uses synchronous `requests`, a 12-second timeout, one sequential request per sport, American odds, US region, and exact sportsbook-title filtering. There is no provider interface, cache, retry policy, quota guard, stored snapshot, or sanitized error boundary.
+The Odds API is directly embedded in route logic. The integration uses synchronous `requests`, a 12-second timeout, one sequential request per sport, American odds, US region, exact sportsbook-title filtering, sanitized client-facing errors, and UTC date filtering. There is no provider interface, cache, retry policy, quota guard, or stored snapshot.
 
-The code currently maps NFL, NCAAB, NBA, NHL, MLB, and WNBA. It does **not** map NCAAF/College Football. NCAAB support must not be treated as college-football support.
+The code maps NCAAF to `americanfootball_ncaaf` and keeps it distinct from NCAAB (`basketball_ncaab`). It also maps NFL, NBA, NHL, MLB, and WNBA. Initial market scope remains full-game `h2h`, `spreads`, and `totals`.
 
 ### Current security and operational boundaries
 
-There is no authentication, authorization, rate limiting, idempotency, structured logging, metrics, tracing, CI, or automated test suite. Portfolio IDs function as unprotected lookup keys. The `main` branch is currently unprotected.
+There is deterministic test coverage and lightweight CI, but no authentication, authorization, rate limiting, idempotency, structured logging, metrics, or tracing. Portfolio IDs function as unprotected lookup keys. The `main` branch is currently unprotected.
 
 ## Proposed V2 architecture
 
