@@ -38,7 +38,7 @@ Copy `.env.example` to `.env` and replace placeholder values as needed. `.env` i
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `ODDS_API_KEY` | Required for `/odds` | None | The Odds API credential. |
-| `STARTING_BANKROLL` | No | `200.0` | Paper bankroll assigned to a newly created portfolio. |
+| `STARTING_BANKROLL` | No | `200.0` | Finite positive paper bankroll assigned to a newly created portfolio; invalid values stop startup. |
 | `DATA_DIR` | No | `data` | Directory containing the prototype JSON database. On Render, use a persistent disk such as `/var/data`. |
 
 Never commit real credentials. `.env.example` contains placeholders only.
@@ -55,11 +55,25 @@ FastAPI documentation is available at `http://127.0.0.1:8000/docs` while the ser
 
 ```bash
 python -m ruff check .
-python -m mypy main.py
+python -m mypy app main.py tests
 python -m pytest
 ```
 
 Tests use temporary JSON storage and mocked provider calls. They do not require `ODDS_API_KEY` or live network access.
+
+## Application structure
+
+The root `main.py` remains a compatibility entry point for Render and exports the application built in `app/main.py`. Implementation responsibilities are separated into:
+
+- `app/api/`: FastAPI routes and HTTP error mapping;
+- `app/schemas/`: request validation contracts;
+- `app/domain/`: supported sports, markets, aliases, and pure validation;
+- `app/providers/`: the provider-neutral market-data interface and The Odds API adapter;
+- `app/services/`: odds and portfolio/bet orchestration;
+- `app/persistence/`: the repository interface plus JSON and in-memory implementations; and
+- `app/config.py`, `app/time.py`, `app/logging.py`, and `app/middleware.py`: configuration and cross-cutting runtime concerns.
+
+The JSON store remains prototype persistence and is not safe for multiple workers or concurrent financial mutations. Phase 2 replaces it with a transactional ledger.
 
 ## API endpoints
 

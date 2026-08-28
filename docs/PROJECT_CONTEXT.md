@@ -69,7 +69,7 @@ The recommendation interface should return up to a configurable Top N qualified 
 
 ## What exists today
 
-The current implementation is a single-file FastAPI prototype in `main.py`. It currently provides:
+The current implementation is a modular FastAPI prototype under `app/`, with a small root `main.py` compatibility entry point. It currently provides:
 
 - health information;
 - live/current odds retrieval from The Odds API;
@@ -160,8 +160,8 @@ An official bet should eventually preserve enough information to reconstruct the
 
 The following are known current-state problems, not solved capabilities:
 
-- single-file architecture;
-- unsafe shared JSON persistence and silent I/O failures;
+- modular boundaries are established, but records remain untyped dictionaries and the prototype contracts still need V2 domain models;
+- unsafe shared JSON persistence and non-failing I/O behavior that can still acknowledge an unsaved mutation;
 - no authentication or portfolio ownership;
 - caller-supplied EV and probabilities that are range-validated but not independently calculated or verified;
 - caller-supplied win payouts that are sign-validated but not derived from entry odds;

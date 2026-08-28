@@ -53,7 +53,9 @@ Consequences:
 - Date: Historical; recorded 2026-08-28
 - Status: Current prototype
 
-The prototype uses The Odds API and is hosted through Render. Provider calls currently live directly in `main.py`.
+The prototype uses The Odds API and is hosted through Render. At the time of this decision, provider calls lived directly in `main.py`.
+
+Implementation note (2026-08-28): ADR-023 completed the planned isolation. The Odds API remains the provider, but its URL, credentials, transport, timeout, sanitized failures, and payload parsing now live in a concrete adapter behind a provider-neutral protocol.
 
 Consequences:
 
@@ -297,6 +299,23 @@ Consequences:
 - Runtime changes should remain compatible with Python 3.12 until a superseding decision.
 - Dependency updates are explicit reviewed changes rather than implicit floating upgrades.
 - Deterministic tests and mocked provider boundaries are required for critical behavior.
+
+## ADR-023 — Modular boundaries precede V2 behavior
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Phase 1 separates the existing prototype into API, schema, domain, provider, service, persistence, configuration, UTC-time, and logging boundaries without introducing pricing, recommendation, predictive-model, or database behavior. The root `main.py` remains a compatibility export for the deployed `uvicorn main:app` command.
+
+Consequences:
+
+- FastAPI routes validate requests, delegate to services, map known service errors, and do not perform provider HTTP or JSON-file operations.
+- The Odds API is one adapter behind a provider-neutral protocol and emits transitional `MarketGame`/`MarketOffer` records. These are not the final normalized V2 market model.
+- Portfolio services depend on a repository protocol; JSON remains the configured compatibility implementation until Phase 2 selects and migrates to transactional storage.
+- Application construction accepts deterministic settings, fake providers, in-memory persistence, and a clock for isolated tests.
+- UTC timestamp creation is centralized, and responses carry a validated or generated `X-Request-ID` that is included in lightweight structured logs.
+- Provider exception details, credential-bearing URLs, and API keys are never logged or returned.
+- Phase 1 intentionally preserves caller-supplied model metadata and payout semantics; modularization does not make those values calculated or trustworthy.
 
 ## Open decisions
 

@@ -22,7 +22,7 @@ This document defines shared terminology and intended mathematical semantics. It
 
 The current `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields are passive metadata supplied by the caller. Their names do not prove that a model or calculation occurred.
 
-The prototype supports NCAAB but not NCAAF. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
+The prototype supports both NCAAF and NCAAB as distinct canonical leagues. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
 
 ## League and market modeling sequence
 

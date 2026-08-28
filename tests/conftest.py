@@ -1,21 +1,57 @@
-import os
-import tempfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
-# Keep import-time prototype storage out of the repository.
-os.environ["DATA_DIR"] = str(Path(tempfile.gettempdir()) / "sports-betting-backend-tests")
-os.environ.pop("ODDS_API_KEY", None)
+from app.config import Settings
+from app.main import create_app
+from app.persistence.memory_repository import InMemoryPortfolioRepository
+from app.providers.base import MarketGame
 
-import main  # noqa: E402
+
+class FakeProvider:
+    def __init__(
+        self,
+        games: list[MarketGame] | None = None,
+        *,
+        configured: bool = False,
+        error: Exception | None = None,
+    ) -> None:
+        self.games = games or []
+        self._configured = configured
+        self.error = error
+        self.calls: list[tuple[str, list[str]]] = []
+
+    @property
+    def configured(self) -> bool:
+        return self._configured
+
+    def fetch_current_odds(self, sport: str, markets: list[str]) -> list[MarketGame]:
+        self.calls.append((sport, markets))
+        if self.error:
+            raise self.error
+        return self.games
 
 
 @pytest.fixture
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    main.DATA_DIR = tmp_path
-    main.DB_FILE = tmp_path / "portfolio_db.json"
-    main.DB = main._default_db()
-    monkeypatch.setattr(main, "ODDS_API_KEY", None)
-    return TestClient(main.app)
+def settings(tmp_path: Path) -> Settings:
+    return Settings(data_dir=tmp_path, starting_bankroll=200.0)
+
+
+@pytest.fixture
+def repository() -> InMemoryPortfolioRepository:
+    return InMemoryPortfolioRepository(200.0)
+
+
+@pytest.fixture
+def client(settings: Settings, repository: InMemoryPortfolioRepository) -> TestClient:
+    return TestClient(create_app(settings=settings, provider=FakeProvider(), repository=repository))
+
+
+@pytest.fixture
+def app_client(settings: Settings, repository: InMemoryPortfolioRepository) -> Any:
+    def build(provider: FakeProvider) -> TestClient:
+        return TestClient(create_app(settings=settings, provider=provider, repository=repository))
+
+    return build

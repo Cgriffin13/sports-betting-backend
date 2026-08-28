@@ -1,13 +1,16 @@
 [tool.pytest.ini_options]
 addopts = "-ra"
+pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
+src = ["app", "tests"]
 target-version = "py312"
 
 [tool.mypy]
 python_version = "3.12"
+files = ["app", "main.py", "tests"]
 check_untyped_defs = true
 ignore_missing_imports = true
 warn_redundant_casts = true

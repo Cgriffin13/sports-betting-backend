@@ -6,7 +6,7 @@ The roadmap prioritizes a trustworthy paper-trading platform before predictive s
 
 Goal: make the prototype safe to change and honest about its behavior.
 
-Status: **Completed in Sprint 1 on 2026-08-28.** The remaining single-file architecture, JSON persistence, authentication, idempotency, and analytical/modeling gaps belong to later phases.
+Status: **Completed in Sprint 1 on 2026-08-28.** JSON persistence, authentication, idempotency, and analytical/modeling gaps belong to later phases.
 
 - [x] Add durable project documentation and a concise root README.
 - [x] Remove the tracked virtual environment and bytecode from version control while retaining appropriate ignore rules.
@@ -30,18 +30,23 @@ Exit criteria:
 
 Goal: establish boundaries that can support V2.
 
-- Introduce application configuration with explicit validation.
-- Separate API routes, Pydantic contracts, provider adapters, domain calculations, persistence interfaces, and application services.
-- Wrap The Odds API behind a provider-neutral interface.
-- Add structured logging and request correlation without logging secrets.
-- Define versioned internal identifiers and UTC timestamp conventions.
-- Preserve current externally required behavior through tests while extracting pure logic.
+Status: **Completed in the Phase 1 modularization sprint on 2026-08-28.** The transitional provider records and existing bet IDs establish conventions, but full versioned V2 event/market/selection identifiers remain Phase 3 work.
+
+- [x] Introduce immutable application configuration with explicit bankroll and timeout validation.
+- [x] Separate API routes, Pydantic contracts, provider adapters, domain normalization/validation, persistence interfaces, and application services.
+- [x] Wrap The Odds API behind a provider-neutral interface and transitional `MarketGame`/`MarketOffer` records.
+- [x] Add lightweight JSON application logging and request correlation without logging secrets or credential-bearing URLs.
+- [x] Centralize timezone-aware UTC timestamps and preserve generated bet-ID behavior.
+- [x] Preserve the Sprint 1 HTTP, validation, odds, bankroll, settlement, JSON, and environment behavior through deterministic tests.
+- [x] Retain the root `main:app` deployment entry point.
 
 Exit criteria:
 
 - Routes contain orchestration, not provider parsing or financial formulas.
 - Provider responses are normalized through tested adapters.
 - Core logic can be tested without FastAPI, disk, or network access.
+
+Exit criteria status: **Satisfied.** Routes validate/map HTTP concerns and delegate to services; adapter parsing has isolated tests; odds and portfolio services run against fakes/in-memory persistence without FastAPI, disk, or network.
 
 ## Phase 2 — Durable portfolio and bet ledger
 
@@ -219,12 +224,10 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 
 ## Immediate recommended sequence
 
-1. Complete Phase 0 hygiene and security fixes.
-2. Add characterization tests before restructuring `main.py`.
-3. Extract provider and domain boundaries.
-4. Decide the database/ownership architecture.
-5. Build the durable ledger and normalized NCAAF market path.
-6. Implement the transparent consensus/EV baseline.
-7. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
-8. Add the conservative equity-scaled risk and approval engine before expanding scope.
+1. Decide the database, ownership, money, and ledger architecture for Phase 2.
+2. Build the durable ledger and migrate or explicitly archive prototype JSON data with reconciliation.
+3. Build the normalized, persisted NCAAF market snapshot path.
+4. Implement the transparent consensus/EV baseline.
+5. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
+6. Add the conservative equity-scaled risk and approval engine before expanding scope.
 

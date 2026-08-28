@@ -6,30 +6,50 @@ This document separates the architecture that exists in code from the architectu
 
 ### Runtime shape
 
-The application is a synchronous FastAPI service contained entirely in `main.py`.
+The application is a synchronous FastAPI service composed in `app/main.py`. The root `main.py` only re-exports the application so the existing Render command, `uvicorn main:app`, remains valid.
 
 ```text
 Custom ChatGPT client / API caller
               |
               v
-       FastAPI routes in main.py
-          |              |
-          v              v
-   The Odds API     process-global DB dict
-                           |
-                           v
-                 data/portfolio_db.json
+      Request-ID middleware
+              |
+              v
+       FastAPI API routers
+          |           |
+          v           v
+    OddsService   PortfolioService
+          |           |
+          v           v
+ provider-neutral   PortfolioRepository
+ market interface         |
+          |                v
+          v        JsonPortfolioRepository
+ TheOddsApiProvider        |
+          |                v
+          v      data/portfolio_db.json
+   The Odds API
 ```
 
-Render is the intended host. `ODDS_API_KEY`, `STARTING_BANKROLL`, and `DATA_DIR` are read from environment variables at process startup. Comments in the code recommend a Render Disk mounted at `/var/data` for persistence.
+Render is the intended host. `app/config.py` reads and validates `ODDS_API_KEY`, `STARTING_BANKROLL`, and `DATA_DIR` once during default application composition. A Render Disk mounted at `/var/data` remains the intended prototype persistence configuration.
 
 ### Current modules and files
 
-- `main.py`: application creation, environment loading, models, normalization, provider calls, persistence, bankroll logic, settlement, and statistics.
+- `main.py`: compatibility export for `app.main.app`; it contains no route or business logic.
+- `app/main.py`: application factory and dependency composition.
+- `app/api/`: thin health, odds, bet, settlement, and portfolio route modules.
+- `app/schemas/`: Pydantic request contracts and current flexible portfolio response shape.
+- `app/domain/`: canonical sports, aliases, allowed markets, normalization, and American-odds validation.
+- `app/providers/`: provider-neutral market records/protocol and the concrete The Odds API HTTP/parser adapter.
+- `app/services/`: odds orchestration and portfolio/bet business behavior.
+- `app/persistence/`: repository protocol, compatibility JSON implementation, and deterministic in-memory implementation.
+- `app/config.py`: environment-backed immutable settings.
+- `app/time.py`: timezone-aware UTC clock and provider-date parsing.
+- `app/logging.py` and `app/middleware.py`: lightweight JSON logging and request correlation.
 - `requirements.txt` and `requirements-dev.txt`: pinned direct runtime and validation dependencies.
-- `tests/`: deterministic FastAPI and domain characterization tests with mocked provider requests.
+- `tests/`: deterministic API, domain, provider, service, configuration, and persistence tests without live provider access.
 - `pyproject.toml`: pytest, Ruff, and mypy configuration.
-- `.github/workflows/ci.yml`: Python 3.12 lint, type-check, and test workflow.
+- `.github/workflows/ci.yml`: Python 3.12 lint, package-wide type-check, and test workflow.
 - `data/.gitkeep`: placeholder for runtime data.
 - `.gitignore`: ignores local secrets, virtual environments, and bytecode.
 
@@ -48,37 +68,39 @@ Render is the intended host. `ODDS_API_KEY`, `STARTING_BANKROLL`, and `DATA_DIR`
 
 Odds retrieval:
 
-1. Normalize requested sport and market labels.
-2. Query The Odds API sequentially for each supported sport.
-3. Filter provider events to the requested UTC calendar date.
-4. Keep US-region American odds from allowed books.
-5. Flatten provider events into games and offers.
-6. Return results without persisting a market snapshot.
+1. The API validates `OddsRequest` and calls `OddsService`.
+2. The service normalizes canonical sports and allowed markets.
+3. It calls the provider-neutral `MarketDataProvider` once per supported sport.
+4. `TheOddsApiProvider` owns authentication, URL construction, the 12-second timeout, HTTP, failure sanitization, and provider-payload parsing into `MarketGame`/`MarketOffer` records.
+5. The service filters events to the requested UTC calendar date and selected books, then serializes the compatibility response.
+6. Results are returned without persisting a market snapshot.
 
 Bet lifecycle:
 
-1. The caller supplies descriptive fields, stake, and optional model metadata.
-2. The API checks only that the stake is positive and cash is sufficient.
-3. The stake is deducted and the bet is appended to the portfolio JSON structure.
-4. A later caller supplies win/loss/push plus net payout.
+1. Pydantic request schemas validate the caller's descriptive fields, stake, result, and optional model metadata.
+2. `PortfolioService` obtains state through `PortfolioRepository`, checks cash, deducts stake, and records a UTC timestamp and generated bet ID.
+3. The configured repository saves the updated compatibility record.
+4. A later caller supplies win/loss/push plus net payout; the service enforces current settlement and double-settlement rules.
 5. Settlement returns stake plus net payout to bankroll.
-6. Aggregate statistics are calculated on demand from settled records.
+6. The service calculates aggregate statistics on demand from settled records.
 
 ### Current persistence properties
 
-The database is a process-global Python dictionary loaded once from a JSON file. Writes use a temporary file and replacement, which reduces partial-file risk for a single writer. It is not safe for concurrent requests, multiple processes, multiple instances, or transactional financial updates.
+`PortfolioService` depends only on a `PortfolioRepository` protocol. The production-composed implementation remains a process-owned Python dictionary loaded once from a JSON file. Writes use a temporary file and replacement, which reduces partial-file risk for a single writer. An in-memory implementation supports deterministic core tests.
 
-Load and save exceptions are swallowed. An invalid file can silently produce a new default database, and a failed save can still be followed by a successful API response.
+The interface removes filesystem and global-state knowledge from routes and services, but the JSON implementation is still not safe for concurrent requests, multiple processes, multiple instances, or transactional financial updates. Load and save failures are logged generically and retain the prototype's non-failing API behavior; an invalid file can produce a default database, and a failed save can still be followed by a successful response.
 
 ### Current external integration
 
-The Odds API is directly embedded in route logic. The integration uses synchronous `requests`, a 12-second timeout, one sequential request per sport, American odds, US region, exact sportsbook-title filtering, sanitized client-facing errors, and UTC date filtering. There is no provider interface, cache, retry policy, quota guard, or stored snapshot.
+The Odds API is isolated in `TheOddsApiProvider` behind `MarketDataProvider`. The adapter uses synchronous `requests`, a 12-second timeout, one sequential request per sport, American odds, and US region. It converts provider payloads to small provider-neutral records and emits only sanitized failure categories. The service owns exact sportsbook-title and UTC-date filtering. There is no cache, retry policy, quota guard, raw snapshot, or second provider.
 
 The code maps NCAAF to `americanfootball_ncaaf` and keeps it distinct from NCAAB (`basketball_ncaab`). It also maps NFL, NBA, NHL, MLB, and WNBA. Initial market scope remains full-game `h2h`, `spreads`, and `totals`.
 
 ### Current security and operational boundaries
 
-There is deterministic test coverage and lightweight CI, but no authentication, authorization, rate limiting, idempotency, structured logging, metrics, or tracing. Portfolio IDs function as unprotected lookup keys. The `main` branch is currently unprotected.
+Every response carries `X-Request-ID`; valid incoming IDs are honored and invalid/missing values are replaced. Application logs are JSON records with UTC time, severity, logger, request ID, and selected non-secret request/provider/storage fields. Credential-bearing provider URLs and exception text are never logged.
+
+There is deterministic test coverage and lightweight CI, but no authentication, authorization, rate limiting, idempotency, metrics, or tracing. Portfolio IDs function as unprotected lookup keys. The `main` branch is currently unprotected.
 
 ## Proposed V2 architecture
 
@@ -186,7 +208,9 @@ The conceptual data model should include:
 
 ## Migration strategy
 
-V2 should evolve incrementally. First characterize current behavior with tests, then extract pure domain logic, introduce normalized contracts, and move persistence behind an interface. Replace JSON storage only with an explicit migration and reconciliation plan. Do not combine every architectural change into a single rewrite.
+Phase 1 characterized and modularized the prototype: routes, schemas, services, provider integration, domain normalization, configuration, UTC handling, and persistence now have explicit boundaries. The small `MarketGame` and `MarketOffer` records are transitional provider-neutral shapes, not the complete V2 event/market domain model.
+
+Next, replace JSON storage only with an explicit schema, migration, and reconciliation plan. The repository boundary is intended to limit service churn, but Phase 2 will still introduce transactional semantics and durable ledger concepts that the compatibility dictionary model cannot express. Do not combine database migration with pricing or recommendation behavior.
 
 Detailed sequencing appears in `ROADMAP.md`.
 
