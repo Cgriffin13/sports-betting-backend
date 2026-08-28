@@ -8,6 +8,12 @@ from pydantic import BaseModel
 class PortfolioResponse(BaseModel):
     portfolio_id: str
     bankroll: float
+    cash: float
+    reserved_stake: float
+    open_exposure: float
+    equity: float
+    realized_pnl: float
+    currency: str
     bets: list[dict[str, Any]]
 
 
@@ -15,6 +21,11 @@ class PortfolioStatsResponse(BaseModel):
     portfolio_id: str
     starting_bankroll: float
     current_bankroll: float
+    cash: float
+    reserved_stake: float
+    open_exposure: float
+    equity: float
+    realized_pnl: float
     net_pnl: float
     overall: dict[str, Any]
     by_bucket: list[dict[str, Any]]

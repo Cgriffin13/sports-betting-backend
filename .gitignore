@@ -28,6 +28,9 @@ dist/
 # Runtime data
 data/*.json
 data/*.tmp
+*.db
+*.sqlite
+*.sqlite3
 
 # Editors and operating systems
 .idea/

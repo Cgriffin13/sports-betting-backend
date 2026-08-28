@@ -48,5 +48,5 @@ Before completing a change:
 - For persistence changes, verify migrations, transactions, concurrent updates, and rollback behavior.
 - For documentation-only changes, check internal links, terminology, current-versus-planned labels, and consistency with the code.
 
-The repository uses Python 3.12 with pinned development dependencies. Run `python -m ruff check .`, `python -m mypy app main.py tests`, and `python -m pytest` before completing relevant changes, and report the exact results.
+The repository uses Python 3.12 with pinned development dependencies. Run `python -m ruff check .`, `python -m mypy app main.py tests migrations`, and `python -m pytest` before completing relevant changes. Persistence changes must also validate `python -m alembic upgrade head` and `python -m alembic downgrade -1` against a disposable database. Report exact results.
 

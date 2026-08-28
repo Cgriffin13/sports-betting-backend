@@ -15,7 +15,7 @@ The prototype workflow was:
 7. Bankroll and results are tracked.
 8. Historical evidence is intended to improve later decisions.
 
-The initial experimental bankroll was approximately $200. The code still defaults new portfolios to `$200.00`, configurable through `STARTING_BANKROLL`.
+The initial experimental bankroll was approximately $200. The code defaults new portfolios to `$200.00`, configurable through `STARTING_BANKROLL`; this is configuration, not a schema or product constant.
 
 This is an experimental system. Its near- and medium-term purpose is extensive paper trading, methodology validation, and reliable measurement—not meaningful real-money deployment.
 
@@ -27,7 +27,7 @@ Immediate development priority is:
 2. **NFL**
 3. **NBA**
 
-MLB, NHL, and WNBA are secondary. The current prototype supports NCAAB, which means men's college basketball. NCAAF is college football and is not currently a first-class supported league in code; V2 must add it explicitly rather than reusing or relabeling NCAAB behavior.
+MLB, NHL, and WNBA are secondary. The prototype supports NCAAB, which means men's college basketball. NCAAF is college football, is first-class in code, remains distinct from NCAAB, and maps to The Odds API's `americanfootball_ncaaf` key.
 
 Initial NCAAF and NFL scope should emphasize full-game moneyline, spreads, and totals. Alternate spreads/totals and half/quarter markets follow after the core pricing and modeling pipeline is validated. Player props are later work because they require materially more player-level data and modeling.
 
@@ -75,12 +75,13 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 - live/current odds retrieval from The Odds API;
 - first-class NCAAF mapping alongside NFL, NCAAB, NBA, MLB, NHL, and WNBA;
 - basic sport, market, sportsbook, and requested UTC calendar-date filtering;
-- JSON-backed portfolios;
+- PostgreSQL-backed owned portfolios and an auditable relational bankroll ledger;
+- Decimal/NUMERIC money, transactional bet placement/settlement, persistent idempotency, and API-key authentication;
 - manual bet recording and settlement;
 - bankroll accounting; and
 - basic ROI and hit-rate summaries overall and by sport/market bucket.
 
-Phase 0 adds a Python 3.12 development baseline, pinned direct dependencies, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, and finite/range validation for current financial metadata. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
+Phases 0–2 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
 The backend accepts optional probability, edge, and EV fields, but it does not calculate or verify them. It stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 
@@ -161,12 +162,12 @@ An official bet should eventually preserve enough information to reconstruct the
 The following are known current-state problems, not solved capabilities:
 
 - modular boundaries are established, but records remain untyped dictionaries and the prototype contracts still need V2 domain models;
-- unsafe shared JSON persistence and non-failing I/O behavior that can still acknowledge an unsaved mutation;
-- no authentication or portfolio ownership;
 - caller-supplied EV and probabilities that are range-validated but not independently calculated or verified;
 - caller-supplied win payouts that are sign-validated but not derived from entry odds;
 - insufficient event, selection, and line metadata in recorded bets;
-- no idempotency;
+- lightweight API-key authentication is suitable only for the private service, not a mature identity system;
+- SQLite unit tests do not reproduce PostgreSQL row-lock scheduling; production concurrency still needs PostgreSQL integration/load validation;
+- operational PostgreSQL backup/restore drills remain future hardening work;
 - no CLV calculation;
 - no pricing/fair-probability engine;
 - no structured sports/statistical or injury/news signal pipeline;

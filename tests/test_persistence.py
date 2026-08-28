@@ -2,7 +2,8 @@ import json
 from pathlib import Path
 
 from app.persistence.json_repository import JsonPortfolioRepository
-from app.persistence.memory_repository import InMemoryPortfolioRepository
+from app.domain.identity import Principal
+from app.persistence.memory_repository import create_in_memory_repository
 
 
 def test_json_repository_round_trip_preserves_existing_shape(tmp_path: Path) -> None:
@@ -24,6 +25,8 @@ def test_json_repository_falls_back_from_invalid_file(tmp_path: Path) -> None:
 
 
 def test_repository_contract_auto_creates_portfolios() -> None:
-    repository = InMemoryPortfolioRepository(275.0)
-    assert repository.get_or_create("new") == {"bankroll": 275.0, "bets": []}
-    assert repository.save_count == 1
+    repository = create_in_memory_repository()
+    portfolio = repository.get_portfolio(Principal("owner", "Owner"), "new")
+    assert portfolio["bankroll"] == 200.0
+    assert portfolio["equity"] == 200.0
+    assert portfolio["bets"] == []

@@ -5,12 +5,12 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
-src = ["app", "tests"]
+src = ["app", "tests", "migrations"]
 target-version = "py312"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["app", "main.py", "tests"]
+files = ["app", "main.py", "tests", "migrations"]
 check_untyped_defs = true
 ignore_missing_imports = true
 warn_redundant_casts = true

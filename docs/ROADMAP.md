@@ -6,7 +6,7 @@ The roadmap prioritizes a trustworthy paper-trading platform before predictive s
 
 Goal: make the prototype safe to change and honest about its behavior.
 
-Status: **Completed in Sprint 1 on 2026-08-28.** JSON persistence, authentication, idempotency, and analytical/modeling gaps belong to later phases.
+Status: **Completed in Sprint 1 on 2026-08-28.** At that point JSON persistence, authentication, and idempotency were deferred; Phase 2 has since completed those items, while analytical/modeling gaps remain later work.
 
 - [x] Add durable project documentation and a concise root README.
 - [x] Remove the tracked virtual environment and bytecode from version control while retaining appropriate ignore rules.
@@ -52,13 +52,17 @@ Exit criteria status: **Satisfied.** Routes validate/map HTTP concerns and deleg
 
 Goal: replace mutable JSON state with auditable transactional persistence.
 
-- Select the relational database and data-access approach; PostgreSQL is the leading candidate but not yet decided.
-- Define schemas for users/owners, portfolios, bankroll ledger entries, recommendations, approvals, bets, state transitions, and settlements.
-- Capture full event, market, selection, point, provider, book, entry price, timestamps, bankroll, and version metadata.
-- Add migrations, constraints, transactions, and backup/recovery procedures.
-- Add authentication and portfolio ownership.
-- Add idempotency to every mutation.
-- Migrate or explicitly archive prototype JSON data with reconciliation totals.
+Status: **Completed in Sprint 3 on 2026-08-28.** PostgreSQL is the production database; SQLAlchemy 2.x and Alembic provide the vendor-neutral relational layer and migrations.
+
+- [x] Select PostgreSQL, SQLAlchemy 2.x, psycopg, and Alembic.
+- [x] Define owners, portfolios, future-compatible recommendations, approvals, reconstructable bets, state transitions, settlements, ledger entries, and idempotency records.
+- [x] Capture available event, market, selection, point, provider, book, entry price, timestamp, probability, closing, and version metadata without inventing missing values.
+- [x] Add an initial reversible migration, constraints, repository-managed transactions, and documented deployment/migration procedures.
+- [x] Make the immutable ledger the source of cash and preserve reserved stake, equity, exposure, and realized P&L separately.
+- [x] Add lightweight API-key principals, portfolio ownership, and cross-owner rejection.
+- [x] Add transactional `Idempotency-Key` support to `/bets` and `/bet-result`.
+- [x] Add an explicit rerunnable JSON importer with current-cash reconciliation adjustments; it never runs automatically.
+- [x] Preserve Render and `uvicorn main:app` while requiring `DATABASE_URL` and `APP_API_KEY`.
 
 Exit criteria:
 
@@ -66,6 +70,8 @@ Exit criteria:
 - Every balance can be reconstructed from ledger entries.
 - Duplicate requests do not create duplicate bets or settlements.
 - Unauthorized portfolio access is rejected.
+
+Exit criteria status: **Satisfied for the current private paper-trading service.** PostgreSQL row locks serialize an owner's mutations and target bet settlement; SQLite tests validate atomic rollback and constraints but do not emulate PostgreSQL lock scheduling. Backup/restore operations remain an infrastructure responsibility of the selected PostgreSQL provider and must be tested operationally before production-scale paper trading.
 
 ## Phase 3 — Market-data ingestion and normalization
 
@@ -224,10 +230,9 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 
 ## Immediate recommended sequence
 
-1. Decide the database, ownership, money, and ledger architecture for Phase 2.
-2. Build the durable ledger and migrate or explicitly archive prototype JSON data with reconciliation.
-3. Build the normalized, persisted NCAAF market snapshot path.
-4. Implement the transparent consensus/EV baseline.
-5. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
-6. Add the conservative equity-scaled risk and approval engine before expanding scope.
+1. Provision PostgreSQL, apply the Phase 2 migration, and explicitly import/reconcile any retained prototype JSON data.
+2. Build the normalized, persisted NCAAF market snapshot path.
+3. Implement the transparent consensus/EV baseline.
+4. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
+5. Add the conservative equity-scaled risk and approval engine before expanding scope.
 

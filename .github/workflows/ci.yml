@@ -23,6 +23,13 @@ jobs:
       - name: Lint
         run: python -m ruff check .
       - name: Type check
-        run: python -m mypy app main.py tests
+        run: python -m mypy app main.py tests migrations
       - name: Test
         run: python -m pytest
+      - name: Validate migrations
+        env:
+          DATABASE_URL: sqlite+pysqlite:///./ci-migrations.db
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade -1
+          python -m alembic upgrade head

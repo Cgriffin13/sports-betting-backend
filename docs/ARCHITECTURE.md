@@ -1,233 +1,112 @@
 # Architecture
 
-This document separates the architecture that exists in code from the architecture proposed for V2. Planned components must not be represented as implemented.
+This document describes implemented architecture first. The later target is explicitly proposed, not shipped behavior.
 
-## Current architecture
+## Current implemented architecture
 
-### Runtime shape
-
-The application is a synchronous FastAPI service composed in `app/main.py`. The root `main.py` only re-exports the application so the existing Render command, `uvicorn main:app`, remains valid.
+The runtime is a synchronous FastAPI service composed in `app/main.py`. Root `main.py` only re-exports `app`, preserving Render's `uvicorn main:app` contract.
 
 ```text
-Custom ChatGPT client / API caller
-              |
-              v
-      Request-ID middleware
-              |
-              v
-       FastAPI API routers
-          |           |
-          v           v
-    OddsService   PortfolioService
-          |           |
-          v           v
- provider-neutral   PortfolioRepository
- market interface         |
-          |                v
-          v        JsonPortfolioRepository
- TheOddsApiProvider        |
-          |                v
-          v      data/portfolio_db.json
-   The Odds API
+private client -- X-API-Key / request ID --> FastAPI routers
+                                                |       |
+                                                v       v
+                                        OddsService  PortfolioService
+                                             |              |
+                                             v              v
+                                    MarketDataProvider  PortfolioRepository
+                                             |              |
+                                             v              v
+                                    TheOddsApiProvider  SQLAlchemy repository
+                                             |              |
+                                             v              v
+                                      The Odds API      PostgreSQL
 ```
 
-Render is the intended host. `app/config.py` reads and validates `ODDS_API_KEY`, `STARTING_BANKROLL`, and `DATA_DIR` once during default application composition. A Render Disk mounted at `/var/data` remains the intended prototype persistence configuration.
+`GET /health` is public. `/odds`, portfolio reads, bet placement, settlement, and statistics require `X-API-Key`. Authentication resolves a replaceable `Principal`; every portfolio has an owner, and cross-owner access returns 403. This is a private single-user boundary, not a full identity platform.
 
-### Current modules and files
+### Module responsibilities
 
-- `main.py`: compatibility export for `app.main.app`; it contains no route or business logic.
-- `app/main.py`: application factory and dependency composition.
-- `app/api/`: thin health, odds, bet, settlement, and portfolio route modules.
-- `app/schemas/`: Pydantic request contracts and current flexible portfolio response shape.
-- `app/domain/`: canonical sports, aliases, allowed markets, normalization, and American-odds validation.
-- `app/providers/`: provider-neutral market records/protocol and the concrete The Odds API HTTP/parser adapter.
-- `app/services/`: odds orchestration and portfolio/bet business behavior.
-- `app/persistence/`: repository protocol, compatibility JSON implementation, and deterministic in-memory implementation.
-- `app/config.py`: environment-backed immutable settings.
-- `app/time.py`: timezone-aware UTC clock and provider-date parsing.
-- `app/logging.py` and `app/middleware.py`: lightweight JSON logging and request correlation.
-- `requirements.txt` and `requirements-dev.txt`: pinned direct runtime and validation dependencies.
-- `tests/`: deterministic API, domain, provider, service, configuration, and persistence tests without live provider access.
-- `pyproject.toml`: pytest, Ruff, and mypy configuration.
-- `.github/workflows/ci.yml`: Python 3.12 lint, package-wide type-check, and test workflow.
-- `data/.gitkeep`: placeholder for runtime data.
-- `.gitignore`: ignores local secrets, virtual environments, and bytecode.
+- `app/api/`: Pydantic-backed HTTP contracts, authentication dependency, service calls, and known-error mapping. Routes contain no raw SQL or provider HTTP.
+- `app/services/`: provider and portfolio orchestration plus canonical idempotency request hashing.
+- `app/domain/`: sports/market normalization, money rules, principals, and application errors.
+- `app/providers/`: provider-neutral `MarketDataProvider` and The Odds API adapter. The adapter owns URL/auth construction, timeout, requests, sanitized errors, and parsing.
+- `app/db/`: SQLAlchemy 2.x metadata, relational models, database URL normalization, engine, and session factory.
+- `app/persistence/sqlalchemy_repository.py`: primary runtime persistence, transactions, row locking, ledger-derived balances, settlements, ownership, and idempotency records.
+- `app/persistence/json_repository.py`: legacy compatibility only; not composed into the runtime.
+- `app/persistence/memory_repository.py`: SQLAlchemy/SQLite test factory.
+- `app/migration/` and `app/cli/`: explicit, rerunnable JSON import and reconciliation.
+- `migrations/`: Alembic configuration and schema revisions. Production startup never calls `Base.metadata.create_all()`.
+- `app/config.py`, `app/time.py`, `app/logging.py`, and `app/middleware.py`: environment configuration, UTC time, structured logs, and request IDs.
 
-### Current API surface
+### Relational schema
 
-| Endpoint | Current behavior |
+| Table | Purpose and key invariants |
 | --- | --- |
-| `GET /health` | Reports service status, whether an odds key exists, storage paths, and UTC time. |
-| `POST /odds` | Fetches current/upcoming odds and filters timezone-aware provider events to the requested UTC calendar date. It does not query historical odds. |
-| `GET /portfolio/{portfolio_id}` | Auto-creates missing portfolios and returns bankroll plus recent bets. |
-| `POST /bets` | Records a caller-provided bet and deducts its stake. |
-| `POST /bet-result` | Records a caller-provided result and net payout, then updates bankroll. |
-| `GET /portfolio/{portfolio_id}/stats` | Computes settled-bet totals and sport/market buckets. |
+| `owners` | Stable UUID, external principal ID, display name, status, creation time. External ID is unique. |
+| `portfolios` | UUID, compatibility external ID, owner, starting capital, currency, status, creation time. Starting capital is not fixed at $200. |
+| `recommendations` | Future-compatible decision snapshot for later engines. The current application does not create recommendations. |
+| `bets` | Reconstructable entry snapshot: event/team/time fields, league/sport, market/period/selection/point, book/price/stake, optional probability and version metadata, approval/placement, closing, result, and realized P&L. |
+| `bet_approvals` | One approval audit record per official bet, associated with the authenticated owner and optional future recommendation. |
+| `bet_state_transitions` | Append-only placement and settlement state transitions with source and time. |
+| `settlements` | One auditable settlement per bet with outcome, net payout, source, closing metadata, and timestamp. Unique `bet_id` prevents a second settlement. |
+| `ledger_entries` | Immutable bankroll events with signed `NUMERIC(18,2)` amount, type, bet link, unique portfolio reference, optional idempotency key/metadata, and timestamp. |
+| `idempotency_records` | Owner + endpoint + key uniqueness, canonical request hash, and successful response snapshot. |
 
-### Current data flow
+Foreign keys use restrictive deletion because financial history must not cascade away. Check constraints bound statuses, results, entry types, and positive stakes. UUIDs are internal identities; existing external IDs preserve API compatibility.
 
-Odds retrieval:
+### Money and ledger semantics
 
-1. The API validates `OddsRequest` and calls `OddsService`.
-2. The service normalizes canonical sports and allowed markets.
-3. It calls the provider-neutral `MarketDataProvider` once per supported sport.
-4. `TheOddsApiProvider` owns authentication, URL construction, the 12-second timeout, HTTP, failure sanitization, and provider-payload parsing into `MarketGame`/`MarketOffer` records.
-5. The service filters events to the requested UTC calendar date and selected books, then serializes the compatibility response.
-6. Results are returned without persisting a market snapshot.
+Python `Decimal` and SQL `NUMERIC(18,2)` are authoritative. Inputs round to cents with `ROUND_HALF_UP`; floats exist only at the JSON compatibility boundary.
 
-Bet lifecycle:
+Cash is the sum of signed ledger entries. Reserved stake/open exposure is the sum of stakes on open bets. Equity is `cash + reserved stake`. Realized P&L is the sum of settled bet P&L. An open stake reduces cash but is not a realized loss.
 
-1. Pydantic request schemas validate the caller's descriptive fields, stake, result, and optional model metadata.
-2. `PortfolioService` obtains state through `PortfolioRepository`, checks cash, deducts stake, and records a UTC timestamp and generated bet ID.
-3. The configured repository saves the updated compatibility record.
-4. A later caller supplies win/loss/push plus net payout; the service enforces current settlement and double-settlement rules.
-5. Settlement returns stake plus net payout to bankroll.
-6. The service calculates aggregate statistics on demand from settled records.
-
-### Current persistence properties
-
-`PortfolioService` depends only on a `PortfolioRepository` protocol. The production-composed implementation remains a process-owned Python dictionary loaded once from a JSON file. Writes use a temporary file and replacement, which reduces partial-file risk for a single writer. An in-memory implementation supports deterministic core tests.
-
-The interface removes filesystem and global-state knowledge from routes and services, but the JSON implementation is still not safe for concurrent requests, multiple processes, multiple instances, or transactional financial updates. Load and save failures are logged generically and retain the prototype's non-failing API behavior; an invalid file can produce a default database, and a failed save can still be followed by a successful response.
-
-### Current external integration
-
-The Odds API is isolated in `TheOddsApiProvider` behind `MarketDataProvider`. The adapter uses synchronous `requests`, a 12-second timeout, one sequential request per sport, American odds, and US region. It converts provider payloads to small provider-neutral records and emits only sanitized failure categories. The service owns exact sportsbook-title and UTC-date filtering. There is no cache, retry policy, quota guard, raw snapshot, or second provider.
-
-The code maps NCAAF to `americanfootball_ncaaf` and keeps it distinct from NCAAB (`basketball_ncaab`). It also maps NFL, NBA, NHL, MLB, and WNBA. Initial market scope remains full-game `h2h`, `spreads`, and `totals`.
-
-### Current security and operational boundaries
-
-Every response carries `X-Request-ID`; valid incoming IDs are honored and invalid/missing values are replaced. Application logs are JSON records with UTC time, severity, logger, request ID, and selected non-secret request/provider/storage fields. Credential-bearing provider URLs and exception text are never logged.
-
-There is deterministic test coverage and lightweight CI, but no authentication, authorization, rate limiting, idempotency, metrics, or tracing. Portfolio IDs function as unprotected lookup keys. The `main` branch is currently unprotected.
-
-## Proposed V2 architecture
-
-The target is a modular paper-trading platform with explicit boundaries and auditable domain records.
+For a `$200.00` portfolio placing a `$10.00` bet:
 
 ```text
-Odds Providers -----> Market Normalization -----> Market Consensus -----+
-                                                                         |
-Sports/Stats Data --> Sport Feature Pipelines --> Predictive Models -----+--> Final Fair Probability
-                                                                         |             |
-News/Research ------> Traceable Structured Signals ----------------------+             v
-                                                                               EV & Qualification
-                                                                                      |
-                                                                                      v
-Portfolio Equity --> Risk Budget / Correlation Controls --> Stake & Rank --> Top N Interface
-                                                                                      |
-                                                                                      v
-                                                                       Explicit Human Approval
-                                                                                      |
-                                                                                      v
-Bet Ledger --> Closing Price Capture --> Settlement --> Performance & Calibration
+initial_funding  +200.00  => cash 200.00, reserved 0.00, equity 200.00
+bet_stake         -10.00  => cash 190.00, reserved 10.00, equity 200.00
 ```
 
-Market consensus is both an initial pricing baseline and the benchmark for evaluating proprietary models. The long-term product is expected to combine market and model evidence; it is not limited to consensus scanning.
+Settlement uses the legacy API's net-profit `payout` semantics:
 
-### Proposed component responsibilities
+- win with `payout=+9.09`: settlement ledger `+19.09`; cash/equity `$209.09`, realized P&L `+$9.09`;
+- loss with `payout=-10.00`: settlement ledger `+0.00`; cash/equity `$190.00`, realized P&L `-$10.00`;
+- push with `payout=0.00`: settlement ledger `+10.00`; cash/equity `$200.00`, realized P&L `$0.00`.
 
-#### API layer
+The ledger is append-only under normal ORM operations; corrections require explicit adjustment entries rather than editing history.
 
-Own request/response contracts, authentication, authorization, idempotency keys, and error mapping. It should orchestrate application services without containing pricing formulas or provider parsing.
+### Transaction and concurrency boundaries
 
-#### Market-data adapters
+Portfolio creation, initial funding, bet placement, settlement, their ledger entries, and an optional idempotency record commit atomically in repository-managed `Session.begin()` blocks. Any exception rolls the whole mutation back.
 
-Implement a provider-neutral interface for The Odds API and future providers. Preserve raw snapshots for reproducibility, sanitize failures, track quotas, and convert provider payloads into normalized records.
+PostgreSQL locks the owner row before portfolio mutation, serializing changes across all that owner's portfolios, and additionally locks the target portfolio/bet where relevant. This conservative scope prevents concurrent overspending and double settlement. SQLite test transactions exercise atomicity and constraints but ignore `SELECT ... FOR UPDATE`; they do not prove PostgreSQL lock scheduling. Production concurrency validation should therefore include PostgreSQL integration tests before horizontal scaling.
 
-NCAAF is the first new league requirement, followed by deeper NFL and NBA support. Initial NCAAF and NFL adapters should support full-game moneyline, spreads, and totals before alternate, half, quarter, or player-prop markets.
+An `Idempotency-Key` is scoped to authenticated owner and endpoint. Same key plus the same canonical payload returns the stored successful response without a second mutation. Same key plus different payload returns 409. Missing keys are allowed for backward compatibility and repeated requests are treated as distinct. Failed transactions do not retain an idempotency record.
 
-#### Structured sports-data adapters
+### Runtime and deployment
 
-Ingest provider-neutral schedules, results, team statistics, and sport-specific features. NCAAF and NFL require team/game context; NBA eventually requires player availability, projected minutes, usage, pace, rest, lineup, and matchup data. Raw source records and transformation versions must remain traceable.
+`DATABASE_URL` and `APP_API_KEY` are required at startup; owner metadata, starting bankroll, Odds API key, and legacy data directory are environment-controlled. Generic `postgres://` or `postgresql://` URLs are normalized to psycopg without vendor-specific logic. PostgreSQL is the documented production database; SQLite is test-only.
 
-#### Research and signal ingestion
+Render remains the backend host. Configure a PostgreSQL `DATABASE_URL`, private API key, and other environment values; run `alembic upgrade head` before the web process; keep `uvicorn main:app`. A persistent disk is no longer the primary portfolio store.
 
-Capture injuries, availability, news, and research as sourced, timestamped, structured signals. LLMs may assist discovery, extraction, summarization, and explanation, but probability changes must occur only through documented, versioned model or policy inputs.
+Odds behavior is unchanged: current/upcoming The Odds API results are filtered by timezone-aware `commence_time` to the requested UTC calendar date. NCAAF maps to `americanfootball_ncaaf` and remains distinct from NCAAB.
 
-#### Normalization
+## Proposed architecture after Phase 2
 
-Resolve stable internal IDs for events, participants, markets, selections, and exact line points. Ensure prices are compared only when event, market, period, selection, and line are equivalent.
+```text
+Odds providers -> normalization -> no-vig/consensus pricing ----+
+Sports data -> league feature pipeline -> predictive models ----+-> final fair probability
+Research/news -> traceable structured signals ------------------+          |
+                                                                          v
+                                                           EV / qualification
+                                                                          |
+Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
+                                                                          |
+                                                               human approval
+                                                                          |
+                                  bet ledger -> close -> settlement -> analytics/calibration
+```
 
-#### Pricing and probability engine
+Next phases add normalized market snapshots, pricing/EV, recommendation/risk policy, and an early NCAAF model track. Market consensus is the baseline and benchmark, not necessarily the final proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those engines exist.
 
-Provide pure, versioned calculations for odds conversion, vig removal, consensus construction, final fair-probability policy, uncertainty, edge, and EV. Every output must identify its source and calculation version.
-
-#### Sport-specific model pipelines
-
-Train, evaluate, and serve versioned league-specific models against the market-consensus benchmark. NCAAF is first, then NFL and NBA. Historical variables and research signals enter only when their out-of-sample value is reproducible. Market-consensus and proprietary probabilities must remain separately observable even when a final fair-probability policy blends them.
-
-#### Portfolio and risk engine
-
-Recommend stakes from current portfolio equity, EV, uncertainty, open exposure, daily risk, and correlation constraints. Stakes scale with equity under a versioned conservative fractional-Kelly/risk-budget policy. Full Kelly is prohibited; final policy remains to be validated through paper trading. Units are a bankroll-relative display abstraction, not fixed dollars.
-
-#### Recommendation and approval workflow
-
-Create immutable recommendation snapshots and record explicit human approval or rejection. The interface returns up to a configurable Top N qualified opportunities per selected league, normally no more than 10. It must never relax qualification rules to fill Top N.
-
-Each recommendation exposes the best executable book/price, implied probability, consensus probability, proprietary-model probability when available, final fair probability, edge, EV, uncertainty/confidence, stake, equity percentage, and a traceable research explanation. Approval creates an official paper bet; analysis alone must not mutate the ledger.
-
-#### Bet ledger and settlement
-
-Use durable transactional storage. Preserve entry context, bankroll movements, closing data, result, and settlement provenance. Repeated requests must be idempotent.
-
-#### Analytics and calibration
-
-Compute reproducible portfolio, model, calibration, and risk metrics from ledger and market snapshots. Model changes should follow versioned evaluation rather than mutating production behavior from recent outcomes.
-
-### Proposed persistence
-
-A relational database is the expected production direction because transactions, constraints, indexed historical analysis, and auditability are core requirements. PostgreSQL is a likely candidate for Render, but the database product and ORM are not yet an accepted decision.
-
-The conceptual data model should include:
-
-- providers and sportsbooks;
-- normalized events, markets, selections, and lines;
-- raw and normalized price snapshots;
-- structured sport/statistical observations and traceable news/research signals;
-- pricing/model versions and probability estimates;
-- recommendations, qualification decisions, research explanations, and approval records;
-- portfolios, bankroll ledger entries, bets, and bet state transitions;
-- closing-price observations and settlements; and
-- analytics runs or reproducible derived views.
-
-### Cross-cutting requirements
-
-- UTC, timezone-aware timestamps.
-- Decimal or explicitly rounded money representation; no non-finite numbers.
-- Database constraints for probability ranges and financial invariants.
-- Transactions and row-level concurrency controls for bankroll mutations.
-- Idempotency for all mutating endpoints.
-- Secrets only in runtime configuration and sanitized provider errors.
-- Deterministic unit tests for financial logic and contract/integration tests for boundaries.
-- Structured logs, metrics, provider quota visibility, backups, and recovery procedures.
-- Versioned schemas, pricing logic, risk policies, and model outputs.
-- Separate persisted consensus, proprietary-model, and final fair probabilities.
-- Qualification and Top N truncation applied after deterministic eligibility rules.
-
-## Migration strategy
-
-Phase 1 characterized and modularized the prototype: routes, schemas, services, provider integration, domain normalization, configuration, UTC handling, and persistence now have explicit boundaries. The small `MarketGame` and `MarketOffer` records are transitional provider-neutral shapes, not the complete V2 event/market domain model.
-
-Next, replace JSON storage only with an explicit schema, migration, and reconciliation plan. The repository boundary is intended to limit service churn, but Phase 2 will still introduce transactional semantics and durable ledger concepts that the compatibility dictionary model cannot express. Do not combine database migration with pricing or recommendation behavior.
-
-Detailed sequencing appears in `ROADMAP.md`.
-
-## Open architecture decisions
-
-- PostgreSQL and ORM/query-layer choice.
-- Deployment topology and worker model on Render.
-- Authentication and portfolio-ownership model.
-- Raw snapshot retention and compression policy.
-- Background job/scheduler technology.
-- Provider failover and consensus weighting policy.
-- Structured sports/statistical data providers and licensing/retention constraints.
-- Injury/news/research providers, provenance schema, and signal freshness policy.
-- Event identity and cross-provider matching strategy.
-- Final fair-probability selection or blending policy.
-- League-specific feature stores, model families, and model-serving topology.
-- Top N qualification thresholds, tie-breaking, and per-league allocation behavior.
-- Equity definition, unit display convention, fractional-Kelly multiplier, and risk budgets.
-- API versioning and compatibility policy.
-
+Not implemented: implied-probability calculation, vig removal, consensus pricing, proprietary models, Kelly sizing, recommendation ranking, structured sports/news ingestion, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work.

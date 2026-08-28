@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from app.persistence.base import PortfolioRecord
+PortfolioRecord = dict[str, Any]
 
 LOGGER = logging.getLogger(__name__)
 

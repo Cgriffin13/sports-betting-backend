@@ -239,7 +239,7 @@ recommended_fraction = min(
 
 All multipliers and caps require paper-trading validation. The engine should also support “no bet” when EV is non-positive, uncertainty is too high, data is stale, limits are reached, or market identity is ambiguous.
 
-The equity base used for sizing must be defined consistently—likely cash plus reserved/open stake valued under a documented convention—and captured with the recommendation. The exact equity definition remains unresolved.
+Phase 2 defines current portfolio equity as cash plus reserved open stake at original stake value. Future sizing should capture that equity value at recommendation time. How to value more complex open positions or pending/partial settlements remains unresolved and requires a superseding versioned policy.
 
 One unit is a display abstraction derived from current equity under a versioned unit policy:
 
@@ -262,16 +262,16 @@ Required risk concepts include:
 
 ## Bet and bankroll semantics
 
-The current prototype treats `payout` as net profit/loss and deducts stake at placement:
+The current ledger implementation preserves the compatibility API's `payout` as net profit/loss and reserves stake at placement:
 
 ```text
 placement:  cash_bankroll -= stake
 settlement: cash_bankroll += stake + net_payout
 ```
 
-That arithmetic is consistent for a win, loss, or push if the supplied payout is correct. V2 should calculate settlement from immutable entry terms and a validated outcome rather than trusting arbitrary payout input.
+That arithmetic is consistent for a win, loss, or push if the supplied payout is correct. A loss must equal negative stake and a push must be zero; a win remains caller-supplied rather than derived from odds. A later settlement engine should calculate profit from immutable entry terms and a validated outcome.
 
-V2 should distinguish:
+Phase 2 distinguishes:
 
 - cash balance;
 - reserved/open stake;
@@ -279,7 +279,9 @@ V2 should distinguish:
 - realized P&L; and
 - unrealized/open exposure.
 
-Money rounding, currency, and sportsbook settlement rules must be explicit. Bankroll changes should be represented by auditable ledger entries rather than only a mutable balance.
+Cash is the sum of signed ledger entries. Reserved/open stake is the sum of open bet stakes. Equity is cash plus reserved stake, and realized P&L is the sum of settled bet P&L; therefore an open stake is exposure, not an immediate realized loss.
+
+Money uses Python `Decimal` and SQL `NUMERIC(18,2)`, rounded to cents with `ROUND_HALF_UP`. JSON responses may contain numbers for compatibility, but floats are not authoritative. Currency is stored per portfolio and is currently USD; conversion and sport/book-specific settlement rules remain unimplemented. Historical ledger entries are immutable under normal operations, with explicit adjustments reserved for reconciliations/corrections.
 
 ## Closing line value
 

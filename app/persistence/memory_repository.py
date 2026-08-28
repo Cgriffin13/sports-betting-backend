@@ -1,24 +1,19 @@
-from typing import Any
+from decimal import Decimal
 
-from app.persistence.base import PortfolioRecord
-from app.persistence.json_repository import default_database
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
+
+from app.db.base import Base
+from app.db.session import create_session_factory
+from app.persistence.sqlalchemy_repository import SqlAlchemyPortfolioRepository
 
 
-class InMemoryPortfolioRepository:
-    """Deterministic repository for unit tests and local composition."""
-
-    def __init__(self, starting_bankroll: float = 200.0, data: dict[str, Any] | None = None) -> None:
-        self._starting_bankroll = starting_bankroll
-        self.data = data if data is not None else default_database(starting_bankroll)
-        self.save_count = 0
-
-    def get_or_create(self, portfolio_id: str) -> PortfolioRecord:
-        portfolios = self.data.setdefault("portfolios", {})
-        if portfolio_id not in portfolios:
-            portfolios[portfolio_id] = {"bankroll": self._starting_bankroll, "bets": []}
-            self.save_portfolio(portfolio_id, portfolios[portfolio_id])
-        return portfolios[portfolio_id]
-
-    def save_portfolio(self, portfolio_id: str, portfolio: PortfolioRecord) -> None:
-        self.data.setdefault("portfolios", {})[portfolio_id] = portfolio
-        self.save_count += 1
+def create_in_memory_repository(starting_capital: Decimal = Decimal("200.00")) -> SqlAlchemyPortfolioRepository:
+    """Create an ephemeral relational repository for deterministic tests only."""
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    return SqlAlchemyPortfolioRepository(create_session_factory(engine), starting_capital)

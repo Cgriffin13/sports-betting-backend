@@ -118,6 +118,8 @@ Consequences:
 - A ledger-style representation is preferred for bankroll movements and bet states.
 - PostgreSQL is a likely candidate on Render, but the database and data-access tooling are not yet selected.
 
+Implementation note (2026-08-28): ADR-024 through ADR-030 resolve the database, ORM, migrations, ledger, money, idempotency, and authentication choices anticipated here.
+
 ## ADR-009 — Preserve immutable decision-time context
 
 - Date: 2026-08-28
@@ -321,9 +323,6 @@ Consequences:
 
 Create separate ADR entries when these are resolved:
 
-- relational database and data-access tooling;
-- authentication and portfolio ownership;
-- money representation and rounding policy;
 - primary vig-removal method and consensus weighting;
 - final fair-probability selection/blending and proprietary-model promotion gates;
 - NCAAF structured-data providers, feature set, model family, and evaluation windows;
@@ -337,4 +336,76 @@ Create separate ADR entries when these are resolved:
 - API versioning and migration policy;
 - exact calendar/scope and operational readiness criteria for the NCAAF opening-weekend milestone; and
 - player-prop expansion gates and required projection quality.
+
+## ADR-024 — PostgreSQL is the production relational database
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Production portfolio state uses PostgreSQL through `DATABASE_URL`. SQLite is permitted only for deterministic tests and disposable local migration validation. The application contains no managed-vendor-specific database logic.
+
+Consequences: deployment requires a migrated PostgreSQL database; Render remains a supported host but its database product is not required. PostgreSQL row locks, constraints, and transactions are the production concurrency model.
+
+## ADR-025 — SQLAlchemy 2.x is the data-access layer
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Modern SQLAlchemy sessions and typed declarative models implement relational persistence behind the existing repository boundary. Routes do not manipulate ORM entities or SQL.
+
+Consequences: `SqlAlchemyPortfolioRepository` owns aggregate transaction boundaries. Tests may inject a SQL repository backed by ephemeral SQLite.
+
+## ADR-026 — Alembic owns schema evolution
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Alembic revisions are the only production schema-creation/evolution mechanism. Application startup does not call `Base.metadata.create_all()`.
+
+Consequences: deploys run `alembic upgrade head`; downgrades and generated revisions must be reviewed and tested. Test fixtures may use metadata creation for isolated schemas.
+
+## ADR-027 — Bankroll accounting is ledger-based
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Every bankroll mutation appends an auditable signed ledger entry. Cash is derived by summing ledger amounts; historical entries are immutable under normal ORM operations. Open stake is reserved exposure and not a realized loss.
+
+Consequences: initial funding, stake reservation, settlement, adjustment, and future void/refund entries have explicit types and references. Equity is currently cash plus open reserved stake. Corrections use adjustments rather than historical edits.
+
+## ADR-028 — Money uses Decimal and NUMERIC with cents rounding
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Python `Decimal` and SQL `NUMERIC(18,2)` are authoritative for money. Inputs quantize to cents using `ROUND_HALF_UP`; JSON numbers are a compatibility serialization only.
+
+Consequences: a value of `10.005` becomes `10.01`. Financial tests assert exact Decimal arithmetic and ledger reconciliation. Multi-currency conversion remains out of scope even though portfolios preserve an ISO currency code.
+
+## ADR-029 — Mutation idempotency is persistent and transactional
+
+- Date: 2026-08-28
+- Status: Accepted
+
+`POST /bets` and `POST /bet-result` accept `Idempotency-Key`. Records are scoped to owner and endpoint and commit in the same transaction as the mutation.
+
+Consequences: the same key/payload returns the original successful response; different payload returns 409. Missing keys remain allowed for compatibility and provide no replay protection. Failed operations leave no committed idempotency record.
+
+## ADR-030 — Authentication uses a replaceable API-key principal boundary
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The private paper-trading API resolves `X-API-Key` to an application `Principal`; portfolios reference owners and reject cross-owner access. Health remains public.
+
+Consequences: `APP_API_KEY`, `APP_OWNER_ID`, and `APP_OWNER_NAME` configure the current single owner. This is intentionally small and replaceable by a proper identity provider; it is not a broad multi-user authorization system.
+
+## ADR-031 — Preserve Render backend hosting
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The FastAPI backend remains on Render and retains `uvicorn main:app`. Phase 2 changes persistence, not hosting.
+
+Consequences: configure `DATABASE_URL`, API authentication, and provider credentials in Render; apply Alembic migrations before starting the service. A persistent disk is not required for primary relational state. No Render-specific database URL, hostname, username, or password is committed or embedded in application code.
 
