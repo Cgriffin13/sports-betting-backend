@@ -17,6 +17,7 @@ This document defines shared terminology and intended mathematical semantics. It
 | EV calculation | Caller-supplied, unverified | Calculated and versioned |
 | Stake recommendation | Not implemented | Fractional-Kelly-informed, conservatively capped |
 | Portfolio exposure control | Not implemented | Required before recommendations become official |
+| Parlay recommendation | Not implemented | Optional later research sleeve after the straight-bet pipeline is proven |
 | Closing line value | Data fields exist; calculation absent | Capture and calculate consistently |
 | Calibration/learning | Not implemented | Offline, evidence-based, and versioned |
 
@@ -210,6 +211,34 @@ Every returned recommendation must preserve and expose:
 - pricing, model, and risk-policy versions; and
 - a human-readable explanation with traceable research sources/signals.
 
+## Optional Parlay of the Day (planned later phase)
+
+The Parlay of the Day is an optional featured recommendation alongside—not inside or above—the core ranked straight-bet portfolio. It must not change the objective of maximizing long-term risk-adjusted bankroll growth through individually qualified positions.
+
+The system may return at most one featured parlay per day/league scope; zero is a correct and expected result. It must not loosen filters, duplicate legs, or manufacture a combination to satisfy the feature. Each leg must independently pass the applicable straight-bet data-quality, pricing, EV, uncertainty, and portfolio-eligibility gates before combination is considered.
+
+For executable parlay decimal odds `d_parlay` and modeled joint win probability `p_joint`:
+
+```text
+parlay_ev_per_unit = p_joint * (d_parlay - 1) - (1 - p_joint)
+```
+
+Qualification must compare the sportsbook's executable combined payout with `p_joint`; it must not infer the offered payout merely by multiplying displayed leg odds when the sportsbook supplies a distinct parlay price.
+
+For defensibly independent cross-event legs, an initial research estimate may use:
+
+```text
+p_joint = product(p_leg_i)
+```
+
+That product is invalid when material dependence is present. Same-game parlays and other correlated combinations require explicit correlation modeling, simulation, a validated joint distribution, or another reproducible joint-probability method before production-quality use. Early experimentation should prefer cross-event combinations with documented independence checks. Unknown correlation is a reason to reject the candidate, not to assume independence.
+
+Parlays must use a separate, conservative portfolio risk budget and generally lower per-position caps than qualified straight bets. Their exposure must still count toward total portfolio, league, event, daily, and correlation limits. The parlay sleeve must be independently versioned and capable of automatic risk reduction or disablement when sufficiently powered out-of-sample evidence shows detrimental risk-adjusted performance.
+
+Track parlays separately from straight bets, including at minimum component legs and their decision-time probabilities, executable combined price, joint fair probability and method/version, expected value at entry, stake, realized P&L, ROI/yield, hit rate, and sample size. Capture closing observations so CLV and calibration can be defined and evaluated later where mathematically meaningful.
+
+Unresolved policies include permitted leg counts, minimum EV, independence tests, correlation thresholds/models, same-game eligibility, parlay Kelly multiplier, stake and sleeve exposure caps, league/day scope, executable-price freshness, CLV convention, and promotion/disablement evidence gates. Full Kelly remains prohibited.
+
 ## Staking philosophy
 
 The objective is long-term risk-adjusted bankroll growth, not reaching a fixed bankroll target. Stakes should scale automatically from current portfolio equity rather than use static dollar amounts.
@@ -337,6 +366,8 @@ Track peak-to-trough decline on a clearly defined portfolio-equity series, with 
 Eventually evaluate results by model/version, sport, league, market, sportsbook, edge bucket, probability bucket, confidence bucket, and time period. Multiple comparisons and small samples must be treated cautiously.
 
 Market-consensus and proprietary-model predictions should be scored separately against outcomes and closing markets. A model should not receive weight merely because a historical trend recently succeeded; promotion requires time-aware out-of-sample evaluation, calibration evidence, and sufficient sample size.
+
+Model changes must be driven by reproducible out-of-sample evidence rather than short winning or losing streaks. Versioned portfolio-risk policies may adapt to equity, exposure, drawdown, uncertainty, and validated model performance, but any adaptation must be bounded, auditable, and evaluated separately from predictive-model changes. Straight-bet and future parlay-sleeve results must remain separately segmented.
 
 ## Testing requirements
 

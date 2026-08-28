@@ -145,6 +145,8 @@ Consequences:
 - Model and policy changes require versioning and reproducible evaluation.
 - Silent online mutation of production logic is not allowed.
 - Promotion and rollback criteria must be defined before automated model updates.
+- Historical prediction snapshots, closing prices, outcomes, calibration, CLV, drawdown, and segmented results form the evidence base.
+- Versioned portfolio-risk policy may respond to equity, exposure, drawdown, uncertainty, and validated model performance; short streaks alone may not trigger changes.
 
 ## ADR-011 — Initial bankroll is configuration, not a product invariant
 
@@ -332,10 +334,15 @@ Create separate ADR entries when these are resolved:
 - portfolio-equity definition, unit display policy, fractional-Kelly multiplier, and exposure caps;
 - primary CLV definition and closing benchmark;
 - event matching and cross-provider identity;
-- scheduler/background-job technology; and
+- scheduler/background-job technology;
 - API versioning and migration policy;
-- exact calendar/scope and operational readiness criteria for the NCAAF opening-weekend milestone; and
-- player-prop expansion gates and required projection quality.
+- exact calendar/scope and operational readiness criteria for the NCAAF opening-weekend milestone;
+- player-prop expansion gates and required projection quality;
+- parlay day/league scope and eligible leg counts;
+- parlay minimum EV, executable-price freshness, independence tests, and correlation policy;
+- validated same-game joint-probability method and production-readiness gate;
+- parlay Kelly multiplier, stake cap, sleeve exposure budget, and disablement criteria; and
+- parlay-specific CLV/calibration definitions and evidence thresholds.
 
 ## ADR-024 — PostgreSQL is the production relational database
 
@@ -408,4 +415,23 @@ Consequences: `APP_API_KEY`, `APP_OWNER_ID`, and `APP_OWNER_NAME` configure the 
 The FastAPI backend remains on Render and retains `uvicorn main:app`. Phase 2 changes persistence, not hosting.
 
 Consequences: configure `DATABASE_URL`, API authentication, and provider credentials in Render; apply Alembic migrations before starting the service. A persistent disk is not required for primary relational state. No Render-specific database URL, hostname, username, or password is committed or embedded in application code.
+
+## ADR-032 — Parlay of the Day is an optional later research sleeve
+
+- Date: 2026-08-28
+- Status: Accepted
+
+After the core straight-bet pricing, predictive-model, portfolio-risk, and evaluation pipeline is proven, the platform may return at most one featured Parlay of the Day per day/league scope. Zero is valid. The feature is subordinate to the core ranked straight-bet portfolio and must not alter its qualification standards or long-term risk-adjusted bankroll-growth objective.
+
+Consequences:
+
+- Every component leg must independently qualify; combinations are never manufactured to satisfy a display feature.
+- Recommendation requires an executable sportsbook parlay payout and a versioned modeled joint fair probability.
+- Marginal probabilities are multiplied only when independence is defensible and documented.
+- Same-game or otherwise correlated combinations require validated correlation modeling, simulation, or another reproducible joint-probability method before production-quality use.
+- Early research prefers cross-event combinations with more defensible independence assumptions.
+- Parlays use a separate conservative risk sleeve, generally lower stake caps, and the portfolio's aggregate exposure/correlation controls.
+- Performance is segmented from straight bets and includes entry EV, stake, outcome, realized P&L, ROI/yield, hit rate, sample size, and later CLV/calibration where meaningful.
+- The sleeve must be reducible or disableable when reproducible out-of-sample evidence shows that it damages risk-adjusted performance.
+- Exact leg counts, EV thresholds, joint-probability methods, Kelly multipliers, caps, and correlation/evidence policies remain unresolved pending empirical validation.
 

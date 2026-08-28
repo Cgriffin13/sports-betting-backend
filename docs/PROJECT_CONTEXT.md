@@ -67,6 +67,8 @@ The complete product should be able to:
 
 The recommendation interface should return up to a configurable Top N qualified opportunities for each selected league, with 10 as the normal display maximum. Top N is a ceiling, not a target: the system must return fewer recommendations, including zero, when fewer opportunities pass pricing, confidence, data-quality, and portfolio-risk rules.
 
+After the core straight-bet pricing, predictive-model, and portfolio-risk pipeline is proven, the platform may also offer an optional **Parlay of the Day**. This is a separate featured research sleeve, not a replacement for or quota within the ranked straight-bet portfolio. It may return at most one parlay per day/league scope, and zero is valid. The feature must never manufacture a parlay or weaken leg-level qualification standards merely to produce one.
+
 ## What exists today
 
 The current implementation is a modular FastAPI prototype under `app/`, with a small root `main.py` compatibility entry point. It currently provides:
@@ -125,6 +127,14 @@ Every recommendation should preserve and expose:
 
 Qualification thresholds must remain independent of the requested Top N. The interface must never manufacture marginal bets merely to fill the display.
 
+### Parlays are an optional, subordinate research sleeve
+
+The primary objective remains long-term risk-adjusted bankroll growth through individually qualified straight bets. A featured parlay is a later-phase experiment and may be considered only when every component leg independently satisfies the same applicable qualification standards.
+
+The system must compare an executable sportsbook parlay payout with a modeled joint fair probability. Marginal leg probabilities may be multiplied only when the independence assumption is defensible. Correlated outcomes—especially same-game combinations—require explicit correlation modeling, simulation, or another validated joint-probability method before they can be treated as production-quality recommendations. Early experiments should prefer cross-event legs where independence assumptions are more credible.
+
+Parlays use a separate conservative risk budget and generally lower stake caps than qualified straight bets. Their performance must be segmented from straight bets, and the portfolio engine must be able to reduce or disable the parlay sleeve when out-of-sample evidence indicates that it harms risk-adjusted performance.
+
 ### Bankroll growth and risk are core product functions
 
 The objective is long-term risk-adjusted bankroll growth, not reaching a fixed bankroll target. Position sizes should scale automatically with current portfolio equity through a conservative, versioned fractional-Kelly and risk-budget policy rather than static dollar bets.
@@ -137,7 +147,9 @@ News, injuries, and research should be ingested as timestamped, sourced, structu
 
 ### Learning must be statistical, not reactive
 
-The platform should improve through calibration analysis, controlled backtests, versioned models, and sufficient sample sizes. Recent wins alone are not evidence that confidence or stake sizes should increase. Historical trends and narratives should not influence predictions automatically; candidate historical variables must earn model weight through reproducible out-of-sample evidence. Small samples must not cause large automatic changes in weights or risk policy.
+The platform should improve through historical prediction snapshots, closing prices, outcomes, calibration analysis, CLV, drawdown, segmented performance, controlled backtests, versioned models, and sufficient sample sizes. Short winning or losing streaks are not evidence for mechanical probability, model-weight, or stake changes. Historical trends and narratives should not influence predictions automatically; candidate variables and predictive-model changes must earn weight through reproducible out-of-sample evidence.
+
+Portfolio-risk policies may respond to current equity, open exposure, drawdown, uncertainty, and validated model performance, but those responses must be explicit, bounded, versioned, and reproducible. Small samples must not cause large automatic changes in model weights, qualification standards, or risk policy.
 
 ### Auditability matters
 

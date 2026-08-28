@@ -210,12 +210,37 @@ Goal: improve estimates through statistically defensible evidence.
 - Compare each proprietary sport-specific model against the market-consensus baseline and against its prior production version.
 - Define conservative promotion, rollback, and weight-change criteria.
 - Prevent small samples or recent streaks from automatically increasing confidence or stakes.
+- Permit portfolio-risk policy changes to respond to equity, exposure, drawdown, uncertainty, and validated model performance only through bounded, versioned, reproducibly evaluated rules.
 
 Exit criteria:
 
 - Model changes are supported by reproducible out-of-sample evidence.
 - Historical predictions remain tied to the version that produced them.
 - No online “learning” silently mutates production policy.
+
+## Later capability — Controlled Parlay of the Day research sleeve
+
+Goal: evaluate whether a narrowly constrained featured parlay can add value without weakening or displacing the straight-bet portfolio.
+
+This capability begins only after the core straight-bet market normalization, pricing/EV, sport-model, portfolio-risk, closing-price, settlement, and evaluation pipeline is proven. It is not part of Phase 3 and must not delay the NCAAF straight-bet baseline.
+
+- Return at most one featured parlay per day/league scope; zero is valid and no candidate may be manufactured to fill the feature.
+- Require every leg to independently pass the applicable straight-bet qualification standards.
+- Capture the sportsbook's executable combined payout and compare it with a versioned modeled joint fair probability.
+- Begin research with cross-event combinations whose independence assumptions can be documented and tested.
+- Exclude same-game and materially correlated combinations until a joint-probability method using correlation modeling, simulation, or equivalent validation passes out-of-sample evaluation.
+- Allocate a separate conservative risk sleeve with lower stake caps and shared portfolio exposure/correlation controls.
+- Persist component-leg context, joint-probability method/version, entry EV, stake, closing observations, outcome, and P&L.
+- Report parlay stake, realized P&L, ROI/yield, hit rate, entry EV, sample size, and later CLV/calibration where meaningful separately from straight bets.
+- Allow the portfolio engine to reduce or disable the sleeve under a versioned policy when out-of-sample evidence shows detrimental risk-adjusted performance.
+
+Exit criteria:
+
+- Straight-bet qualification and allocation remain primary and are unchanged by parlay availability.
+- Joint probabilities and executable payouts are reproducible and auditable.
+- Correlation assumptions are explicit; unknown material correlation rejects the candidate.
+- Parlay risk and performance are isolated, measurable, and disableable.
+- Kelly multipliers, caps, leg counts, minimum EV, correlation policy, and evidence gates are empirically accepted before any production-quality recommendation.
 
 ## Phase 10 — Paper-trading production hardening
 
