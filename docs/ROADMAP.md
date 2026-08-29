@@ -100,14 +100,19 @@ Exit criteria status: **Satisfied.** Every observation has a raw snapshot/source
 
 Goal: generate transparent market-consensus opportunities as a baseline and benchmark without claiming a proprietary model.
 
-- Implement and test American/decimal odds conversion.
-- Implement a versioned initial vig-removal method.
-- Build a transparent multi-book consensus policy with outlier and staleness handling.
-- Calculate offered implied probability, consensus probability, initial fair probability, probability edge, and EV.
-- Attach source, version, inputs, and uncertainty/data-quality indicators to every calculation.
-- Create deterministic fixtures and offline replay/backtest tooling.
-- Produce up to a configurable Top N qualified opportunities per selected league, normally capped at 10, without relaxing thresholds to fill the list.
-- Preserve the best executable price and every required recommendation field even before a proprietary model is available.
+Status: **Completed in Sprint 5 on 2026-08-28.** Calculations are transient, versioned projections from immutable Phase 3 observations; no recommendation/stake persistence or proprietary probability is claimed.
+
+- [x] Implement and test Decimal American/decimal odds conversion, implied probability, edge, and binary/push-form EV primitives.
+- [x] Implement `proportional-v1` two-outcome vig removal with explicit 12-decimal half-even probability precision.
+- [x] Implement `unweighted-median-v1` multi-book consensus without unevidenced weights, with configurable book minimums, outlier flags, and maximum dispersion.
+- [x] Exclude stale, inactive, ambiguous, malformed, incomplete, unsupported, and superseded book/market states.
+- [x] Separate the best executable observation/price from the market-consensus fair-probability source.
+- [x] Calculate implied probability, consensus/final fair probability, probability edge, and EV with full observation/snapshot and policy provenance.
+- [x] Add `baseline-qualification-v1` and deterministic EV/data-quality ranking with configurable thresholds.
+- [x] Produce up to configurable Top N per selected league, default 10, without relaxing thresholds; zero-result behavior is tested.
+- [x] Add an authenticated paper/research `/opportunities` endpoint that preserves all existing APIs and returns no stake.
+- [x] Add deterministic offline pricing replay through the shared service and CLI with observation-time and ingestion-time cutoff enforcement.
+- [x] Preserve integer spread/total observations while conservatively excluding them from EV qualification until push probability is modeled.
 
 Exit criteria:
 
@@ -115,6 +120,8 @@ Exit criteria:
 - Market consensus is labeled accurately.
 - Numerical and market-identity edge cases are covered by tests.
 - Returning fewer than Top N, including zero, is tested as correct behavior.
+
+Exit criteria status: **Satisfied.** Every baseline opportunity reproduces from exact stored observations; market consensus is explicitly labeled and proprietary probability remains null; exact line/period/side pairing, vig, outlier, dispersion, best-price, edge, EV, Top N, zero-result, repeat-snapshot, and no-future-leakage behavior are deterministic and tested. Pricing replay is implemented; outcome backtesting and portfolio simulation remain correctly deferred.
 
 ### Short-term milestone — Opening-weekend NCAAF paper-trading baseline
 
@@ -259,8 +266,8 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 
 ## Immediate recommended sequence
 
-1. Apply the Phase 3 migration in each deployed PostgreSQL environment and begin collecting timestamped NCAAF snapshots.
-2. Implement the transparent consensus/EV baseline from stored equivalent, fresh, unambiguous observations.
-3. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
-4. Add the conservative equity-scaled risk and approval engine before expanding scope.
+1. Apply current migrations in each deployed PostgreSQL environment and collect continuous timestamped NCAAF snapshots.
+2. Begin the Phase 5 NCAAF predictive-model track and benchmark it directly against `market-baseline-v1`.
+3. Add the Phase 6 conservative equity-scaled risk/approval engine and connect qualified baseline opportunities to immutable recommendation snapshots.
+4. Run the opening-weekend NCAAF paper-trading milestone with entry, closing, outcome, and reconciliation capture.
 

@@ -78,6 +78,9 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 - first-class NCAAF mapping alongside NFL, NCAAB, NBA, MLB, NHL, and WNBA;
 - provider-neutral raw market snapshots and normalized full-game moneyline, spread, and total observations;
 - stable events/provider mappings, canonical sportsbooks, exact line/period/side identity, freshness, and source provenance;
+- Decimal implied-probability, proportional no-vig, unweighted-median consensus, edge, and EV calculations for a versioned market baseline;
+- authenticated Top-N baseline opportunity analysis with explicit zero-result behavior, best executable price, uncertainty/data-quality fields, null proprietary probability, and complete source provenance;
+- deterministic offline pricing replay that enforces both provider-observation and database-ingestion cutoff times;
 - basic sport, market, sportsbook, and requested UTC calendar-date filtering in the compatibility API;
 - PostgreSQL-backed owned portfolios and an auditable relational bankroll ledger;
 - Decimal/NUMERIC money, transactional bet placement/settlement, persistent idempotency, and API-key authentication;
@@ -85,9 +88,9 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 - bankroll accounting; and
 - basic ROI and hit-rate summaries overall and by sport/market bucket.
 
-Phases 0–3 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, a transactional ledger, raw and normalized market history, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
+Phases 0–4 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, a transactional ledger, raw and normalized market history, a reproducible consensus/EV baseline and offline replay, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
-The backend accepts optional probability, edge, and EV fields, but it does not calculate or verify them. It stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
+The Phase 4 pricing path calculates probability, edge, and EV independently, but the legacy bet-entry endpoint still accepts optional caller-supplied fields and does not assert that they came from Phase 4. Pricing outputs remain transient until a later official recommendation boundary. The backend stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 
 See `ARCHITECTURE.md` and `MODEL_LOGIC.md` for exact implemented-versus-planned boundaries.
 
@@ -176,14 +179,16 @@ An official bet should eventually preserve enough information to reconstruct the
 The following are known current-state problems, not solved capabilities:
 
 - modular boundaries are established, but records remain untyped dictionaries and the prototype contracts still need V2 domain models;
-- caller-supplied EV and probabilities that are range-validated but not independently calculated or verified;
+- caller-supplied EV and probabilities on legacy official-bet input that are range-validated but not reconciled to Phase 4 outputs;
 - caller-supplied win payouts that are sign-validated but not derived from entry odds;
 - insufficient event, selection, and line metadata in recorded bets;
 - lightweight API-key authentication is suitable only for the private service, not a mature identity system;
 - SQLite unit tests do not reproduce PostgreSQL row-lock scheduling; production concurrency still needs PostgreSQL integration/load validation;
 - operational PostgreSQL backup/restore drills remain future hardening work;
+- integer spreads/totals are preserved but conservatively excluded from Phase 4 EV qualification because push probability is not yet modeled;
+- no persisted official recommendation snapshot connecting a Phase 4 opportunity to later approval/placement;
+- no outcome backtest or portfolio simulation beyond deterministic pricing replay;
 - no CLV calculation;
-- no pricing/fair-probability engine;
 - no structured sports/statistical or injury/news signal pipeline;
 - no proprietary sport-specific predictive models;
 - no staking or portfolio-risk engine; and

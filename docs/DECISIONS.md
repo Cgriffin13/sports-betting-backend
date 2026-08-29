@@ -325,7 +325,7 @@ Consequences:
 
 Create separate ADR entries when these are resolved:
 
-- primary vig-removal method and consensus weighting;
+- future vig-removal alternatives and evidence-backed consensus weighting beyond the accepted Phase 4 baseline;
 - final fair-probability selection/blending and proprietary-model promotion gates;
 - NCAAF structured-data providers, feature set, model family, and evaluation windows;
 - NFL/NBA data providers and league-specific model scope;
@@ -515,4 +515,79 @@ Consequences:
 - Phase 3 does not label an official close, select benchmark books, or calculate CLV.
 - A later decision must define closing cutoff, source/book set, stale/ambiguous handling, and CLV formula.
 - Line movement remains observable without overwriting earlier prices.
+
+## ADR-039 — Initial vig removal uses proportional normalization
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Phase 4 uses `proportional-v1` for a complete coherent two-outcome market at one book. Each raw implied probability is divided by their sum. Normalized probabilities use Decimal arithmetic, 12 decimal places with `ROUND_HALF_EVEN`, and a residual final outcome so the pair sums exactly to one.
+
+Consequences:
+
+- Each calculation exposes both raw implied probabilities, their sum, overround, normalized probabilities, source observation IDs, and version.
+- Incomplete, malformed, or inconsistent pairs do not contribute to consensus.
+- This transparent baseline may be compared with power, additive, Shin, or other methods later, but historical outputs retain their original version.
+- No claim is made that proportional removal is universally optimal.
+
+## ADR-040 — Initial multi-book consensus is the unweighted median
+
+- Date: 2026-08-28
+- Status: Accepted
+
+`unweighted-median-v1` takes the median of eligible sportsbook no-vig probabilities for one exact selection. Eligibility requires the same canonical event, league, market, period, selection side, and exact line; supported active books; a complete pair; current matched event identity; and freshness at the calculation cutoff. The minimum book count is configurable and defaults to two.
+
+Consequences:
+
+- Median aggregation is transparent and resistant to one extreme contributor.
+- No unsupported “sharp book” or liquidity weights are invented.
+- Every contributing book and both source observations remain visible.
+- Book-quality weights may be added only through a new version supported by reproducible evidence.
+- Consensus is the market baseline and fair-probability source for Phase 4, never a proprietary model probability.
+
+## ADR-041 — Outliers are surfaced and excessive dispersion rejects the market
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Phase 4 reports consensus dispersion as the range of contributing no-vig probabilities. A book is a material outlier when its absolute probability deviation from the median exceeds a configurable threshold, initially 0.03. The opportunity carries a warning; if total dispersion exceeds the configurable initial maximum of 0.08, the exact market is rejected.
+
+Consequences:
+
+- An outlier is not silently averaged away or automatically treated as informationally superior.
+- The median can remain usable when a flagged contributor exists below the rejection limit.
+- Thresholds are conservative operational starting points, not empirical permanence; changes require a new qualification/policy version and replay evaluation.
+- Best executable price remains a separate observation and may differ from the books closest to consensus.
+
+## ADR-042 — Phase 4 qualification is sparse, transient, and push-conservative
+
+- Date: 2026-08-28
+- Status: Accepted
+
+`baseline-qualification-v1` uses configurable minimum EV, probability edge, book count, freshness, event-review status, exact pairing, supported-book, and maximum-dispersion gates. Qualified opportunities rank deterministically by EV and data quality, then apply Top N independently per league; 10 is the default and zero is valid. Outputs remain transient and reproducible from Phase 3 observations until a later official recommendation/approval boundary is implemented.
+
+Integer spread and total observations remain stored and replayable but are excluded from Phase 4 EV qualification because push probability is not modeled. Half-point spreads/totals may use the binary EV formula. This exclusion is a conservative Phase 4 limitation, not a permanent product decision.
+
+Consequences:
+
+- Thresholds never relax to fill Top N.
+- Every output contains the best executable observation, consensus inputs, edge, EV, uncertainty/data-quality indicators, all versions, and observation/snapshot provenance.
+- Proprietary probability is explicitly null and fair-probability source is `market_consensus`.
+- No stake, Kelly calculation, risk budget, official recommendation mutation, or autonomous execution occurs.
+- A later push-aware policy must explicitly model `p_win`, `p_loss`, and `p_push` before qualifying integer lines.
+
+## ADR-043 — Historical pricing replay uses dual time boundaries and latest market state
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Pricing replay includes an observation only when both its provider/effective observation time and its database ingestion time are at or before the timezone-aware cutoff. It then selects the latest snapshot state per canonical event, sportsbook, market type, and period before applying the same freshness, ambiguity, pairing, consensus, EV, and qualification rules as current analysis.
+
+Consequences:
+
+- An observation carrying an old provider timestamp but ingested after the cutoff cannot leak backward.
+- A later line move cannot appear in an earlier replay, and the superseded line is not treated as still executable after the move.
+- The replay cutoff is the deterministic calculation timestamp.
+- Pricing calculations are transient rather than stored redundantly; source observations plus policy versions reproduce them.
+- Pricing replay is not an outcome backtest or portfolio simulation. Results, closing prices, and stakes are not fabricated when unavailable.
 

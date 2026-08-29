@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 
-from app.api import bets, health, odds, portfolios
+from app.api import bets, health, odds, opportunities, portfolios
 from app.config import Settings
 from app.db.session import create_database_engine, create_session_factory
 from app.domain.identity import Principal
@@ -12,10 +12,13 @@ from app.middleware import RequestIdMiddleware
 from app.persistence.base import PortfolioRepository
 from app.persistence.market_base import MarketDataRepository
 from app.persistence.market_repository import SqlAlchemyMarketDataRepository
+from app.persistence.pricing_base import EmptyPricingObservationRepository, PricingObservationRepository
+from app.persistence.pricing_repository import SqlAlchemyPricingObservationRepository
 from app.persistence.sqlalchemy_repository import SqlAlchemyPortfolioRepository
 from app.providers.base import MarketDataProvider
 from app.providers.odds_api import TheOddsApiProvider
 from app.services.odds_service import OddsService
+from app.services.pricing_service import PricingService, build_pricing_policy
 from app.services.portfolio_service import PortfolioService
 from app.security import ApiKeyAuthenticator
 from app.time import utc_now
@@ -27,6 +30,7 @@ def create_app(
     provider: MarketDataProvider | None = None,
     repository: PortfolioRepository | None = None,
     market_repository: MarketDataRepository | None = None,
+    pricing_repository: PricingObservationRepository | None = None,
     authenticator: ApiKeyAuthenticator | None = None,
     clock: Callable[[], datetime] = utc_now,
 ) -> FastAPI:
@@ -52,9 +56,13 @@ def create_app(
             freshness_seconds=resolved_settings.market_freshness_seconds,
             clock=clock,
         )
+        resolved_pricing_repository: PricingObservationRepository = (
+            pricing_repository or SqlAlchemyPricingObservationRepository(session_factory)
+        )
     else:
         resolved_repository = repository
         resolved_market_repository = market_repository
+        resolved_pricing_repository = pricing_repository or EmptyPricingObservationRepository()
     resolved_authenticator = authenticator or ApiKeyAuthenticator(
         {
             resolved_settings.app_api_key: Principal(
@@ -67,17 +75,30 @@ def create_app(
     configure_logging()
     application = FastAPI(
         title="Sports Betting Portfolio Backend",
-        version="1.3.0",
-        description="Backend for odds, bankroll tracking, bet logging, and learning stats.",
+        version="1.4.0",
+        description="Paper-trading backend for market data, baseline pricing, and portfolio tracking.",
     )
     application.state.settings = resolved_settings
     application.state.database_engine = database_engine
     application.state.authenticator = resolved_authenticator
+    application.state.clock = clock
     application.state.odds_service = OddsService(resolved_provider, resolved_market_repository)
+    application.state.pricing_service = PricingService(
+        resolved_pricing_repository,
+        build_pricing_policy(
+            minimum_books=resolved_settings.pricing_minimum_books,
+            minimum_ev=resolved_settings.pricing_minimum_ev,
+            minimum_probability_edge=resolved_settings.pricing_minimum_probability_edge,
+            outlier_threshold=resolved_settings.pricing_outlier_threshold,
+            maximum_dispersion=resolved_settings.pricing_maximum_dispersion,
+            supported_books=resolved_settings.pricing_supported_books,
+        ),
+    )
     application.state.portfolio_service = PortfolioService(resolved_repository)
     application.add_middleware(RequestIdMiddleware)
     application.include_router(health.router)
     application.include_router(odds.router)
+    application.include_router(opportunities.router)
     application.include_router(bets.router)
     application.include_router(portfolios.router)
     return application

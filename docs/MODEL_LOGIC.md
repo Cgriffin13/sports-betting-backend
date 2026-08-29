@@ -9,20 +9,20 @@ This document defines shared terminology and intended mathematical semantics. It
 | American odds retrieval | Implemented | Retain behind provider adapters |
 | Raw and normalized market snapshots | Implemented for current game markets | Use as the reproducible input to pricing, closing capture, and backtests |
 | First-class NCAAF support | Provider key, aliases, raw snapshots, and normalized full-game markets implemented | Expand through pricing and modeling |
-| Implied-probability calculation | Not implemented | Deterministic pricing primitive |
-| Vig removal | Not implemented | Versioned method per market |
-| Multi-book consensus | Not implemented | Initial fair-price baseline and benchmark |
+| Implied-probability calculation | Implemented with Decimal for Phase 4 baseline pricing | Retain and extend to additional market conventions |
+| Vig removal | `proportional-v1` implemented for complete two-outcome book markets | Evaluate alternatives without rewriting historical outputs |
+| Multi-book consensus | `unweighted-median-v1` implemented with dispersion/outlier reporting | Remain the baseline; evaluate evidence-backed weighting later |
 | Proprietary predictive model | Not implemented | NCAAF track after baseline engine, then NFL/NBA |
 | Structured sports/news signals | Not implemented | Traceable league-specific inputs |
-| Edge calculation | Caller-supplied, unverified | Calculated and versioned |
-| EV calculation | Caller-supplied, unverified | Calculated and versioned |
+| Edge calculation | Calculated by the Phase 4 pricing path; legacy bet fields remain caller-supplied | Persist an immutable value when an official recommendation exists |
+| EV calculation | Calculated for binary moneylines and half-point spreads/totals; legacy bet fields remain caller-supplied | Add explicit push-aware EV before qualifying integer lines |
 | Stake recommendation | Not implemented | Fractional-Kelly-informed, conservatively capped |
 | Portfolio exposure control | Not implemented | Required before recommendations become official |
 | Parlay recommendation | Not implemented | Optional later research sleeve after the straight-bet pipeline is proven |
 | Closing line value | Data fields exist; calculation absent | Capture and calculate consistently |
 | Calibration/learning | Not implemented | Offline, evidence-based, and versioned |
 
-The current `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields are passive metadata supplied by the caller. Their names do not prove that a model or calculation occurred. Phase 3 market observations contain source prices and identity only; they do not contain implied, no-vig, consensus, fair, or EV calculations.
+The current bet-entry `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields remain passive metadata supplied by the caller. Their names do not prove that the Phase 4 engine produced them. Phase 4 calculations are separate transient, reproducible outputs from Phase 3 observations; they are not silently copied into an official bet or recommendation record.
 
 The prototype supports both NCAAF and NCAAB as distinct canonical leagues. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
 
@@ -49,6 +49,8 @@ Phase 3 defines an observation by stable event UUID, canonical sportsbook, canon
 - price: valid integer American odds.
 
 Equivalent-price calculations in Phase 4 must additionally reject observations marked stale, suspended, `needs_review`, or `conflict`. For example, Over 52.5 and Over 53.5 are different identities, as are home -3.5 and home -4.0. Period is explicit so later first-half/quarter markets cannot collide with full-game markets.
+
+For spread pairing, the opposing point must be the exact additive inverse: home -3.5 pairs with away +3.5, never away +4.0. Totals require the identical point on over and under. At a historical cutoff, Phase 4 first removes observations whose provider observation time or database ingestion time is after the cutoff, then selects the latest snapshot state per event/book/market/period. This prevents both future information leakage and a superseded line from remaining falsely executable.
 
 Every normalized observation points to an immutable raw snapshot and raw array indexes. Its provider update time, effective observation time, ingestion time, age, freshness-policy version, threshold, and stale flag are retained. The first and last pre-start observations can therefore be selected later by identity and time. Phase 3 does not define which book set/time is the official close and does not calculate CLV.
 
@@ -87,6 +89,8 @@ p_i = q_i / sum(q_j for all outcomes j)
 
 The method must use a complete, coherent market at one book and one observation time. More sophisticated methods may be evaluated later, but the method and version must be stored.
 
+Implemented Phase 4 policy is `proportional-v1`. It uses Decimal arithmetic, rounds normalized probabilities to 12 decimal places using `ROUND_HALF_EVEN`, and assigns the final outcome the residual so a paired market sums exactly to one. Raw implied probabilities, their sum, overround, both observation IDs, and the version remain visible.
+
 ### Consensus probability
 
 A fair-price estimate derived from multiple market observations after normalization and vig removal. Consensus construction may account for book quality, liquidity proxies, staleness, outliers, and observation time.
@@ -94,6 +98,17 @@ A fair-price estimate derived from multiple market observations after normalizat
 Only equivalent markets may be combined. A spread at `-3.0` is not the same price object as a spread at `-3.5`; totals, periods, overtime rules, and participant identity also matter.
 
 A consensus probability is market-derived. It is not a proprietary predictive model. It is the initial baseline and ongoing benchmark for measuring whether a proprietary model adds predictive or economic value.
+
+Implemented Phase 4 policy is `unweighted-median-v1`:
+
+1. Require a configurable minimum number of supported books with complete exact-market pairs.
+2. Calculate each book's `proportional-v1` no-vig probability.
+3. Take the unweighted median for each selection. No “sharp book” weights are assumed.
+4. Report dispersion as the maximum minus minimum contributing no-vig probability.
+5. Identify any book whose absolute deviation from the median exceeds the configured outlier threshold.
+6. Reject the exact market if dispersion exceeds the configured maximum.
+
+The default outlier threshold is 0.03 and maximum dispersion is 0.08. These are configurable conservative operational baselines, not permanent empirically validated claims.
 
 ### Proprietary/model probability
 
@@ -134,6 +149,8 @@ The push contributes zero net profit. Rules for half-wins, half-losses, voids, a
 
 Positive edge does not always imply positive EV across differently priced opportunities, and a large uncertain edge should not automatically outrank a smaller reliable EV estimate.
 
+Phase 4 uses the binary identity only for two-outcome moneylines and half-point spreads/totals. Integer spread/total observations remain stored and replayable, but they are excluded from EV qualification under `baseline-qualification-v1` because push probability is not yet modeled. This is a conservative Phase 4 limitation, not a permanent product decision. A later version may qualify integer lines only after explicit win/loss/push probabilities and settlement conventions are implemented and tested.
+
 ### Confidence and uncertainty
 
 Probability is an estimate of event likelihood. Confidence describes the reliability of that estimate; uncertainty describes its dispersion or error. They are not interchangeable, and confidence must not be added to probability as an arbitrary bonus.
@@ -164,7 +181,24 @@ sportsbook odds
   -> recommend stake
 ```
 
-This provides a testable baseline. An NCAAF predictive-model track should begin as soon as the baseline pricing engine is reproducible; it does not wait until the final roadmap phase. NFL and NBA follow. Proprietary models should be promoted into final-fair-probability decisions only when out-of-sample evidence shows value relative to the consensus benchmark.
+This is now the implemented `market-baseline-v1` path. It provides a testable baseline. An NCAAF predictive-model track should begin next; it does not wait until the final roadmap phase. NFL and NBA follow. Proprietary models should be promoted into final-fair-probability decisions only when out-of-sample evidence shows value relative to the consensus benchmark.
+
+## Phase 4 qualification and replay
+
+`baseline-qualification-v1` defaults to a minimum of two books, EV per unit of 0.01, probability edge of 0.005, maximum consensus dispersion of 0.08, and canonical supported books DraftKings, FanDuel, and BetMGM. Thresholds and book keys are environment-configurable. These values are research starting points, not staking rules or evidence of profitability.
+
+Qualified opportunities rank deterministically by EV, contributing-book count, dispersion, event time, and stable identity. Top N is then applied independently per league; its default is 10 and it remains a ceiling. No threshold changes when fewer results qualify, and zero is correct.
+
+Every output contains the event and exact market identity; best executable observation/book/odds and implied probability; each book's no-vig inputs; median consensus, dispersion, outliers, edge, and EV; null proprietary probability; `market_consensus` fair source; policy versions; observation/snapshot provenance; and cutoff/calculation timestamp. Phase 4 returns no stake.
+
+Historical pricing replay is deterministic and offline. It requires a timezone-aware cutoff and enforces both:
+
+```text
+observation.observed_at <= replay_as_of
+observation.ingested_at <= replay_as_of
+```
+
+It applies the same latest-state, freshness, ambiguity, exact-pairing, consensus, and qualification policies as current stored-observation analysis. Replay outputs what pricing knew at that time. It does not fabricate results and must be distinguished from an outcome backtest or portfolio simulation, neither of which is implemented in Phase 4.
 
 ## Structured data and research signals
 

@@ -8,33 +8,34 @@ The runtime is a synchronous FastAPI service composed in `app/main.py`. Root `ma
 
 ```text
 private client -- X-API-Key / request ID --> FastAPI routers
-                                                |       |
-                                                v       v
-                                        OddsService  PortfolioService
-                                             |              |
-                                             v              v
-                                  MarketIngestionService  PortfolioRepository
-                                      |              |          |
-                                      v              v          v
-                              MarketDataProvider  MarketDataRepo  Ledger Repo
-                                      |              |          |
-                                      v              +----+-----+
-                              TheOddsApiProvider          v
-                                      |               PostgreSQL
-                                      v
-                                The Odds API
+                          |                         |                 |
+                          v                         v                 v
+                     OddsService              PricingService   PortfolioService
+                          |                         |                 |
+                          v                         v                 v
+               MarketIngestionService     Consensus/EV domain   Ledger Repo
+                  |                |                |
+                  v                v                v
+          MarketDataProvider  MarketDataRepo  Pricing read repo
+                  |                |                |
+                  v                +--------+-------+
+          TheOddsApiProvider                v
+                  |                     PostgreSQL
+                  v
+            The Odds API
 ```
 
-`GET /health` is public. `/odds`, portfolio reads, bet placement, settlement, and statistics require `X-API-Key`. Authentication resolves a replaceable `Principal`; every portfolio has an owner, and cross-owner access returns 403. This is a private single-user boundary, not a full identity platform.
+`GET /health` is public. `/odds`, `/opportunities`, portfolio reads, bet placement, settlement, and statistics require `X-API-Key`. Authentication resolves a replaceable `Principal`; every portfolio has an owner, and cross-owner access returns 403. This is a private single-user boundary, not a full identity platform.
 
 ### Module responsibilities
 
 - `app/api/`: Pydantic-backed HTTP contracts, authentication dependency, service calls, and known-error mapping. Routes contain no raw SQL or provider HTTP.
-- `app/services/`: provider-neutral market ingestion, flattened odds behavior, portfolio orchestration, and canonical idempotency hashing. Ingestion is callable without FastAPI.
-- `app/domain/`: league, canonical book, market/period/side/point identity, money rules, principals, and errors.
+- `app/services/`: provider-neutral market ingestion, stored-observation pricing/replay, flattened odds behavior, portfolio orchestration, and canonical idempotency hashing. Ingestion and pricing are callable without FastAPI.
+- `app/domain/`: league, canonical book, market/period/side/point identity, pure Decimal pricing/vig/consensus/EV rules, money rules, principals, and errors.
 - `app/providers/`: provider-neutral fetch records and The Odds API adapter. The adapter owns URL/auth construction, bounded retry/backoff, cache, quota metadata, timeout, sanitized errors, raw response capture, and provider parsing.
 - `app/db/`: SQLAlchemy 2.x ledger and market-data models, database URL normalization, engine, and session factory.
 - `app/persistence/market_repository.py`: atomic raw snapshot, event matching, book mapping, and observation persistence.
+- `app/persistence/pricing_repository.py`: read-only, time-bounded projection of normalized observations into provider-neutral pricing inputs.
 - `app/persistence/sqlalchemy_repository.py`: primary runtime persistence, transactions, row locking, ledger-derived balances, settlements, ownership, and idempotency records.
 - `app/persistence/json_repository.py`: legacy compatibility only; not composed into the runtime.
 - `app/persistence/memory_repository.py`: SQLAlchemy/SQLite test factory.
@@ -117,13 +118,42 @@ Canonical market types are `moneyline`, `spread`, and `total`; initial period is
 
 Every observation retains its snapshot FK and raw payload indexes, making source reconstruction direct. Ordering equivalent identities by `observed_at` supports first-observed and most-recent-pre-start selection. The same records contain enough entry and pre-start timing/line identity for a later closing-price/CLV policy, but Phase 3 does not label a close or calculate CLV.
 
+### Baseline pricing, qualification, and replay
+
+Phase 4 adds no tables. Pricing is a transient deterministic projection from immutable Phase 3 observations; an official future recommendation remains the persistence boundary. Every output includes source observation/snapshot IDs, best executable observation, calculation cutoff, and vig, consensus, pricing, and qualification versions.
+
+```text
+time-bounded stored observations
+  -> latest snapshot state per event/book/market/period
+  -> supported/active/fresh/matched gates
+  -> exact coherent two-outcome book pairs
+  -> proportional no-vig probability per book
+  -> unweighted median across books
+  -> dispersion and material-outlier diagnostics
+  -> separate best executable offer
+  -> probability edge and binary EV
+  -> versioned qualification
+  -> deterministic EV/data-quality ranking
+  -> Top N per league (ceiling, never quota)
+```
+
+Initial policy versions are `proportional-v1`, `unweighted-median-v1`, `market-baseline-v1`, and `baseline-qualification-v1`. Proportional no-vig probabilities use Decimal arithmetic, round to 12 decimal places with half-even rounding, and force the final outcome to the residual so paired probabilities sum exactly to one. Consensus is the unweighted median of complete paired book probabilities; no unsupported empirical “sharp book” weights exist. Dispersion is the across-book probability range. Deviations above the configurable outlier threshold are surfaced, while dispersion above the configurable maximum rejects the market.
+
+Exact pairing uses canonical event, market, period, and line. A spread pair requires opposite signed points; a total pair requires the identical point. The consensus source may only include complete pairs. The best executable offer is selected separately from the same eligible exact market, so it cannot become its own fair-probability source.
+
+The initial binary EV qualification supports two-outcome moneylines and half-point spreads/totals. Integer spread/total lines are rejected with `push_probability_not_modeled`; Phase 4 does not invent a push probability. Default operational thresholds are two books, 1% EV per unit, 0.5 percentage-point edge, 3 percentage-point outlier deviation, and 8 percentage-point maximum dispersion. All are environment-configurable starting values, not evidence-backed permanent standards.
+
+`POST /opportunities` is authenticated and reads stored observations only. It labels outputs `market_consensus_baseline`, keeps proprietary probability null, returns no stake, and accepts an optional historical cutoff/date. The replay CLI uses the same service and policy code.
+
+Historical replay enforces `observed_at <= as_of` and `ingested_at <= as_of`. It then selects the latest snapshot state for each event/book/market/period, preventing a later ingestion or line move from leaking into an earlier replay and preventing superseded exact lines from remaining falsely executable. Event start, freshness, ambiguity, supported-book, pair, and qualification gates are evaluated at the cutoff. The cutoff is also the deterministic calculation timestamp. Pricing replay produces decision-time prices only; it is not an outcome backtest or bankroll simulation.
+
 ### Freshness, retry, cache, and quota policy
 
 Freshness policy `market-freshness-v1` stores provider update time where available, effective observation time, ingestion time, age in seconds, the configured threshold, and materialized `is_stale`. The initial 120-second threshold is configurable through `MARKET_FRESHNESS_SECONDS`; it is an operational baseline, not a permanent empirical claim.
 
 The provider retries only timeouts, connection failures, HTTP 408/425/429, and 5xx, with configurable bounded attempts and exponential backoff. Authentication and other client errors are not retried. A configurable short process-local cache reduces duplicate calls; cache hits can still become separately timestamped persisted snapshots. Returned usage headers are stored as structured source metadata, and low remaining quota becomes a structured warning. API keys and credential-bearing URLs are never persisted or logged.
 
-## Proposed architecture after Phase 3
+## Proposed architecture after Phase 4
 
 ```text
 Odds providers -> normalization -> no-vig/consensus pricing ----+
@@ -139,6 +169,6 @@ Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
                                   bet ledger -> close -> settlement -> analytics/calibration
 ```
 
-Next phases add pricing/EV, recommendation/risk policy, closing-label policy, and an early NCAAF model track. Market consensus is the baseline and benchmark, not necessarily the final proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those engines exist.
+Next phases add an early NCAAF proprietary-model track, recommendation/risk policy, and closing-label policy. Market consensus is the implemented baseline and benchmark, not a proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those future engines exist.
 
-Not implemented: implied-probability calculation, vig removal, consensus pricing, proprietary models, Kelly sizing, recommendation ranking, structured sports/news ingestion, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work.
+Not implemented: proprietary models, model blending, push-probability modeling, Kelly sizing, bankroll-aware ranking/stakes, structured sports/news ingestion, outcome backtesting, portfolio simulation, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work.

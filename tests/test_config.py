@@ -85,3 +85,48 @@ def test_settings_reject_malformed_environment_bankroll(monkeypatch: pytest.Monk
     monkeypatch.setenv("STARTING_BANKROLL", "not-a-number")
     with pytest.raises(ValueError, match="STARTING_BANKROLL"):
         Settings.from_env()
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"pricing_minimum_books": 1},
+        {"pricing_minimum_ev": Decimal("-0.01")},
+        {"pricing_minimum_probability_edge": Decimal("-0.01")},
+        {"pricing_outlier_threshold": Decimal("-0.01")},
+        {"pricing_maximum_dispersion": Decimal("-0.01")},
+        {"pricing_maximum_dispersion": Decimal("1.01")},
+        {
+            "pricing_outlier_threshold": Decimal("0.10"),
+            "pricing_maximum_dispersion": Decimal("0.05"),
+        },
+        {"pricing_supported_books": ()},
+    ],
+)
+def test_settings_reject_invalid_pricing_policy(overrides: dict[str, Any]) -> None:
+    with pytest.raises(ValueError, match="Pricing|PRICING"):
+        Settings(**overrides)
+
+
+def test_settings_read_pricing_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PRICING_MINIMUM_BOOKS", "3")
+    monkeypatch.setenv("PRICING_MINIMUM_EV", "0.02")
+    monkeypatch.setenv("PRICING_MINIMUM_PROBABILITY_EDGE", "0.01")
+    monkeypatch.setenv("PRICING_OUTLIER_THRESHOLD", "0.04")
+    monkeypatch.setenv("PRICING_MAXIMUM_DISPERSION", "0.09")
+    monkeypatch.setenv("PRICING_SUPPORTED_BOOKS", "draftkings, fanduel")
+
+    settings = Settings.from_env()
+
+    assert settings.pricing_minimum_books == 3
+    assert settings.pricing_minimum_ev == Decimal("0.02")
+    assert settings.pricing_minimum_probability_edge == Decimal("0.01")
+    assert settings.pricing_outlier_threshold == Decimal("0.04")
+    assert settings.pricing_maximum_dispersion == Decimal("0.09")
+    assert settings.pricing_supported_books == ("draftkings", "fanduel")
+
+
+def test_settings_reject_malformed_environment_pricing_decimal(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PRICING_MINIMUM_EV", "not-a-number")
+    with pytest.raises(ValueError, match="PRICING_MINIMUM_EV"):
+        Settings.from_env()
