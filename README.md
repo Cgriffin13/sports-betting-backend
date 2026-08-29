@@ -12,6 +12,12 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
+Offline NCAAF research transforms additionally require the pinned, non-web runtime:
+
+```bash
+python -m pip install -r requirements-research.txt
+```
+
 Activate `.venv`, copy `.env.example` to `.env`, and replace all placeholders. PostgreSQL is the production database. SQLite is supported only for deterministic tests and disposable local validation.
 
 | Variable | Required | Purpose |
@@ -130,13 +136,14 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 - `app/providers/`: provider-neutral interface and The Odds API adapter.
 - `app/db/`: SQLAlchemy ledger and provider-neutral market-data schemas plus session/engine construction.
 - `app/persistence/`: transactional portfolio/market-data repositories, read-only pricing queries, and legacy/test adapters.
+- `app/research/ncaaf/`: offline normalized-fact, point-in-time feature, artifact, reconciliation, and reporting code.
 - `migrations/`: Alembic environment and revisions.
 - `app/migration/` and `app/cli/`: explicit legacy JSON import, market ingestion, and offline pricing replay.
 - `tests/`: deterministic API, provider, pricing, replay, domain, ledger, migration-boundary, and service coverage.
 
 Read [`AGENTS.md`](AGENTS.md) and the durable product/architecture documents in [`docs/`](docs/) before making changes.
 
-Phase 5B-1 now implements the CFBD source-manifest, immutable-cache, canonical program/venue identity, game-target, and corpus-reporting foundation. It does **not** train a model or produce proprietary probabilities; market consensus remains the implemented pricing source. The research contract is documented in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_SOURCE_AUDIT.md`](docs/NCAAF_SOURCE_AUDIT.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md).
+Phase 5B-2 now implements an offline, content-addressed normalized-Parquet and point-in-time feature factory over the Phase 5B-1 corpus. It does **not** train a model or produce proprietary probabilities; market consensus remains the implemented pricing source. The research contract is documented in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_SOURCE_AUDIT.md`](docs/NCAAF_SOURCE_AUDIT.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md).
 
 The completed aggregate corpus evidence is available as [`NCAAF_CORPUS_REPORT.md`](docs/NCAAF_CORPUS_REPORT.md) and machine-readable [`NCAAF_CORPUS_2014_2024.json`](docs/reports/NCAAF_CORPUS_2014_2024.json).
 
@@ -152,3 +159,19 @@ python -m app.cli.inspect_source_manifests --limit 20
 ```
 
 Development ingestion rejects 2025+ by default. `--allow-holdout-access` is deliberately explicit and must not be used for ordinary development.
+
+Phase 5B-2 commands are offline by construction and reject `--network`. They default to 2014–2024 and fail closed at 2025:
+
+```bash
+python -m app.cli.normalize_ncaaf_research --plan
+python -m app.cli.normalize_ncaaf_research
+python -m app.cli.build_ncaaf_features --plan
+python -m app.cli.build_ncaaf_features
+python -m app.cli.validate_ncaaf_features --namespace normalized
+python -m app.cli.validate_ncaaf_features --namespace features
+python -m app.cli.inspect_ncaaf_features --feature home_off_ppa_blend
+python -m app.cli.inspect_ncaaf_features --game-id 401628334
+python -m app.cli.report_ncaaf_features
+```
+
+Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

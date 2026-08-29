@@ -214,9 +214,29 @@ The retrieval transaction is one request/manifest partition at a time. The artif
 
 The 2014–2024 development command uses year-level calendars, teams, games and drives plus weekly regular/postseason plays and team game statistics. Development commands reject 2025+ outcomes unless the operator supplies the explicit holdout-access flag. Initial training remains offline. Spark, Databricks, distributed ML infrastructure, and a separate inference service remain deferred.
 
+### Phase 5B-2 feature architecture (implemented offline)
+
+```text
+Phase 5B-1 immutable raw JSON.gz + PostgreSQL identity/manifests
+                              |
+                 bounded column-projected transforms
+                              |
+       immutable normalized Parquet facts by dataset/season
+                              |
+        as-of rolling/prior/opponent-adjusted feature builder
+                              |
+        three separately versioned horizon Parquet matrices
+                              |
+       manifests + hashes + QA/reconciliation/fold metadata
+```
+
+`app/research/ncaaf/` owns these offline boundaries. It reads compact relational identity/game metadata and project-selects Parquet columns; it does not load 1.7 million plays into ORM objects or change synchronous FastAPI behavior. Bulky normalized facts and feature matrices remain content-addressed under ignored `.ncaaf-data/`. PostgreSQL continues to store the authoritative Phase 5B-1 source indexes and identities; Phase 5B-2 required no relational schema change.
+
+Normalized artifacts preserve source-manifest IDs/hashes, transformation/schema versions, row counts, input hashes, exact file hashes, and immutable paths. The feature manifest records the normalized input, feature-set/availability/fold policy versions, season range, eligibility counts, schema hash, and content hash. A mutable `current.json` pointer is only a convenience reference and never mutates prior content-addressed artifacts.
+
 ### Phase 5 model architecture (planned, not implemented)
 
-The current source layer does not implement feature engineering, model training, calibration, proprietary probability inference, or market/model blending. Those remain later Phase 5B steps built over versioned source manifests and immutable artifacts.
+The current research layer implements feature engineering but not model training, feature selection, learned imputation, calibration, proprietary probability inference, or market/model blending. Those remain later Phase 5B steps built over versioned source and feature manifests.
 
 Every time-sensitive model input must carry `effective_at`, `observed_at`, `ingested_at`, source, provenance, schema version, and reconstructed-versus-contemporaneous status. The as-of builder requires all applicable time boundaries to be at or before the prediction cutoff. Provider corrections supersede rather than overwrite historical versions. Large training and calibration jobs run offline; a future FastAPI inference path may load one approved small artifact only after schema/hash verification and a golden prediction check. Batch refresh or computationally heavy models may later justify a worker.
 

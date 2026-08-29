@@ -1,0 +1,5 @@
+-r requirements-dev.txt
+
+# Offline Phase 5 research only. These are intentionally not installed in the Render web service.
+psutil==7.0.0
+pyarrow==21.0.0

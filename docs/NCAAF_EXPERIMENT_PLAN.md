@@ -25,10 +25,10 @@ The tournament is deliberately staged. A model family earns additional complexit
 | E002 | Margin | results/MOV, venue | MOV-adjusted Elo | No | OOF empirical margin residual | E001/D002 |
 | R001 | Margin | `ncaaf_basic_v1` | Ridge | No | Normal then OOF empirical | D002/E002 |
 | R002 | Total | `ncaaf_basic_v1` | Ridge | No | Normal then OOF empirical | D002 |
-| R003 | Margin/total | `ncaaf_efficiency_v1` | Ridge | No | Best prior distribution, recalibrated | R001/R002 ablation |
+| R003 | Margin/total | `ncaaf-efficiency-point-in-time-v1` | Ridge | No | Best prior distribution, recalibrated | R001/R002 ablation |
 | R004 | Margin/total | efficiency + compact matchup interactions | Elastic Net | No | Same as R003 | Ridge; coefficient stability |
-| P001 | Home/away points jointly | `ncaaf_efficiency_v1` | Two Ridge component models | No | Correlated OOF score residual simulation | Direct margin/total models |
-| T001 | Margin/total | `ncaaf_efficiency_v1` | XGBoost | No | OOF empirical / best common calibrator | R003 under equal budget |
+| P001 | Home/away points jointly | `ncaaf-efficiency-point-in-time-v1` | Two Ridge component models | No | Correlated OOF score residual simulation | Direct margin/total models |
+| T001 | Margin/total | `ncaaf-efficiency-point-in-time-v1` | XGBoost | No | OOF empirical / best common calibrator | R003 under equal budget |
 | T002 | Margin/total | same | LightGBM | No | Same protocol | R003/T001 |
 | T003 | Margin/total | same | CatBoost | No | Same protocol | R003/T001/T002 |
 | U001 | Margin/total | winning linear/tree features | Best simple candidate | No | Normal vs Student-t vs empirical residual | NLL/CRPS/calibration |
@@ -138,7 +138,7 @@ Each report contains:
 
 ### 5B-2 — as-of features and dataset builder
 
-Implement target generation, `ncaaf_basic_v1` and `ncaaf_efficiency_v1`, cutoff joins, opponent adjustment, missing semantics, manifests and time-travel/leakage tests. Emit immutable training matrices.
+**Completed on 2026-08-29.** The offline builder emits normalized Parquet facts, three distinct horizon matrices, explicit missingness/quality, prior-only rolling/opponent adjustment, early-season shrinkage, chronological fold metadata, immutable manifests, and leakage/time-travel tests. The feature set is `ncaaf-efficiency-point-in-time-v1`. It does not fit imputation, select columns, train a model, or claim predictive performance.
 
 ### 5B-3 — falsification baselines
 
@@ -176,7 +176,7 @@ Only after promotion gates pass, design a separately reviewed API integration th
 
 Approved: CFBD primary MVP/free-tier-first; a small historical-odds audit before full acquisition; one game-day-morning operational run; separate 60-minute and 24-hour research horizons; locked 2025 and prospective 2026; offline training; PostgreSQL metadata plus immutable Parquet/artifacts; and injuries/weather as later ablation tracks.
 
-Remaining decisions are limited to the exact morning convention and predeclared odds-audit tolerances, upstream SportsDataverse-use determination, conservative reconstructed-data delays, 2025 access-seal mechanism, numeric promotion rule, and whether longer shadow evidence is required.
+Remaining decisions are limited to the exact morning convention and predeclared odds-audit tolerances, upstream SportsDataverse-use determination, production-grade 2025 access-seal mechanism, numeric promotion rule, and whether longer shadow evidence is required. The reconstructed CFBD delay is fixed for v1 at kickoff plus 24 hours and may become stricter only through a new version.
 
 ## Explicit non-deliverables
 

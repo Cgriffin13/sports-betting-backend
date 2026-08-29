@@ -24,9 +24,11 @@ def research_runtime() -> tuple[sessionmaker[Session], CfbdClient, ImmutableArti
 
 def research_index_runtime() -> tuple[sessionmaker[Session], ImmutableArtifactStore]:
     load_dotenv()
-    database_url = os.getenv("NCAAF_RESEARCH_DATABASE_URL") or os.getenv("DATABASE_URL")
-    if not database_url:
-        raise RuntimeError("NCAAF_RESEARCH_DATABASE_URL or DATABASE_URL is required")
+    database_url = (
+        os.getenv("NCAAF_RESEARCH_DATABASE_URL")
+        or os.getenv("DATABASE_URL")
+        or "sqlite+pysqlite:///.ncaaf-data/audit.sqlite"
+    )
     store = ImmutableArtifactStore(Path(os.getenv("NCAAF_ARTIFACT_DIR", ".ncaaf-data")))
     factory = create_session_factory(create_database_engine(database_url))
     return factory, store

@@ -1,6 +1,6 @@
 # NCAAF Backtest Design
 
-Status: **Phase 5A experimental protocol.** This document governs model research; it does not describe an implemented outcome backtest. Phase 4 implements deterministic pricing replay only.
+Status: **Phase 5B-2 point-in-time dataset and fold metadata implemented; no model or outcome backtest implemented.** Phase 4 still implements pricing replay only.
 
 ## Objective and estimands
 
@@ -33,7 +33,7 @@ observed_at  <= as_of
 ingested_at  <= as_of
 ```
 
-Where a reconstructed historical dataset lacks a genuine historical ingestion timestamp, mark `availability_mode = reconstructed` and apply a source-specific conservative publication rule. Such a row may support exploratory football-model research but cannot claim strict live replay equivalence. The report must separate contemporaneously captured and reconstructed evidence.
+Where a reconstructed historical dataset lacks a genuine historical ingestion timestamp, mark `availability_mode = reconstructed` and apply a source-specific conservative publication rule. Phase 5B-2 implements `cfbd-reconstructed-kickoff-plus-24h-v1`: postgame game/PBP/drive/stat facts are unavailable until scheduled kickoff plus 24 hours. Actual local ingestion remains the real 2026 timestamp and is not backdated. Such a row may support exploratory football-model research but cannot claim strict live replay equivalence.
 
 Phase 3 market replay retains both observation-time and ingestion-time boundaries. A provider update observed before cutoff but ingested afterward is unavailable. Final scores, corrections, closing lines, realized weather and later roster/injury states are labels or evaluation data only.
 

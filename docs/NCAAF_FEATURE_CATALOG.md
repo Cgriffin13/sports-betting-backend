@@ -1,6 +1,28 @@
 # NCAAF Feature Catalog
 
-Status: **Phase 5A candidate catalog.** A listed feature is a hypothesis, not an approved predictor. Phase 5B must measure coverage, leakage, stability, incremental forward value and missingness before promotion.
+Status: **Phase 5B-2 feature contract implemented; predictive value untested.** A materialized feature is a reproducible research input, not an approved predictor. Phase 5B-3 and later must measure stability, incremental forward value, calibration, and missingness before any promotion.
+
+## Implemented Phase 5B-2 release
+
+`ncaaf-efficiency-point-in-time-v1` transforms the immutable Phase 5B-1 source corpus into content-addressed normalized Parquet facts and one feature row per eligible game and declared horizon. Its registry hash is `0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad`. The dataset hash is recorded in the dataset manifest and QA report rather than embedded as a permanent feature definition.
+
+Implemented source metrics are offensive and defensive PPA/EPA proxy per play, pass and rush PPA, success rate, explosive-play rate, yards/play, yards/drive, points/drive, plays/game, drives/game, and a conservative havoc proxy. Success is at least 50% of yards-to-go on first down, 70% on second, and 100% on third/fourth. Explosives are passes of at least 20 yards or rushes of at least 10. Havoc counts sacks, interceptions, and opponent fumble recoveries over defensive scrimmage plays. These definitions are versioned research conventions, not claims that a provider field is a production-grade proprietary metric.
+
+Each team metric exposes prior-three, prior-five, season-to-date, prior-season/program, and blended values. The blend uses current-season weight `n / (n + 3)` and prior weight `3 / (n + 3)`; missing prior program history falls back to the prior-only population mean and remains visible through depth/coverage fields. Phase 5B-3 may compare these columns, but must not silently replace their definition.
+
+Opponent adjustment `prior-only-opponent-residual-v1` is:
+
+```text
+team last-five raw metric
+- mean(prior-only opponent opposite-unit strength at each prior matchup)
++ prior-only population mean
+```
+
+The opponent state is computed at the target row's historical `as_of`. It never uses results after that cutoff or an end-of-season rating. Adjustment availability and contributing depth remain explicit.
+
+The three independent horizons are `game_day_morning`, `24_hours_before_kickoff`, and `60_minutes_before_kickoff`. Morning supports the still-candidate `fixed_0900_et_candidate_v1` and `first_kickoff_minus_3h_candidate_v1` policies; no final operational convention was selected. Reconstructed CFBD postgame facts become eligible only at scheduled kickoff plus 24 hours under `cfbd-reconstructed-kickoff-plus-24h-v1`; occurrence, effective/available, and actual local ingestion times remain distinct.
+
+Missing is never converted to zero. Rows separately report prior-game depth, PBP/drive/stat coverage, wall-clock coverage, reconstructed-source status, opponent-adjustment availability, and context. The 2020 season is retained with a regime indicator so later ablations can include, flag, or exclude it without rewriting facts.
 
 ## Feature contract
 
@@ -145,10 +167,11 @@ Before Week 0, rely on regressed prior strength, multi-year program information,
 
 Weeks 0–3 require wider reported epistemic uncertainty and segmented evaluation. Missing roster/QB data must widen uncertainty or trigger abstention; it must never silently become league average without a missingness flag.
 
-## Feature-set releases proposed for Phase 5B
+## Feature-set releases
 
 - `ncaaf_basic_v1`: pregame Elo, regressed scoring/efficiency, home/neutral, rest, effective sample and missingness.
-- `ncaaf_efficiency_v1`: basic plus point-in-time EPA, success, explosive, finishing-drives, tempo, havoc and opponent adjustments.
+- `ncaaf-efficiency-point-in-time-v1`: **implemented in Phase 5B-2** with the bounded corpus-supported efficiency, rolling, prior, context, quality, and opponent-adjustment definitions above.
+- `ncaaf_efficiency_v2`: proposed extensions such as finishing-opportunity and more robust game-state metrics after source-specific coverage studies.
 - `ncaaf_preseason_v1`: recruiting/talent, returning production, QB and coaching continuity, transfers/departures with provenance.
 - `ncaaf_market_v1`: fixed-horizon consensus state and quality, for residual/market-aware candidates only.
 - `ncaaf_weather_v1` and `ncaaf_availability_v1`: deferred until historical timestamp coverage clears an explicit audit.

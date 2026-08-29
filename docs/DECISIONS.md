@@ -802,3 +802,70 @@ Consequences:
 - The flag is authorization for a future frozen holdout evaluation, not permission for iterative development.
 - 2026 remains prospective shadow evidence; no model was trained in Phase 5B-1.
 
+## ADR-059 — Phase 5B-2 uses immutable normalized Parquet and offline feature matrices
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Phase 5B-1 raw JSON gzip remains the lossless source record. Phase 5B-2 derives content-addressed, season-partitioned normalized Parquet facts and horizon-specific feature matrices outside PostgreSQL and Git. PostgreSQL remains authoritative for canonical identities, source manifests, and indexes; no Phase 5B-2 relational schema was necessary.
+
+Consequences:
+
+- Every artifact records source manifests/hashes, transformation/schema version, row count, schema hash, content hash, and immutable path.
+- Column projection and season-bounded transforms avoid materializing the 1.7-million-play corpus as ORM objects or one giant Python record list.
+- Research-only PyArrow/psutil dependencies are isolated from the Render web requirements.
+- Identical source versions and configuration must reproduce row order, schema, values, and dataset hash.
+
+## ADR-060 — Reconstructed CFBD postgame facts become available at kickoff plus 24 hours in v1
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Under `cfbd-reconstructed-kickoff-plus-24h-v1`, reconstructed game, PBP, drive, and team-stat facts are ineligible until at least 24 hours after scheduled kickoff. Occurrence/effective time, reconstructed availability, and actual local ingestion time remain separate; ingestion is never backdated.
+
+Consequences:
+
+- A target game cannot enter its own pregame features, and later corrections cannot masquerade as contemporaneously known.
+- The rule is deliberately conservative and source-specific, not a claim about CFBD's historical publication timestamp.
+- A stricter future rule requires a new version and dataset; it may not silently mutate v1.
+
+## ADR-061 — Initial opponent adjustment and early-season priors are transparent research features
+
+- Date: 2026-08-29
+- Status: Accepted and implemented as candidate inputs
+
+Opponent-adjusted v1 metrics residualize a team's prior-five raw performance against each prior opponent's opposite-unit strength using only facts available at the target row's historical `as_of`, then restore the prior-only population mean. Early-season blend v1 weights current evidence by `n / (n + 3)` and prior evidence by `3 / (n + 3)`, using up to three prior seasons and a prior-only population fallback.
+
+Consequences:
+
+- End-of-season opponent ratings and future opponent games cannot leak backward.
+- Raw, prior, blended, and adjusted values remain separate with sample/coverage indicators; missing is never silently zero.
+- These formulas are frozen inputs for Phase 5B-3 comparisons, not selected model coefficients or evidence of predictive value.
+- Recruiting, transfers, returning production, quarterback, coaching, injuries, and weather remain Phase 5B-6/later inputs.
+
+## ADR-062 — Feature horizons and 2020 regime remain explicit research dimensions
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Game-day morning, 24-hours-before-kickoff, and 60-minutes-before-kickoff are emitted as distinct dataset horizons even when independent-football features coincide. Morning retains two candidate policies—09:00 America/New_York and first kickoff minus three hours—until the historical-odds audit resolves the operational convention. The 2020 season remains included with a regime indicator.
+
+Consequences:
+
+- Horizons cannot be pooled or used to fill each other's missing state.
+- Later weather, injury, roster, and market features may legitimately differ by horizon without a schema redesign.
+- Later experiments may include, flag, or exclude 2020 as a predeclared ablation; Phase 5B-2 makes no performance-based choice.
+
+## ADR-063 — cfbfastR remains QA-only after universe-corrected PBP reconciliation
+
+- Date: 2026-08-29
+- Status: Accepted
+
+The prior 123,444-play headline difference compared CFBD 2014–2024 with a public cfbfastR 2014–2025 total. On the common 2014–2024 universe, CFBD contains 42,406 more rows. Differences remain concentrated enough in 2021–2022 and within matched-game play counts to require explicit feature coverage and future common-row ablations, but do not block the baseline feature dataset.
+
+Consequences:
+
+- SportsDataverse/cfbfastR does not replace CFBD as the durable fact source.
+- Exact play-level equality is not required across differing taxonomies and processing pipelines.
+- PBP-dependent features carry coverage flags; season/source sensitivity remains a Phase 5B-3 validation concern.
+

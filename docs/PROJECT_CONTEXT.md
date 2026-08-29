@@ -92,6 +92,8 @@ Phases 0–4 establish a Python 3.12 development baseline, modular boundaries, P
 
 Phase 5A has now produced the research specification for an NCAAF model tournament, data-source strategy, time-aware feature catalog, chronological evaluation protocol, and Phase 5B implementation sequence. It deliberately added no production model or application behavior. The first model hypothesis is a pair of calibrated margin/total predictive distributions, evaluated alongside component-score and direct-win challengers across naive, Elo, regularized, boosted-tree, hierarchical, residual, and learned-ensemble approaches. Market consensus remains the implemented final fair probability until a candidate proves incremental out-of-sample value and completes shadow evaluation.
 
+Phase 5B-2 now provides the offline, leakage-tested research input layer: normalized immutable Parquet facts, explicit historical availability, three separate prediction horizons, rolling/prior/opponent-adjusted features, quality/missingness fields, chronological folds, and reproducible manifests. It did not train a model, inspect the sealed 2025 outcomes, or change production pricing behavior.
+
 The Phase 4 pricing path calculates probability, edge, and EV independently, but the legacy bet-entry endpoint still accepts optional caller-supplied fields and does not assert that they came from Phase 4. Pricing outputs remain transient until a later official recommendation boundary. The backend stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 
 See `ARCHITECTURE.md` and `MODEL_LOGIC.md` for exact implemented-versus-planned boundaries.

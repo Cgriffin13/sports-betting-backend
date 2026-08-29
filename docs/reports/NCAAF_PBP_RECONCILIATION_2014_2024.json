@@ -1,0 +1,1117 @@
+{
+  "assessment": "feature-specific concern, not blocking for the baseline dataset",
+  "bias_conclusion": "Use CFBD as authoritative input, retain per-season/game PBP coverage flags, and segment 2021-2022. Row equality is not expected because source play taxonomy and FBS filters differ.",
+  "by_season": [
+    {
+      "cfbd_only_games": 2,
+      "cfbd_rows": 158170,
+      "cfbfastR_only_games": 6,
+      "cfbfastR_rows": 155521,
+      "difference": 2649,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 2688,
+        "fbs_vs_fcs_or_other": -39
+      },
+      "difference_by_season_segment": {
+        "postseason": -291,
+        "regular": 2940
+      },
+      "matched_games": 848,
+      "season": 2014,
+      "within_matched_game_difference": 3213
+    },
+    {
+      "cfbd_only_games": 0,
+      "cfbd_rows": 160180,
+      "cfbfastR_only_games": 3,
+      "cfbfastR_rows": 158501,
+      "difference": 1679,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 1829,
+        "fbs_vs_fcs_or_other": -150
+      },
+      "difference_by_season_segment": {
+        "postseason": -304,
+        "regular": 1983
+      },
+      "matched_games": 863,
+      "season": 2015,
+      "within_matched_game_difference": 2157
+    },
+    {
+      "cfbd_only_games": 1,
+      "cfbd_rows": 158518,
+      "cfbfastR_only_games": 2,
+      "cfbfastR_rows": 155622,
+      "difference": 2896,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 2876,
+        "fbs_vs_fcs_or_other": 20
+      },
+      "difference_by_season_segment": {
+        "postseason": -146,
+        "regular": 3042
+      },
+      "matched_games": 856,
+      "season": 2016,
+      "within_matched_game_difference": 3054
+    },
+    {
+      "cfbd_only_games": 0,
+      "cfbd_rows": 158574,
+      "cfbfastR_only_games": 3,
+      "cfbfastR_rows": 155505,
+      "difference": 3069,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 3145,
+        "fbs_vs_fcs_or_other": -76
+      },
+      "difference_by_season_segment": {
+        "postseason": -313,
+        "regular": 3382
+      },
+      "matched_games": 869,
+      "season": 2017,
+      "within_matched_game_difference": 3552
+    },
+    {
+      "cfbd_only_games": 0,
+      "cfbd_rows": 160512,
+      "cfbfastR_only_games": 3,
+      "cfbfastR_rows": 158249,
+      "difference": 2263,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 2446,
+        "fbs_vs_fcs_or_other": -183
+      },
+      "difference_by_season_segment": {
+        "postseason": -420,
+        "regular": 2683
+      },
+      "matched_games": 881,
+      "season": 2018,
+      "within_matched_game_difference": 2783
+    },
+    {
+      "cfbd_only_games": 0,
+      "cfbd_rows": 159915,
+      "cfbfastR_only_games": 3,
+      "cfbfastR_rows": 156888,
+      "difference": 3027,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 3057,
+        "fbs_vs_fcs_or_other": -30
+      },
+      "difference_by_season_segment": {
+        "postseason": -362,
+        "regular": 3389
+      },
+      "matched_games": 887,
+      "season": 2019,
+      "within_matched_game_difference": 3515
+    },
+    {
+      "cfbd_only_games": 5,
+      "cfbd_rows": 99460,
+      "cfbfastR_only_games": 21,
+      "cfbfastR_rows": 100420,
+      "difference": -960,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": -741,
+        "fbs_vs_fcs_or_other": -219
+      },
+      "difference_by_season_segment": {
+        "postseason": -267,
+        "regular": -693
+      },
+      "matched_games": 544,
+      "season": 2020,
+      "within_matched_game_difference": 1742
+    },
+    {
+      "cfbd_only_games": 48,
+      "cfbd_rows": 158498,
+      "cfbfastR_only_games": 3,
+      "cfbfastR_rows": 146367,
+      "difference": 12131,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 8815,
+        "fbs_vs_fcs_or_other": 3316
+      },
+      "difference_by_season_segment": {
+        "postseason": -282,
+        "regular": 12413
+      },
+      "matched_games": 839,
+      "season": 2021,
+      "within_matched_game_difference": 4565
+    },
+    {
+      "cfbd_only_games": 39,
+      "cfbd_rows": 160282,
+      "cfbfastR_only_games": 4,
+      "cfbfastR_rows": 149654,
+      "difference": 10628,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 8758,
+        "fbs_vs_fcs_or_other": 1870
+      },
+      "difference_by_season_segment": {
+        "postseason": -488,
+        "regular": 11116
+      },
+      "matched_games": 857,
+      "season": 2022,
+      "within_matched_game_difference": 4475
+    },
+    {
+      "cfbd_only_games": 8,
+      "cfbd_rows": 158995,
+      "cfbfastR_only_games": 1,
+      "cfbfastR_rows": 153626,
+      "difference": 5369,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 4497,
+        "fbs_vs_fcs_or_other": 872
+      },
+      "difference_by_season_segment": {
+        "postseason": 19,
+        "regular": 5350
+      },
+      "matched_games": 902,
+      "season": 2023,
+      "within_matched_game_difference": 4096
+    },
+    {
+      "cfbd_only_games": 18,
+      "cfbd_rows": 162605,
+      "cfbfastR_only_games": 46,
+      "cfbfastR_rows": 162950,
+      "difference": -345,
+      "difference_by_cohort": {
+        "fbs_vs_fbs": 6085,
+        "fbs_vs_fcs_or_other": -6430
+      },
+      "difference_by_season_segment": {
+        "postseason": -98,
+        "regular": -247
+      },
+      "matched_games": 900,
+      "season": 2024,
+      "within_matched_game_difference": 4397
+    }
+  ],
+  "cited_aggregate_difference": -123444,
+  "cited_difference_problem": "The prior comparison used CFBD 2014-2024 against cfbfastR 2014-2025 and therefore mixed universes.",
+  "common_season_cfbd_rows": 1695709,
+  "common_season_cfbfastR_rows": 1653303,
+  "common_season_difference": 42406,
+  "common_season_range": [
+    2014,
+    2024
+  ],
+  "largest_matched_game_differences": [
+    {
+      "cfbd_plays": 199,
+      "cfbfastR_plays": 1493,
+      "cohort": "fbs_vs_fbs",
+      "difference": -1294,
+      "game_id": 400756912,
+      "season": 2015,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 60,
+      "cfbfastR_plays": 203,
+      "cohort": "fbs_vs_fbs",
+      "difference": -143,
+      "game_id": 400869339,
+      "season": 2016,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 191,
+      "cfbfastR_plays": 308,
+      "cohort": "fbs_vs_fbs",
+      "difference": -117,
+      "game_id": 401249031,
+      "season": 2020,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 202,
+      "cfbfastR_plays": 316,
+      "cohort": "fbs_vs_fbs",
+      "difference": -114,
+      "game_id": 401282717,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 199,
+      "cfbfastR_plays": 86,
+      "cohort": "fbs_vs_fbs",
+      "difference": 113,
+      "game_id": 401525497,
+      "season": 2023,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 169,
+      "cfbfastR_plays": 270,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": -101,
+      "game_id": 401309542,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 164,
+      "cfbfastR_plays": 66,
+      "cohort": "fbs_vs_fbs",
+      "difference": 98,
+      "game_id": 401117914,
+      "season": 2019,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 107,
+      "cfbfastR_plays": 198,
+      "cohort": "fbs_vs_fbs",
+      "difference": -91,
+      "game_id": 400548169,
+      "season": 2014,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 59,
+      "cfbfastR_plays": 145,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": -86,
+      "game_id": 400548259,
+      "season": 2014,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 175,
+      "cfbfastR_plays": 253,
+      "cohort": "fbs_vs_fbs",
+      "difference": -78,
+      "game_id": 401022532,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 167,
+      "cfbfastR_plays": 241,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": -74,
+      "game_id": 400869091,
+      "season": 2016,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 66,
+      "cfbfastR_plays": 130,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": -64,
+      "game_id": 400603921,
+      "season": 2015,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 225,
+      "cfbfastR_plays": 161,
+      "cohort": "fbs_vs_fbs",
+      "difference": 64,
+      "game_id": 401645342,
+      "season": 2024,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 179,
+      "cfbfastR_plays": 238,
+      "cohort": "fbs_vs_fbs",
+      "difference": -59,
+      "game_id": 400869460,
+      "season": 2016,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 227,
+      "cfbfastR_plays": 169,
+      "cohort": "fbs_vs_fbs",
+      "difference": 58,
+      "game_id": 401677103,
+      "season": 2024,
+      "season_segment": "postseason"
+    },
+    {
+      "cfbd_plays": 144,
+      "cfbfastR_plays": 188,
+      "cohort": "fbs_vs_fbs",
+      "difference": -44,
+      "game_id": 400548009,
+      "season": 2014,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 266,
+      "cfbfastR_plays": 222,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 44,
+      "game_id": 401405083,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 147,
+      "cfbfastR_plays": 187,
+      "cohort": "fbs_vs_fbs",
+      "difference": -40,
+      "game_id": 401426553,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 199,
+      "cfbfastR_plays": 167,
+      "cohort": "fbs_vs_fbs",
+      "difference": 32,
+      "game_id": 401628472,
+      "season": 2024,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 193,
+      "cfbfastR_plays": 162,
+      "cohort": "fbs_vs_fbs",
+      "difference": 31,
+      "game_id": 401287938,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 150,
+      "cfbfastR_plays": 180,
+      "cohort": "fbs_vs_fbs",
+      "difference": -30,
+      "game_id": 401022535,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 201,
+      "cfbfastR_plays": 230,
+      "cohort": "fbs_vs_fbs",
+      "difference": -29,
+      "game_id": 400547745,
+      "season": 2014,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 164,
+      "cfbfastR_plays": 135,
+      "cohort": "fbs_vs_fbs",
+      "difference": 29,
+      "game_id": 401645328,
+      "season": 2024,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 163,
+      "cfbfastR_plays": 191,
+      "cohort": "fbs_vs_fbs",
+      "difference": -28,
+      "game_id": 401012767,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 173,
+      "cfbfastR_plays": 145,
+      "cohort": "fbs_vs_fbs",
+      "difference": 28,
+      "game_id": 401506450,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 203,
+      "cfbfastR_plays": 230,
+      "cohort": "fbs_vs_fbs",
+      "difference": -27,
+      "game_id": 400547677,
+      "season": 2014,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 264,
+      "cfbfastR_plays": 239,
+      "cohort": "fbs_vs_fbs",
+      "difference": 25,
+      "game_id": 401387250,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 173,
+      "cfbfastR_plays": 197,
+      "cohort": "fbs_vs_fbs",
+      "difference": -24,
+      "game_id": 400869224,
+      "season": 2016,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 216,
+      "cfbfastR_plays": 239,
+      "cohort": "fbs_vs_fbs",
+      "difference": -23,
+      "game_id": 400938640,
+      "season": 2017,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 241,
+      "cfbfastR_plays": 218,
+      "cohort": "fbs_vs_fbs",
+      "difference": 23,
+      "game_id": 401404159,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 163,
+      "cfbfastR_plays": 185,
+      "cohort": "fbs_vs_fbs",
+      "difference": -22,
+      "game_id": 401022567,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 162,
+      "cfbfastR_plays": 140,
+      "cohort": "fbs_vs_fbs",
+      "difference": 22,
+      "game_id": 401415217,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 207,
+      "cfbfastR_plays": 186,
+      "cohort": "fbs_vs_fbs",
+      "difference": 21,
+      "game_id": 401282064,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 190,
+      "cfbfastR_plays": 169,
+      "cohort": "fbs_vs_fbs",
+      "difference": 21,
+      "game_id": 401405082,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 195,
+      "cfbfastR_plays": 175,
+      "cohort": "fbs_vs_fbs",
+      "difference": 20,
+      "game_id": 401282257,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 212,
+      "cfbfastR_plays": 192,
+      "cohort": "fbs_vs_fbs",
+      "difference": 20,
+      "game_id": 401282819,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 159,
+      "cfbfastR_plays": 139,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 20,
+      "game_id": 401310697,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 179,
+      "cfbfastR_plays": 159,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 20,
+      "game_id": 401327913,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 190,
+      "cfbfastR_plays": 170,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 20,
+      "game_id": 401404075,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 198,
+      "cfbfastR_plays": 178,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 20,
+      "game_id": 401635536,
+      "season": 2024,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 214,
+      "cfbfastR_plays": 195,
+      "cohort": "fbs_vs_fbs",
+      "difference": 19,
+      "game_id": 401282652,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 187,
+      "cfbfastR_plays": 168,
+      "cohort": "fbs_vs_fbs",
+      "difference": 19,
+      "game_id": 401287893,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 234,
+      "cfbfastR_plays": 215,
+      "cohort": "fbs_vs_fbs",
+      "difference": 19,
+      "game_id": 401426554,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 206,
+      "cfbfastR_plays": 187,
+      "cohort": "fbs_vs_fbs",
+      "difference": 19,
+      "game_id": 401525513,
+      "season": 2023,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 212,
+      "cfbfastR_plays": 193,
+      "cohort": "fbs_vs_fbs",
+      "difference": 19,
+      "game_id": 401645365,
+      "season": 2024,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 170,
+      "cfbfastR_plays": 152,
+      "cohort": "fbs_vs_fbs",
+      "difference": 18,
+      "game_id": 401032061,
+      "season": 2018,
+      "season_segment": "postseason"
+    },
+    {
+      "cfbd_plays": 202,
+      "cfbfastR_plays": 184,
+      "cohort": "fbs_vs_fbs",
+      "difference": 18,
+      "game_id": 401121961,
+      "season": 2019,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 193,
+      "cfbfastR_plays": 175,
+      "cohort": "fbs_vs_fbs",
+      "difference": 18,
+      "game_id": 401282049,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 191,
+      "cfbfastR_plays": 173,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 18,
+      "game_id": 401403978,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 214,
+      "cfbfastR_plays": 196,
+      "cohort": "fbs_vs_fbs",
+      "difference": 18,
+      "game_id": 401404070,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 215,
+      "cfbfastR_plays": 197,
+      "cohort": "fbs_vs_fbs",
+      "difference": 18,
+      "game_id": 401426594,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 198,
+      "cfbfastR_plays": 181,
+      "cohort": "fbs_vs_fbs",
+      "difference": 17,
+      "game_id": 401286299,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 180,
+      "cfbfastR_plays": 163,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 17,
+      "game_id": 401300998,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 218,
+      "cfbfastR_plays": 201,
+      "cohort": "fbs_vs_fbs",
+      "difference": 17,
+      "game_id": 401403889,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 187,
+      "cfbfastR_plays": 170,
+      "cohort": "fbs_vs_fbs",
+      "difference": 17,
+      "game_id": 401405085,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 185,
+      "cfbfastR_plays": 168,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 17,
+      "game_id": 401411104,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 214,
+      "cfbfastR_plays": 197,
+      "cohort": "fbs_vs_fbs",
+      "difference": 17,
+      "game_id": 401411113,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 201,
+      "cfbfastR_plays": 184,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 17,
+      "game_id": 401415032,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 204,
+      "cfbfastR_plays": 187,
+      "cohort": "fbs_vs_fbs",
+      "difference": 17,
+      "game_id": 401416601,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 230,
+      "cfbfastR_plays": 213,
+      "cohort": "fbs_vs_fbs",
+      "difference": 17,
+      "game_id": 401426563,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 216,
+      "cfbfastR_plays": 200,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 400548335,
+      "season": 2014,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 174,
+      "cfbfastR_plays": 158,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401013134,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 155,
+      "cfbfastR_plays": 171,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": -16,
+      "game_id": 401021651,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 167,
+      "cfbfastR_plays": 183,
+      "cohort": "fbs_vs_fbs",
+      "difference": -16,
+      "game_id": 401112084,
+      "season": 2019,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 181,
+      "cfbfastR_plays": 165,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401282622,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 218,
+      "cfbfastR_plays": 202,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401282628,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 170,
+      "cfbfastR_plays": 154,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 16,
+      "game_id": 401287895,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 181,
+      "cfbfastR_plays": 165,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 16,
+      "game_id": 401309540,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 190,
+      "cfbfastR_plays": 174,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401309547,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 206,
+      "cfbfastR_plays": 190,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401309553,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 182,
+      "cfbfastR_plays": 166,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401309585,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 195,
+      "cfbfastR_plays": 179,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401310738,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 200,
+      "cfbfastR_plays": 184,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 16,
+      "game_id": 401404073,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 200,
+      "cfbfastR_plays": 184,
+      "cohort": "fbs_vs_fbs",
+      "difference": 16,
+      "game_id": 401414779,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 171,
+      "cfbfastR_plays": 186,
+      "cohort": "fbs_vs_fbs",
+      "difference": -15,
+      "game_id": 401117535,
+      "season": 2019,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 239,
+      "cfbfastR_plays": 224,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401282110,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 193,
+      "cfbfastR_plays": 178,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 15,
+      "game_id": 401286294,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 186,
+      "cfbfastR_plays": 171,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401287909,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 178,
+      "cfbfastR_plays": 163,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401287948,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 234,
+      "cfbfastR_plays": 219,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401309565,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 202,
+      "cfbfastR_plays": 187,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401309568,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 192,
+      "cfbfastR_plays": 177,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401309577,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 165,
+      "cfbfastR_plays": 150,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401310718,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 171,
+      "cfbfastR_plays": 156,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401403880,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 179,
+      "cfbfastR_plays": 164,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401403883,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 169,
+      "cfbfastR_plays": 154,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 15,
+      "game_id": 401403884,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 205,
+      "cfbfastR_plays": 190,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 15,
+      "game_id": 401411110,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 162,
+      "cfbfastR_plays": 147,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401411115,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 200,
+      "cfbfastR_plays": 185,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 15,
+      "game_id": 401413216,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 225,
+      "cfbfastR_plays": 210,
+      "cohort": "fbs_vs_fbs",
+      "difference": 15,
+      "game_id": 401415257,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 182,
+      "cfbfastR_plays": 167,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 15,
+      "game_id": 401415621,
+      "season": 2022,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 147,
+      "cfbfastR_plays": 162,
+      "cohort": "fbs_vs_fbs",
+      "difference": -15,
+      "game_id": 401677184,
+      "season": 2024,
+      "season_segment": "postseason"
+    },
+    {
+      "cfbd_plays": 173,
+      "cfbfastR_plays": 187,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": -14,
+      "game_id": 400760495,
+      "season": 2015,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 164,
+      "cfbfastR_plays": 178,
+      "cohort": "fbs_vs_fbs",
+      "difference": -14,
+      "game_id": 401014983,
+      "season": 2018,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 158,
+      "cfbfastR_plays": 172,
+      "cohort": "fbs_vs_fbs",
+      "difference": -14,
+      "game_id": 401032076,
+      "season": 2018,
+      "season_segment": "postseason"
+    },
+    {
+      "cfbd_plays": 178,
+      "cfbfastR_plays": 192,
+      "cohort": "fbs_vs_fbs",
+      "difference": -14,
+      "game_id": 401114180,
+      "season": 2019,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 208,
+      "cfbfastR_plays": 194,
+      "cohort": "fbs_vs_fbs",
+      "difference": 14,
+      "game_id": 401282206,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 200,
+      "cfbfastR_plays": 186,
+      "cohort": "fbs_vs_fcs_or_other",
+      "difference": 14,
+      "game_id": 401282210,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 292,
+      "cfbfastR_plays": 278,
+      "cohort": "fbs_vs_fbs",
+      "difference": 14,
+      "game_id": 401282226,
+      "season": 2021,
+      "season_segment": "regular"
+    },
+    {
+      "cfbd_plays": 163,
+      "cfbfastR_plays": 149,
+      "cohort": "fbs_vs_fbs",
+      "difference": 14,
+      "game_id": 401282238,
+      "season": 2021,
+      "season_segment": "regular"
+    }
+  ],
+  "matched_games_with_different_counts": 9203,
+  "report_version": "cfbd-cfbfastr-pbp-reconciliation-v1"
+}

@@ -416,7 +416,13 @@ Eventually evaluate results by model/version, sport, league, market, sportsbook,
 
 Market-consensus and proprietary-model predictions should be scored separately against outcomes and closing markets. A model should not receive weight merely because a historical trend recently succeeded; promotion requires time-aware out-of-sample evaluation, calibration evidence, and sufficient sample size.
 
-## Phase 5A NCAAF model specification (planned, not implemented)
+## Phase 5B-2 NCAAF feature foundation (implemented offline)
+
+The current offline research pipeline materializes only corpus-supported, point-in-time features: rolling efficiency/PPA, success/explosiveness, yards and drive efficiency, plays/drives pace proxies, a conservative havoc proxy, context, explicit quality/missingness, early-season prior shrinkage, and prior-only opponent adjustment. Reconstructed postgame facts become available no earlier than kickoff plus 24 hours. The target game and all future team/opponent results are excluded by construction and regression tests.
+
+These values are candidate inputs, not probabilities, feature importance, or evidence of betting edge. The builder does not impute missing values, learn weights, select transformations, or train a model. The 2020 regime is retained and flagged. Game-day morning, 24-hour, and 60-minute rows remain distinct even when independent-football values coincide.
+
+## Phase 5A NCAAF model specification (planned model, implemented feature inputs)
 
 The primary research targets are:
 

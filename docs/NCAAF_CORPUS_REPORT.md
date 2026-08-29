@@ -30,4 +30,4 @@ All FBS-participant team identities resolve through exact CFBD IDs. The 289 miss
 
 ## Reconciliation
 
-The CFBD corpus contains 123,444 fewer play rows than the Phase 5B-0 cfbfastR QA scan. The sources and filters are not definition-identical: bulky CFBD products are FBS-classification bounded, while the public QA files use their own published universe and processing. Because FBS-participant game coverage is 99.23%, this is not automatically a blocking gap, but Phase 5B-2 must segment the difference by season and game before freezing the feature dataset.
+The original headline said CFBD contained 123,444 fewer play rows than the Phase 5B-0 cfbfastR QA scan. Phase 5B-2 proved that comparison mixed CFBD 2014–2024 with cfbfastR 2014–2025. On the common 2014–2024 universe, CFBD contains 42,406 more rows, with material taxonomy/game-level and 2021–2022 differences in both directions. See `NCAAF_PBP_RECONCILIATION.md`; the discrepancy is a feature/season-specific QA concern, not a baseline blocker.

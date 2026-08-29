@@ -1,0 +1,97 @@
+{
+  "build_runtime_seconds": 70.791,
+  "dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+  "early_season_current_game_depth": {
+    "0": 2727,
+    "1": 3027,
+    "2": 2925,
+    "3": 111,
+    "4_plus": 2604
+  },
+  "eligible_games": 8277,
+  "excluded_rows_by_reason": {
+    "eligible": 8277,
+    "not_fbs_vs_fbs": 15944,
+    "not_final": 1
+  },
+  "fbs_vs_fbs_games": 8277,
+  "feature_artifact_bytes": 27532914,
+  "feature_family_coverage": {
+    "drives": {
+      "coverage_fraction": 0.999436,
+      "missing_cells": 56,
+      "present_cells": 99268,
+      "total_cells": 99324
+    },
+    "epa": {
+      "coverage_fraction": 0.999436,
+      "missing_cells": 56,
+      "present_cells": 99268,
+      "total_cells": 99324
+    },
+    "opponent_adjustment": {
+      "coverage_fraction": 0.940317,
+      "missing_cells": 5928,
+      "present_cells": 93396,
+      "total_cells": 99324
+    },
+    "pace": {
+      "coverage_fraction": 0.999436,
+      "missing_cells": 56,
+      "present_cells": 99268,
+      "total_cells": 99324
+    },
+    "success_explosiveness": {
+      "coverage_fraction": 0.999436,
+      "missing_cells": 56,
+      "present_cells": 99268,
+      "total_cells": 99324
+    },
+    "yards": {
+      "coverage_fraction": 0.999436,
+      "missing_cells": 28,
+      "present_cells": 49634,
+      "total_cells": 49662
+    }
+  },
+  "feature_manifest_id": "beebc297a31ff307daf7878215bb1554fb8421d5361fff652b8443191c568d24",
+  "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+  "feature_set_version": "ncaaf-efficiency-point-in-time-v1",
+  "historical_provider_calls": 0,
+  "normalized_artifact_bytes": 43493124,
+  "normalized_dataset_hash": "e93437eb82a2063e086befe2568049fe2be04d39c63393f7db2c9d29501be8ed",
+  "normalized_manifest_id": "fe86407ce3ccd82f989d2a6dcf3f7bfa8221c01fd7dc768d93138ca2819022a7",
+  "opponent_adjustment_coverage_fraction": 0.935726,
+  "opponent_adjustment_rows_both_sides": 23235,
+  "peak_rss_bytes": 613539840,
+  "predictive_performance": "not_applicable_no_model_trained",
+  "quality_mean_ratios": {
+    "away_drive_coverage_ratio": 0.971952,
+    "away_pbp_coverage_ratio": 0.970218,
+    "away_team_stat_coverage_ratio": 0.98125,
+    "home_drive_coverage_ratio": 0.974271,
+    "home_pbp_coverage_ratio": 0.972413,
+    "home_team_stat_coverage_ratio": 0.98267
+  },
+  "regime_2020_rows": 1602,
+  "report_version": "ncaaf-feature-dataset-report-v1",
+  "rows_by_horizon": {
+    "24_hours_before_kickoff": 8277,
+    "60_minutes_before_kickoff": 8277,
+    "game_day_morning": 8277
+  },
+  "rows_by_season": {
+    "2014": 2280,
+    "2015": 2295,
+    "2016": 2280,
+    "2017": 2328,
+    "2018": 2316,
+    "2019": 2322,
+    "2020": 1602,
+    "2021": 2310,
+    "2022": 2328,
+    "2023": 2376,
+    "2024": 2394
+  },
+  "target_rows": 24831
+}
