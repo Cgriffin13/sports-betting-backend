@@ -95,7 +95,7 @@ Apply migrations, then start the unchanged Render-compatible entry point:
 python -m uvicorn main:app --reload
 ```
 
-Run all deterministic gates (no live Odds API credential is required):
+After installing `requirements-research.txt`, run all deterministic application and research gates (no live provider credential is required):
 
 ```bash
 python -m ruff check .
