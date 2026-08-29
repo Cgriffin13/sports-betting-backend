@@ -28,6 +28,9 @@ dist/
 # Runtime data
 data/*.json
 data/*.tmp
+.ncaaf-data/
+ncaaf-data/
+research-data/
 *.db
 *.sqlite
 *.sqlite3

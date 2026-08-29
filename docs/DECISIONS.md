@@ -681,7 +681,7 @@ Consequences:
 ## ADR-050 — CFBD is the MVP sports-data candidate; historical odds are a separate gate
 
 - Date: 2026-08-28
-- Status: Accepted for MVP planning; credentialed terms/coverage execution pending
+- Status: Accepted; CFBD credentialed coverage completed, historical-odds gate pending
 
 CollegeFootballData is the recommended first source for schedules/results, PBP, teams/venues, coaches, recruiting, returning production and transfers. SportsDataverse/cfbfastR is a bootstrap and cross-check subject to upstream-use review. Existing Odds API snapshots support forward evaluation; a bounded paid historical-odds audit is required before market-relative backtest claims.
 
@@ -692,7 +692,7 @@ Consequences:
 - Precomputed retrospective metrics must be audited and may not substitute for own as-of rolling features.
 - Injuries, archived forecasts and premium participation feeds enter later only if coverage and ablation evidence justify cost.
 - Phase 5B-0 measured 1,819,153 public PBP rows and 98.35% FBS-participant game coverage for 2014–2025, but found material 2021–2022 gaps and 2017 wall-clock missingness. Missingness must remain explicit.
-- Start CFBD on the free tier with immutable caching and bulk/year requests. The credentialed endpoint audit remains an acquisition gate because no key was available during Phase 5B-0.
+- CFBD started on the free tier with immutable caching and bulk/year requests. Phase 5B-1 completed the credentialed endpoint audit and 2014–2024 corpus within 416 billable calls; the separate historical-odds audit remains an acquisition gate.
 
 ## ADR-051 — Promotion requires locked chronological and shadow evidence
 
@@ -747,4 +747,58 @@ Consequences:
 - Injuries and weather remain required future audits/ablations but do not block the first statistical baseline.
 - Backfilled archive source time and actual local ingestion time remain distinct; do not falsify ingestion time to simulate contemporaneous capture.
 - Full historical odds acquisition is conditional on predeclared sample tolerances, not enthusiasm after inspecting results.
+
+## ADR-055 — CFBD source versions use credential-free request identity and immutable content hashes
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Canonical request identity includes provider, endpoint, and sorted non-secret parameters. Credentials exist only in the bearer header. `provider + request hash + content hash` identifies one immutable source version; changed content appends a manifest linked to the prior version, while identical content reuses the prior manifest and facts.
+
+Consequences:
+
+- Historical responses retrieved now are labeled `reconstructed` with their actual retrieval time.
+- Cache hits may re-run idempotent normalization without another provider call, allowing interrupted runs to resume safely.
+- Content-addressed orphan files after a rolled-back relational transaction are harmless and reusable; a future garbage collector may remove unreferenced artifacts.
+
+## ADR-056 — Canonical football identity extends existing event identity through exact provider IDs
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Programs and venues receive stable UUIDs and provider mapping rows. Program aliases and conference/classification membership are effective-season records. CFBD game IDs use the existing `ProviderEventMapping` boundary and add nullable program, venue, season, week, season-type, neutral-site, and schedule-provenance fields to `CanonicalEvent`.
+
+Consequences:
+
+- Display strings never merge programs or events.
+- Renames and conference/classification changes do not create a new program.
+- Ambiguous or unresolved cross-provider mappings remain reviewable and model-ineligible.
+- Existing live odds events are not destructively rewritten.
+
+## ADR-057 — Raw CFBD artifacts use lossless canonical JSON gzip; PostgreSQL stores indexes and targets
+
+- Date: 2026-08-29
+- Status: Accepted and implemented for source ingestion
+
+The raw research cache uses content-addressed `raw-json-gzip-v1` files containing the provider's exact response bytes and partitioned by provider/league/season/week/product. PostgreSQL stores manifests, artifact indexes, canonical identities, game targets, exclusions, and existing-event links. This satisfies the approved “Parquet or equivalently lean immutable format” direction without adding a large columnar dependency to the Render web service.
+
+Consequences:
+
+- The measured 1.22 GB response corpus occupies about 92.6 MB losslessly.
+- Later feature matrices may use Parquet without changing raw-source provenance.
+- Multi-million-row PBP is not stored as ORM records.
+- Spark, Databricks, and a separate inference service remain unjustified.
+
+## ADR-058 — Development source commands fail closed at the locked 2025 holdout
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Research ingestion and corpus validation default to 2014–2024 and reject 2025+ unless an explicit `--allow-holdout-access` flag is provided. Phase 5B-1 did not request, inspect, or report 2025 score magnitudes.
+
+Consequences:
+
+- Ordinary builders cannot silently include locked outcomes.
+- The flag is authorization for a future frozen holdout evaluation, not permission for iterative development.
+- 2026 remains prospective shadow evidence; no model was trained in Phase 5B-1.
 

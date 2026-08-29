@@ -130,11 +130,11 @@ Each report contains:
 
 ### 5B-0 — source and identity audit
 
-**Completed as a conditional-go research audit on 2026-08-29.** `NCAAF_SOURCE_AUDIT.md` records public coverage, identities, targets, timing classifications, costs, and frozen designs for the credentialed CFBD and 2,280-credit odds audits. The provider calls were not executed because this workspace had no credentials; those are explicit Phase 5B-1/5B-7 acquisition gates, not fabricated results.
+**Completed as a conditional-go research audit on 2026-08-29.** `NCAAF_SOURCE_AUDIT.md` records public coverage, identities, targets, timing classifications, costs, and frozen provider-audit designs. The CFBD credentialed gate was subsequently completed in 5B-1; the 2,280-credit historical-odds gate remains unexecuted for later market-aware work.
 
 ### 5B-1 — historical facts ingestion
 
-Add versioned, idempotent raw ingestion for NCAAF calendars, schedules/results, teams/conferences, venues, plays/drives, game team stats and source manifests. PostgreSQL stores canonical/time-sensitive indexes; immutable partitioned Parquet stores bulky PBP. Defer rosters/coaches/personnel until the core facts reconcile. No model code.
+**Completed on 2026-08-29.** Versioned, idempotent ingestion covers calendars, schedules/results, teams/conferences, venues, plays/drives, game team stats, manifests, identities, targets, exclusions, reports, safe resume, and the 2025 holdout gate. PostgreSQL stores canonical/time-sensitive indexes; lossless partitioned canonical-JSON gzip stores raw bulky PBP. Rosters/coaches/personnel and all model code remain deferred.
 
 ### 5B-2 — as-of features and dataset builder
 

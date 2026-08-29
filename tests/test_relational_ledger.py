@@ -24,7 +24,7 @@ def _service(repository: SqlAlchemyPortfolioRepository) -> PortfolioService:
 
 def test_schema_contains_phase2_tables_and_constraints(engine: Engine) -> None:
     inspector = inspect(engine)
-    assert set(inspector.get_table_names()) == {
+    assert {
         "bet_approvals",
         "bet_state_transitions",
         "bets",
@@ -40,7 +40,7 @@ def test_schema_contains_phase2_tables_and_constraints(engine: Engine) -> None:
         "recommendations",
         "settlements",
         "sportsbooks",
-    }
+    } <= set(inspector.get_table_names())
     assert {column["name"] for column in inspector.get_columns("bets")} >= {
         "provider_event_id",
         "period",

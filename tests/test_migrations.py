@@ -6,7 +6,7 @@ from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 
 
-def test_alembic_phase3_upgrade_downgrade_and_schema_drift(
+def test_alembic_phase5b1_upgrade_downgrade_and_schema_drift(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -24,6 +24,10 @@ def test_alembic_phase3_upgrade_downgrade_and_schema_drift(
         "sportsbooks",
         "provider_sportsbooks",
         "market_observations",
+        "source_manifests",
+        "canonical_programs",
+        "canonical_venues",
+        "football_game_facts",
     } <= set(inspect(engine).get_table_names())
     engine.dispose()
 
@@ -31,7 +35,9 @@ def test_alembic_phase3_upgrade_downgrade_and_schema_drift(
     engine = create_engine(database_url)
     tables_after_downgrade = set(inspect(engine).get_table_names())
     assert "portfolios" in tables_after_downgrade
-    assert "market_snapshots" not in tables_after_downgrade
+    assert "market_snapshots" in tables_after_downgrade
+    assert "source_manifests" not in tables_after_downgrade
+    assert "home_program_id" not in {column["name"] for column in inspect(engine).get_columns("canonical_events")}
     engine.dispose()
 
     command.upgrade(config, "head")

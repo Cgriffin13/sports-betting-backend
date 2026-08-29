@@ -179,7 +179,7 @@ Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
 
 Next phases add an early NCAAF proprietary-model track, recommendation/risk policy, and closing-label policy. Market consensus is the implemented baseline and benchmark, not a proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those future engines exist.
 
-### Phase 5 NCAAF research architecture (approved direction, not implemented)
+### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text
 CFBD / approved sports sources    historical/future odds    structured reports/weather
@@ -204,7 +204,19 @@ CFBD / approved sports sources    historical/future odds    structured reports/w
                 future distinct market/model/final probabilities
 ```
 
-PostgreSQL remains the system of record for canonical identities, time-sensitive source indexes, source/feature manifests, model/calibrator registry metadata, promotion history, and prediction provenance. Bulky immutable play-by-play extracts, feature matrices, out-of-fold predictions, reports, and model artifacts use partitioned files (initially Parquet and safe model-native formats) referenced by URI and SHA-256. Initial training runs offline. Spark, Databricks, distributed ML infrastructure, and a separate inference service are explicitly deferred unless measured scale requires them. This is an approved low-cost direction, not an implemented research data layer.
+PostgreSQL is now the system of record for source manifests, artifact indexes, canonical program and venue identities, effective-dated program aliases/conference membership, versioned game facts, explicit eligibility/exclusion reasons, and links to existing `CanonicalEvent`/`ProviderEventMapping` rows. The new tables are additive; the Phase 2 ledger and Phase 3/4 market path are unchanged.
+
+CFBD responses are stored outside Git as content-addressed `raw-json-gzip-v1` artifacts partitioned by provider, league, season, week, and endpoint. The compressed payload is the provider's exact response bytes, not re-serialized JSON. This is the approved “equivalently lean immutable format” for raw source responses: it keeps the Render web dependency set small, compresses the measured 1.22 GB response corpus to about 92.6 MB, and remains lossless. A later feature build may produce Parquet matrices without rewriting the raw-source contract.
+
+The retrieval transaction is one request/manifest partition at a time. The artifact is written atomically before relational normalization; the database manifest, artifact index, identities, and facts commit together. If relational normalization rolls back, a content-addressed orphan file may remain safely reusable by a resumed run; no partial relational state is committed. Cache hits re-run idempotent normalization from the immutable artifact, enabling recovery when a prior run retrieved data but did not complete downstream normalization.
+
+`canonical request + content hash` uniquely identifies one source version. A changed response creates a new immutable manifest linked by `supersedes_manifest_id`; an identical response reuses the prior manifest. Authentication headers are never part of request parameters, hashes, filenames, manifests, warnings, or logs.
+
+The 2014–2024 development command uses year-level calendars, teams, games and drives plus weekly regular/postseason plays and team game statistics. Development commands reject 2025+ outcomes unless the operator supplies the explicit holdout-access flag. Initial training remains offline. Spark, Databricks, distributed ML infrastructure, and a separate inference service remain deferred.
+
+### Phase 5 model architecture (planned, not implemented)
+
+The current source layer does not implement feature engineering, model training, calibration, proprietary probability inference, or market/model blending. Those remain later Phase 5B steps built over versioned source manifests and immutable artifacts.
 
 Every time-sensitive model input must carry `effective_at`, `observed_at`, `ingested_at`, source, provenance, schema version, and reconstructed-versus-contemporaneous status. The as-of builder requires all applicable time boundaries to be at or before the prediction cutoff. Provider corrections supersede rather than overwrite historical versions. Large training and calibration jobs run offline; a future FastAPI inference path may load one approved small artifact only after schema/hash verification and a golden prediction check. Batch refresh or computationally heavy models may later justify a worker.
 

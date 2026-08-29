@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A completed on 2026-08-28; Phase 5B-0 public source/identity audit completed with a conditional-go decision on 2026-08-29.** No model has been trained and no production probability changed. `NCAAF_SOURCE_AUDIT.md` records the empirical coverage findings and the credentialed CFBD/historical-odds gates that remain before source acquisition is complete.
+Status: **Phase 5A, Phase 5B-0, and Phase 5B-1 completed through the durable CFBD development corpus on 2026-08-29.** No model has been trained and no production probability changed. `NCAAF_SOURCE_AUDIT.md` records the credentialed audit, corpus measurements, reconciliation limits, and remaining historical-odds/model gates.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -150,7 +150,10 @@ Status: **Phase 5A completed on 2026-08-28; Phase 5B-0 public source/identity au
 - [x] Define margin and total predictive distributions as primary targets, with direct win and component-score challengers.
 - [x] Define calibration, uncertainty, integer push-probability, registry, explanation, promotion, and falsification requirements.
 - [x] Complete the Phase 5B-0 public source/identity audit, target contract, cost model, and bounded provider-audit designs.
-- [ ] Execute the credentialed CFBD audit and ingest the minimum viable historical dataset with versioned manifests and correction semantics.
+- [x] Execute the credentialed CFBD audit and ingest the 2014–2024 development corpus with credential-free request hashes, immutable source versions, correction links, and safe resume.
+- [x] Add canonical program/venue identity, effective-dated aliases/conferences, existing-event linkage, explicit game eligibility/targets, and a tested 2025 holdout guard.
+- [x] Add reproducible audit/ingestion/manifest/corpus-report CLIs and reconcile measured CFBD coverage against the Phase 5B-0 cfbfastR QA baseline.
+- [ ] Phase 5B-2: freeze a versioned fact normalization/dataset contract, resolve the one non-final game and lower-division missing identities only if needed by the modeling cohort, and build leakage-tested pregame feature tables from 2014–2024.
 - [ ] Build reproducible, time-aware feature pipelines with provenance and leakage/time-travel tests.
 - [ ] Run naive, Elo, Ridge/Elastic Net, distribution, and controlled boosted-tree experiments under frozen chronological folds.
 - [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
@@ -170,7 +173,7 @@ Exit criteria:
 Phase 5B implementation order:
 
 1. credentialed source acquisition and identity implementation, following the completed 5B-0 audit;
-2. raw historical facts ingestion and immutable manifests;
+2. raw historical facts ingestion and immutable manifests (**complete in 5B-1**);
 3. as-of feature/dataset builder;
 4. naive, Elo, and Ridge falsification baselines;
 5. distributions, calibration, and integer push probabilities offline;

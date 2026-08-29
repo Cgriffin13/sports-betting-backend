@@ -1,10 +1,36 @@
 # NCAAF Source, Coverage, and Identity Audit
 
-Status: **Phase 5B-0 research audit completed on 2026-08-29; conditional go for Phase 5B-1. No model was trained and no production behavior changed.**
+Status: **Phase 5B-1 credentialed CFBD audit and 2014–2024 development ingestion completed on 2026-08-29. No model was trained and no production probability changed.**
 
 ## Decision
 
-Proceed with the smallest Phase 5B-1 facts pipeline, using CollegeFootballData (CFBD) as the primary MVP statistical source and public cfbfastR/SportsDataverse data as a coverage cross-check. The decision is conditional because this workspace had no CFBD or historical The Odds API credential. The authenticated provider audit and the bounded odds sample below remain acquisition gates; their results must not be invented or inferred from public metadata.
+Proceed to Phase 5B-2 feature/dataset construction using CFBD as the primary MVP statistical source and public cfbfastR/SportsDataverse as QA only. The CFBD credential gate is now satisfied. The separately bounded historical The Odds API sample remains unexecuted and is still required before market-relative historical modeling.
+
+## Phase 5B-1 credentialed execution evidence
+
+The audit used CFBD API v5.24.2 and an ignored local credential. The key appeared only in the bearer header; it was never printed, logged, persisted, committed, hashed, or placed in an artifact path. `/info` reported the Free tier, a shared 1,000-call monthly pool, 0 used before the audit, 15 used after the bounded endpoint audit, and 416 used after the development corpus. Four `/info` calls and one rejected HTTP 400 contract probe did not consume quota. The complete run made 421 credentialed HTTP requests, of which 416 were billable; 584 calls remained.
+
+The bounded sample verified 2014 and 2024 calendars, FBS teams, conferences, and FBS-participant games; global venues; and 2014 week-1 plays, drives, and team game statistics. CFBD returned `Date` and `ETag` but no rate-limit headers in the sampled responses, so `/info` is the authoritative accounting surface. Repeating `teams/fbs?year=2024` twice returned the same 134 rows, 197,094 bytes, and SHA-256 `edf95b175f64557ed6108762fa9d4877e2dc621898ffd91fbaa5a69eff27683b`; no duplicate manifest or fact was created. A changing `/info` body created a superseding immutable source version as designed.
+
+Representative bounded measurements:
+
+| Product | Parameters | Rows | Bytes | SHA-256 prefix |
+| --- | --- | ---: | ---: | --- |
+| calendar | 2014 | 17 | 3,598 | `53dfdca87257` |
+| teams/fbs | 2014 | 128 | 188,424 | `ad6395245c6b` |
+| teams/fbs | 2024 | 134 | 197,094 | `edf95b175f64` |
+| venues | global | 852 | 221,319 | `dfc8daff311f` |
+| games | 2014, FBS | 868 | 680,430 | `b6fb33889971` |
+| games | 2024, FBS | 920 | 723,364 | `aa6656b1b98d` |
+| plays | 2014 regular week 1, FBS | 14,908 | 8,851,494 | `e33f56aa5359` |
+| drives | 2014 regular week 1, FBS | 2,077 | 1,143,615 | `1ebce4f1a877` |
+| games/teams | 2014 regular week 1, FBS | 83 | 195,457 | `f53a08ed2145` |
+
+The development corpus contains 24,222 year-wide game rows, including 9,440 FBS-participant games and 8,277 eligible FBS-vs-FBS final labels. It stores 1,695,709 plays covering 9,367/9,440 FBS-participant games (99.23%), 238,898 drives covering 9,389/9,440 (99.46%), and 9,414 team-game-stat rows covering 9,414/9,440 (99.72%). There are 15,944 non-FBS-vs-FBS exclusions, including 1,162 FBS-vs-FCS games, plus one non-final exclusion. All FBS-participant identities resolve; 289 missing identities are confined to retained lower-division context, and no ambiguous exact-provider mapping remains in the development cohort.
+
+The 415 source manifests represent 414 canonical requests and one observed correction/supersession. Source responses total 1,222,673,736 bytes and occupy 92,579,833 bytes as lossless gzip artifacts, including the local SQLite audit index/report. A complete rerun produced 397 cache hits, zero provider calls, and no duplicate facts. All historical responses are marked `reconstructed`; their actual 2026 retrieval timestamps are preserved and no historical `ingested_at` was fabricated.
+
+The CFBD play count is 123,444 below the Phase 5B-0 cfbfastR public count of 1,819,153. The corpora are not definition-identical: the implemented CFBD pull is FBS-classification bounded for bulky plays/drives/stats, while the cfbfastR QA scan used its published files and eligibility definition. Game coverage within the CFBD FBS-participant universe is high, but this row-count difference must be segmented by season/game before the Phase 5B-2 feature schema is frozen; it is not evidence that either source is intrinsically complete.
 
 This audit supports building ingestion, identities, targets, manifests, and immutable research storage. It does **not** support training a model, claiming strict historical availability for reconstructed fields, purchasing a full odds corpus, or promoting any probability.
 
@@ -27,10 +53,10 @@ The audit used CFBD's official OpenAPI document and documentation, official GitH
 
 Temporary files are deleted. PyArrow is deliberately not an application dependency. The scripts do not read credentials or persist datasets in the repository.
 
-The local environment contained neither `CFBD_API_KEY` nor `ODDS_API_KEY`. One unauthenticated CFBD request correctly returned HTTP 401. Therefore:
+At Phase 5B-0 the local environment contained neither `CFBD_API_KEY` nor `ODDS_API_KEY`. That historical limitation is now resolved for CFBD only. The Odds API historical credential/sample remains pending. Therefore:
 
-- no CFBD quota was consumed;
-- endpoint response completeness, live headers, correction behavior, and actual rate-limit headers remain to be measured;
+- CFBD quota and response behavior are now measured above;
+- selected endpoint response sizes, live headers, retrieval determinism, correction behavior, and `/info` accounting are measured above; sampled responses had `Date`/`ETag` but no rate-limit headers;
 - no historical odds credits were spent; and
 - no claim below presents a proposed odds sample as an executed sample.
 
@@ -52,11 +78,11 @@ The official OpenAPI specification was version `5.24.2` when inspected. It expos
 | Transfers | `/player/portal` | Transfer date exists, but the response lacks a stable player ID. | Later, with probabilistic name/team/date matching and review state. |
 | Returning production | `/player/returning` | Team/season aggregates and percentages/PPA/usage have no demonstrated publication timestamp. | Later; ineligible for strict as-of use until vintage behavior is established. |
 
-No pagination/cursor/limit parameters were present for these operations in the inspected OpenAPI. That is not proof that every live response is complete. The credentialed audit must record status, response size, row count, headers, source timestamp fields, request hash, warnings, and `/info` usage before and after each call.
+No pagination/cursor/limit parameters were present for these operations in the inspected OpenAPI. That is not proof that every live response is complete. Phase 5B-1 recorded status, response size, row count, safe headers, source timestamps where present, request/content hashes, warnings, and `/info` usage around the bounded audit; manifests preserve those fields for the full corpus.
 
 ### Earliest-season and correction conclusions
 
-Public cfbfastR evidence establishes practical play-level coverage from 2014, but it does not prove CFBD's earliest complete season per endpoint. Phase 5B-1 must audit each selected CFBD operation across 2014–2025 and record the earliest season that passes field and identity checks.
+Public cfbfastR evidence establishes practical play-level coverage from 2014. Phase 5B-1 verified every selected CFBD product across the approved 2014–2024 development range, with bounded shape checks at the endpoints of that range. It did not probe before 2014 because earlier seasons are outside the approved corpus, and it deliberately did not request 2025 to preserve the locked holdout. Thus 2014 is the earliest season verified for this product contract, not a claim that every CFBD endpoint begins in 2014.
 
 Most inspected CFBD schemas lack `published_at` or `updated_at`. A historical API response retrieved now is a current reconstruction that may include corrections. Phase 5B must:
 
@@ -123,7 +149,7 @@ cfbfastR/SportsDataverse is a useful QA bootstrap and provides a rich derived sc
 
 ## Canonical identity design
 
-Phase 3 already has stable UUID `CanonicalEvent` rows and provider event mappings. Phase 5B-1 should extend rather than replace them.
+Phase 3 already had stable UUID `CanonicalEvent` rows and provider event mappings. Phase 5B-1 extended rather than replaced them.
 
 ### Team and conference identity
 
@@ -233,7 +259,7 @@ An immutable first import can fit the free 1,000-call monthly tier if calls are 
 
 Every request uses a credential-free canonical request hash. A successful immutable response is never fetched again merely because a downstream transform is rerun. Start free; a small 5,000-call tier is justified only if measured retries, corrections, or endpoint granularity make the free tier materially less efficient.
 
-Measured public PBP storage is 581.66 MiB compressed. Planning estimates—not measured commitments—are:
+Measured public PBP storage is 581.66 MiB compressed. Phase 5B-1 measured 1.22 GB of CFBD response bytes compressed losslessly to 92.6 MB; the older planning estimates below remain capacity context, not actual consumption:
 
 - CFBD compressed immutable raw JSON: 0.5–1.5 GiB;
 - normalized core Parquet: 0.15–0.5 GiB;
@@ -243,16 +269,16 @@ Measured public PBP storage is 581.66 MiB compressed. Planning estimates—not m
 
 Simple Elo/Ridge artifacts should be well below 10 MiB; tree artifacts may be roughly 5–100 MiB. Record actual runtime, peak memory, rows, bytes, calls, and artifact sizes rather than treating these estimates as budgets to consume. No Spark, Databricks, distributed compute, or separate inference service is justified.
 
-## Smallest legitimate Phase 5B-1 scope
+## Implemented Phase 5B-1 scope
 
-Required now:
+Completed:
 
 1. source manifests, credential-free request hashing, immutable raw cache, correction/supersession links;
 2. CFBD calendar, games/results, teams/FBS classifications, conference affiliations, and venues;
 3. CFBD plays, drives, and team game stats for 2014–2024 development data;
 4. canonical programs, effective aliases/memberships, provider mappings, and additive links to Phase 3 events;
 5. target reconciliation and explicit exclusion/missing-reason records;
-6. PostgreSQL identity/manifest/index metadata plus partitioned immutable Parquet for bulky facts; and
+6. PostgreSQL identity/manifest/index metadata plus partitioned immutable canonical-JSON gzip for raw bulky facts (future matrices may use Parquet); and
 7. a sealed 2025 holdout policy and prospective 2026 shadow capture.
 
 Useful later, after the core facts pass reconciliation:
@@ -272,13 +298,13 @@ Defer:
 - coordinators without a reliable source; and
 - distributed ML infrastructure.
 
-Phase 5B-1 should ingest 2014–2024 for development. The 2025 corpus may be physically sealed with restricted outcome access or its outcomes may be deferred; in either case, no 2025 score magnitude, feature, model, or hyperparameter decision may be consulted before the candidate and promotion rule are frozen. This audit used only score-field non-nullness to define the coverage denominator and inspected coverage/null metadata; it never printed, compared, or used 2025 score magnitudes or model performance. That is not material model development, so the intended holdout remains clean.
+Phase 5B-1 ingested 2014–2024 for development. The implementation rejects 2025+ by default and requires an explicit holdout-access flag. No 2025 endpoint was requested and no 2025 score magnitude was inspected or reported in this sprint, so the intended holdout remains clean.
 
 ## Go/no-go gates
 
-**Go now:** build the versioned source cache, identities, targets, and 2014–2024 facts pipeline; verify it against the public audit.
+**Completed:** versioned source cache, identities, targets, 2014–2024 facts pipeline, credentialed audit, correction test, reports, and public-audit reconciliation.
 
-**Must pass before claiming Phase 5B-1 source completion:** credentialed CFBD response audit, recorded terms snapshot, field/season coverage report, corrections test, row-count reconciliation, and exact free-tier call log.
+**Phase 5B-1 source completion evidence:** credentialed response audit, official-contract version, field/season coverage report, correction test, row-count reconciliation, exact free-tier call log, idempotent zero-call rerun, migration validation, and holdout tests are recorded here and in the automated suite.
 
 **Must pass before Phase 5B-7 market-aware work:** the frozen 2,280-credit historical-odds sample and a distinct provider-archive replay policy.
 
@@ -289,8 +315,9 @@ Phase 5B-1 should ingest 2014–2024 for development. The 2025 corpus may be phy
 - Exact morning convention: fixed 09:00 ET or a rule relative to the day's first kickoff. Resolve only from the frozen coverage audit.
 - Quantitative odds-audit pass/fail tolerances, frozen before retrieval.
 - Whether SportsDataverse's upstream ESPN-derived data is acceptable for internal commercial training or remains QA-only.
-- Source-specific conservative publication delays for reconstructed CFBD fields after the credentialed audit.
-- How to enforce the 2025 outcome access seal operationally.
+- Source-specific conservative publication delays for reconstructed CFBD fields; the credentialed audit found no source publication timestamps that resolve this automatically.
+- Whether the explicit 2025 CLI gate is sufficient operationally or should be strengthened with separate credentials/storage before frozen evaluation.
+- Why the CFBD and cfbfastR play row counts differ by 123,444, segmented by season/game and source definition before freezing the feature dataset.
 - Numeric proper-score/calibration/sample/segment promotion thresholds, frozen before opening 2025.
 - Whether one locked season plus one prospective shadow season is enough for paper influence or a longer shadow is required.
 - Future injury-source, weather-source, and production redistribution rights decisions; none blocks the first baseline.

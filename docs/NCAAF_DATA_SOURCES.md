@@ -1,6 +1,6 @@
 # NCAAF Data Sources
 
-Status: **Phase 5A assessment updated by the Phase 5B-0 public audit on 2026-08-29.** Exact measurements, credentialed-audit gaps, identities, budgets, and go/no-go gates are in `NCAAF_SOURCE_AUDIT.md`. Prices, quotas, coverage, and terms can change; verify them before purchase or production use.
+Status: **Updated by the credentialed Phase 5B-1 CFBD audit and 2014–2024 ingestion on 2026-08-29.** Exact measurements, identities, budgets, corrections, and remaining gates are in `NCAAF_SOURCE_AUDIT.md`. Prices, quotas, coverage, and terms can change; verify them before purchase or production use.
 
 ## Recommendation
 
@@ -29,8 +29,8 @@ Historical, fixed-horizon sportsbook data is the main paid-data gate. Without it
 
 | Domain | MVP source | Required Phase 5B acceptance check | Upgrade path |
 | --- | --- | --- | --- |
-| Schedule, teams, score, venue, neutral site | CFBD games/teams | Stable IDs, FBS scope, kickoff history, cancellations, postseason, neutral-site correctness | SportsDataIO/Sportradar cross-check |
-| Plays and team efficiency | CFBD raw PBP, checked against cfbfastR | 2014–2025 coverage by season/team; duplicate/correction policy; target game excluded | Commercial play feed if gaps materially bias evaluation |
+| Schedule, teams, score, venue, neutral site | CFBD games/teams | Implemented for 2014–2024 with exact provider IDs, reconstructed availability, explicit exclusions, and source vintage | SportsDataIO/Sportradar cross-check |
+| Plays and team efficiency | CFBD raw PBP, checked against cfbfastR | 2014–2024 immutable source artifacts: 1,695,709 plays and 99.23% FBS-participant game coverage; investigate material definition differences before feature freeze | Commercial play feed if gaps materially bias evaluation |
 | Coaches | CFBD coaches plus official announcements | Effective-date logic, interim roles, coordinator gap explicitly missing | Structured official-news pipeline |
 | Recruiting/talent | CFBD recruiting | Team/player mapping, class-year availability known before season | Licensed recruiting provider if incremental signal proven |
 | Transfers/returning production | CFBD player portal/returning production | Publication/effective timestamps; historical snapshot audit | Commercial roster feed or own roster-delta derivation |
@@ -89,7 +89,7 @@ The first money should go to exact historical odds, not a broad premium statisti
 
 - Does the frozen The Odds API sample meet predeclared book, event, pairing, mapping, and fixed-horizon coverage tolerances?
 - Are SportsDataverse upstream terms acceptable for internal commercial model training, or should it remain QA-only?
-- What conservative publication delay is defensible for each reconstructed CFBD field after the credentialed endpoint audit?
+- What conservative publication delay is defensible for each reconstructed CFBD field? The audit proves retrieval/correction behavior, not historical publication time.
 - Is official injury reporting sufficiently consistent to justify a normalized production feature?
 - Is NOAA engineering preferable to paid Open-Meteo historical forecast access?
 - What production redistribution/display rights are required for the eventual web product?

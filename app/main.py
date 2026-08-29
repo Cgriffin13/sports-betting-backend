@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.api import bets, health, odds, opportunities, portfolios
 from app.config import Settings
+from app.db import ncaaf_models  # noqa: F401
 from app.db.session import create_database_engine, create_session_factory
 from app.domain.identity import Principal
 from app.logging import configure_logging

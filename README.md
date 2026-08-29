@@ -21,6 +21,10 @@ Activate `.venv`, copy `.env.example` to `.env`, and replace all placeholders. P
 | `APP_OWNER_ID` | No | Stable owner/principal identifier; defaults to `default`. |
 | `APP_OWNER_NAME` | No | Owner display label; defaults to `Default Owner`. |
 | `ODDS_API_KEY` | For `/odds` | The Odds API credential. |
+| `CFBD_API_KEY` | For CFBD research ingestion | CollegeFootballData bearer credential; never included in request hashes or manifests. |
+| `NCAAF_RESEARCH_DATABASE_URL` | No | Optional separate PostgreSQL research-index URL; falls back to `DATABASE_URL`. |
+| `NCAAF_ARTIFACT_DIR` | No | Ignored local/object-mounted immutable source-artifact root; defaults to `.ncaaf-data`. |
+| `CFBD_TIMEOUT_SECONDS` | No | CFBD research request timeout; defaults to `30`. |
 | `STARTING_BANKROLL` | No | Positive paper capital for a newly created portfolio; defaults to `200.00`. |
 | `PROVIDER_TIMEOUT_SECONDS` | No | Per-request timeout; defaults to `12.0`. |
 | `PROVIDER_MAX_RETRIES` | No | Bounded retries after the first attempt for timeouts, connection failures, HTTP 408/425/429, and 5xx; defaults to `2`. |
@@ -132,4 +136,19 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 
 Read [`AGENTS.md`](AGENTS.md) and the durable product/architecture documents in [`docs/`](docs/) before making changes.
 
-Phase 5 NCAAF research is documented separately in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_SOURCE_AUDIT.md`](docs/NCAAF_SOURCE_AUDIT.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md). These are research specifications/audits only; market consensus remains the implemented pricing source.
+Phase 5B-1 now implements the CFBD source-manifest, immutable-cache, canonical program/venue identity, game-target, and corpus-reporting foundation. It does **not** train a model or produce proprietary probabilities; market consensus remains the implemented pricing source. The research contract is documented in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_SOURCE_AUDIT.md`](docs/NCAAF_SOURCE_AUDIT.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md).
+
+The completed aggregate corpus evidence is available as [`NCAAF_CORPUS_REPORT.md`](docs/NCAAF_CORPUS_REPORT.md) and machine-readable [`NCAAF_CORPUS_2014_2024.json`](docs/reports/NCAAF_CORPUS_2014_2024.json).
+
+Research ingestion uses `CFBD_API_KEY`, `NCAAF_RESEARCH_DATABASE_URL` (or `DATABASE_URL`), and optional `NCAAF_ARTIFACT_DIR`/`CFBD_TIMEOUT_SECONDS`. Raw artifacts default to `.ncaaf-data/`, which is ignored by Git. Commands plan by default and require `--execute` for network use:
+
+```bash
+python -m app.cli.audit_cfbd
+python -m app.cli.audit_cfbd --execute
+python -m app.cli.ingest_ncaaf_history --start-season 2014 --end-season 2024
+python -m app.cli.ingest_ncaaf_history --start-season 2014 --end-season 2024 --execute
+python -m app.cli.validate_ncaaf_corpus --output .ncaaf-data/reports/corpus-2014-2024.json
+python -m app.cli.inspect_source_manifests --limit 20
+```
+
+Development ingestion rejects 2025+ by default. `--allow-holdout-access` is deliberately explicit and must not be used for ordinary development.

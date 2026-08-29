@@ -1,0 +1,49 @@
+{
+  "report_version": "ncaaf-corpus-report-v1",
+  "generated_at": "2026-08-29",
+  "development_seasons": [2014, 2024],
+  "games_total": 24222,
+  "fbs_participant_games": 9440,
+  "eligible_fbs_vs_fbs_games": 8277,
+  "fbs_vs_fcs_games": 1162,
+  "excluded_by_reason": {
+    "not_fbs_vs_fbs": 15944,
+    "not_final": 1
+  },
+  "play_rows": 1695709,
+  "play_game_coverage": {
+    "covered": 9367,
+    "eligible_universe": 9440,
+    "percentage": 99.23
+  },
+  "drive_rows": 238898,
+  "drive_game_coverage": {
+    "covered": 9389,
+    "eligible_universe": 9440,
+    "percentage": 99.46
+  },
+  "team_game_stat_rows": 9414,
+  "team_stat_game_coverage": {
+    "covered": 9414,
+    "eligible_universe": 9440,
+    "percentage": 99.72
+  },
+  "canonical_program_mappings": 699,
+  "missing_fbs_participant_identities": 0,
+  "missing_lower_division_identities": 289,
+  "ambiguous_model_cohort_mappings": 0,
+  "source_manifests": 415,
+  "canonical_requests": 414,
+  "supersessions": 1,
+  "response_bytes": 1222673736,
+  "stored_bytes": 92579833,
+  "credentialed_http_requests": 421,
+  "billable_cfbd_calls": 416,
+  "free_tier_calls_remaining": 584,
+  "holdout_2025_outcomes_accessed": false,
+  "notes": [
+    "Historical CFBD responses are reconstructed and retain their actual 2026 retrieval timestamps.",
+    "The 123444-row difference from the cfbfastR QA PBP corpus requires season/game reconciliation before feature freeze.",
+    "Raw artifacts and the local operational report remain outside Git; this committed file contains aggregate non-secret evidence only."
+  ]
+}
