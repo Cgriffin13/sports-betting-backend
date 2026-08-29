@@ -318,3 +318,50 @@ def test_replay_cutoff_uses_old_snapshot_before_move_and_latest_snapshot_after_m
     assert at_eleven.rejection_counts["after_cutoff"] == 4
     assert {item.point for item in at_fourteen.opportunities} == {Decimal("-4.5"), Decimal("4.5")}
     assert all(identifier("snapshot:draftkings:10am") not in item.snapshot_ids for item in at_fourteen.opportunities)
+
+
+def test_replay_excludes_old_provider_observation_ingested_after_cutoff() -> None:
+    ten = datetime(2026, 8, 29, 10, 0, tzinfo=UTC)
+    thirteen = datetime(2026, 8, 29, 13, 0, tzinfo=UTC)
+    observations = (
+        *pair(
+            "draftkings",
+            "moneyline",
+            -110,
+            -110,
+            observed_at=ten,
+            ingested_at=ten,
+            snapshot="known-at-10",
+            stale_after_seconds=20_000,
+        ),
+        *pair(
+            "fanduel",
+            "moneyline",
+            -110,
+            -110,
+            observed_at=ten,
+            ingested_at=ten,
+            snapshot="known-at-10",
+            stale_after_seconds=20_000,
+        ),
+        *pair(
+            "betmgm",
+            "moneyline",
+            110,
+            -130,
+            observed_at=ten,
+            ingested_at=thirteen,
+            snapshot="late-ingestion",
+            stale_after_seconds=20_000,
+        ),
+    )
+
+    result = build_pricing_analysis(
+        observations,
+        as_of=datetime(2026, 8, 29, 11, 0, tzinfo=UTC),
+        policy=policy(),
+    )
+
+    assert result.rejection_counts["after_cutoff"] == 2
+    assert {item.books_contributing for item in result.opportunities} == {2}
+    assert all(identifier("snapshot:betmgm:late-ingestion") not in item.snapshot_ids for item in result.opportunities)
