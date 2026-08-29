@@ -608,3 +608,100 @@ Consequences:
 - Safe request diagnostics report only counts and elapsed times. Raw provider payloads, credentials, and URLs are never logged.
 - Pricing math, policies, response contracts, persistence schema, and historical source observations are unchanged.
 
+## ADR-045 — Phase 5 uses a chronological model tournament
+
+- Date: 2026-08-28
+- Status: Accepted
+
+No algorithm is designated “the NCAAF model” before empirical comparison. Phase 5B must test a simple opponent-adjusted baseline, Elo/power ratings, Ridge/Elastic Net, a bounded and equal-budget screen of XGBoost/LightGBM/CatBoost, and justified component-score, hierarchical, distributional, or ensemble challengers. Primary evidence uses chronological walk-forward evaluation; random splitting is not acceptable as the primary protocol.
+
+Consequences:
+
+- Complexity must beat naive, interpretable, and same-horizon market benchmarks on untouched forward data.
+- Hyperparameters, transforms, calibrators and ensembles are fitted without the locked test season.
+- Failed candidates remain recorded; a negative result does not force a proprietary model into production.
+- Exact tree family, hierarchical specification, final algorithm and numeric promotion thresholds remain unresolved research outcomes.
+
+## ADR-046 — Primary NCAAF targets are margin and total predictive distributions
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Phase 5B initially models `home_points - away_points` and `home_points + away_points` as predictive distributions. These distributions must support coherent moneyline, spread, total and integer-line push probabilities. Direct home/away component scores and direct binary win probability are challengers/diagnostics, not mandatory production components.
+
+Consequences:
+
+- Point estimates alone cannot qualify a model for probability use.
+- Normal residuals are only a benchmark; Student-t, chronological empirical residual, heteroskedastic, quantile/distributional and joint-score methods remain experiments.
+- Integer score-lattice discretization is the initial method to investigate for nonzero push mass.
+- Phase 4's integer-line exclusion remains unchanged until a push-capable distribution is implemented, calibrated and promoted.
+
+## ADR-047 — Model facts and features require point-in-time provenance
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Every time-sensitive sports/model input must preserve effective, observed and ingested time where applicable, source, provenance, schema/transformation version and reconstructed-versus-contemporaneous status. A historical feature row may include only data available at its declared prediction cutoff. Corrections supersede rather than overwrite source history.
+
+Consequences:
+
+- Closing lines, final injuries, realized weather, postgame corrections, target-game statistics and future opponent results cannot leak into an earlier row.
+- Retrospectively recomputed provider metrics are not assumed point-in-time merely because they are returned for an old season.
+- PostgreSQL is proposed for canonical identities, source indexes and manifests; immutable partitioned files are proposed for bulky PBP, feature matrices and OOF artifacts.
+- Reconstructed data is separately labeled and cannot prove strict replay fidelity without a documented availability rule.
+
+## ADR-048 — Independent and market-residual models precede arbitrary blending
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Phase 5B must preserve an independent football model and test a fixed-horizon market-residual model; a direct market-as-feature model is a challenger. Market consensus remains the baseline and may remain the final fair probability. Any blend must be fitted from chronological out-of-fold predictions with all components/versioning visible.
+
+Consequences:
+
+- No fixed 50/50 or hand-authored market/model weight is allowed.
+- Exact historical market snapshots at the prediction horizon are required for residual, market-feature and blending claims.
+- Market, proprietary and final probabilities remain separate fields with an explicit final-source/blend policy.
+- The best executable price is not an independent model feature or the sole fair-probability source.
+
+## ADR-049 — Model training is offline with immutable artifacts and explicit promotion
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Initial model training, tuning, calibration and bulk evaluation run outside synchronous FastAPI requests. Model, feature, calibration, dataset and run metadata are registered; artifacts are immutable and content-hashed. Lifecycle is `experimental -> candidate -> shadow -> production -> retired`, with recorded transitions.
+
+Consequences:
+
+- A future FastAPI inference path may load one approved small artifact after schema/hash and golden-fixture checks; heavier scheduled work may later justify a worker.
+- No artifact silently replaces another, and historical predictions retain their producing versions.
+- Untrusted arbitrary pickle loading is prohibited; transparent or model-native safe formats are preferred.
+- Artifact store, exact registry schema and future worker choice remain Phase 5B implementation decisions.
+
+## ADR-050 — CFBD is the MVP sports-data candidate; historical odds are a separate gate
+
+- Date: 2026-08-28
+- Status: Accepted for research, pending terms/coverage audit
+
+CollegeFootballData is the recommended first source for schedules/results, PBP, teams/venues, coaches, recruiting, returning production and transfers. SportsDataverse/cfbfastR is a bootstrap and cross-check subject to upstream-use review. Existing Odds API snapshots support forward evaluation; a bounded paid historical-odds audit is required before market-relative backtest claims.
+
+Consequences:
+
+- Phase 5B is not blocked on a large commercial statistics bundle, historical injuries or complete weather.
+- The first paid-data priority is exact fixed-horizon historical odds, after a small coverage audit.
+- Precomputed retrospective metrics must be audited and may not substitute for own as-of rolling features.
+- Injuries, archived forecasts and premium participation feeds enter later only if coverage and ablation evidence justify cost.
+
+## ADR-051 — Promotion requires locked chronological and shadow evidence
+
+- Date: 2026-08-28
+- Status: Accepted in principle; numeric tolerances unresolved
+
+A proprietary candidate cannot affect paper recommendations based on in-sample fit, a random split, ROI, hit rate or a short streak. Proposed evidence includes reproducible manifests, automated leakage checks, calibration, paired proper-score comparison with same-horizon consensus, stability across predeclared segments, a locked forward season and a prospective shadow season. At least two genuinely out-of-sample seasons are the initial requirement.
+
+Consequences:
+
+- Market consensus remains production fair probability while candidates are experimental/candidate/shadow.
+- Exact minimum sample, practical Brier/log-loss improvement, calibration tolerance and acceptable segment degradation must be set after development variance is measured and frozen before opening the final holdout.
+- A model that fails to beat or complement consensus remains experimental; there is no forced promotion or blend.
+

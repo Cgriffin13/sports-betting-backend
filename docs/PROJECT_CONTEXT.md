@@ -90,9 +90,13 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 
 Phases 0–4 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, a transactional ledger, raw and normalized market history, a reproducible consensus/EV baseline and offline replay, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
+Phase 5A has now produced the research specification for an NCAAF model tournament, data-source strategy, time-aware feature catalog, chronological evaluation protocol, and Phase 5B implementation sequence. It deliberately added no production model or application behavior. The first model hypothesis is a pair of calibrated margin/total predictive distributions, evaluated alongside component-score and direct-win challengers across naive, Elo, regularized, boosted-tree, hierarchical, residual, and learned-ensemble approaches. Market consensus remains the implemented final fair probability until a candidate proves incremental out-of-sample value and completes shadow evaluation.
+
 The Phase 4 pricing path calculates probability, edge, and EV independently, but the legacy bet-entry endpoint still accepts optional caller-supplied fields and does not assert that they came from Phase 4. Pricing outputs remain transient until a later official recommendation boundary. The backend stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 
 See `ARCHITECTURE.md` and `MODEL_LOGIC.md` for exact implemented-versus-planned boundaries.
+
+The Phase 5A design details are in `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
 
 ## Product principles
 

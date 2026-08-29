@@ -142,9 +142,17 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-- Select structured NCAAF schedules, results, team statistics, injury/availability, weather, and other research-data sources.
-- Build reproducible, time-aware feature pipelines with provenance and leakage controls.
-- Define baseline model families and strict chronological train/validation/test splits.
+Status: **Phase 5A research and architecture completed on 2026-08-28; Phase 5B implementation has not begun.** Phase 5A selected no production algorithm and changed no application behavior. Its durable specifications are `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
+
+- [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
+- [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
+- [x] Define a model tournament across naive, Elo, regularized regression, boosted-tree, component-score, hierarchical, and evidence-learned ensemble candidates.
+- [x] Define margin and total predictive distributions as primary targets, with direct win and component-score challengers.
+- [x] Define calibration, uncertainty, integer push-probability, registry, explanation, promotion, and falsification requirements.
+- [ ] Audit and ingest the minimum viable historical dataset with versioned manifests and correction semantics.
+- [ ] Build reproducible, time-aware feature pipelines with provenance and leakage/time-travel tests.
+- [ ] Run naive, Elo, Ridge/Elastic Net, distribution, and controlled boosted-tree experiments under frozen chronological folds.
+- [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
 - Create a model registry/versioning and promotion process.
@@ -157,6 +165,21 @@ Exit criteria:
 - Leakage and time-boundary tests exist.
 - The NCAAF model is compared directly with the consensus baseline.
 - Failure to beat or complement consensus results in no promotion, not forced blending.
+
+Phase 5B implementation order:
+
+1. source/identity/terms audit;
+2. raw historical facts ingestion and immutable manifests;
+3. as-of feature/dataset builder;
+4. naive, Elo, and Ridge falsification baselines;
+5. distributions, calibration, and integer push probabilities offline;
+6. bounded tree/component/preseason challengers;
+7. fixed-horizon market residual/comparison experiments;
+8. learned blend and once-only locked evaluation;
+9. registry plus prospective shadow operation; and
+10. separately reviewed production-inference decision only if gates pass.
+
+Phase 5 exit criteria remain **unsatisfied** until implementation evidence exists. Phase 5A documentation is not a model, backtest, or promotion.
 
 ## Phase 6 — Portfolio risk, staking, and approval
 

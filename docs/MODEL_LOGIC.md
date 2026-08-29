@@ -416,6 +416,27 @@ Eventually evaluate results by model/version, sport, league, market, sportsbook,
 
 Market-consensus and proprietary-model predictions should be scored separately against outcomes and closing markets. A model should not receive weight merely because a historical trend recently succeeded; promotion requires time-aware out-of-sample evaluation, calibration evidence, and sufficient sample size.
 
+## Phase 5A NCAAF model specification (planned, not implemented)
+
+The primary research targets are:
+
+```text
+margin = home_points - away_points
+total  = home_points + away_points
+```
+
+Candidates must produce predictive distributions from which moneyline, spread and total `P(win)`, `P(push)`, and `P(loss)` can be derived. A continuous distribution is discretized to the integer football-score lattice; for margin CDF `F`, `P(M = k) = F(k + 0.5) - F(k - 0.5)`. Normal, Student-t, chronological out-of-fold empirical residual, heteroskedastic, quantile/distributional, and joint component-score approaches are experiments—not assumptions. Direct win classification is a moneyline challenger/calibration check and cannot price spreads or totals by itself.
+
+Phase 5B must compare naive opponent-adjusted, Elo/power-rating, Ridge/Elastic Net, a bounded XGBoost/LightGBM/CatBoost screen, optional hierarchical Bayesian, component-score, and out-of-fold ensemble candidates. The initial evidence tracks are an independent football model, a fixed-horizon market-residual model, and a market-as-feature challenger. No family, residual correction, or blend has been selected as the production model. Any blend weight is learned from chronological out-of-fold predictions; arbitrary 50/50 weights are prohibited.
+
+Calibration is fitted only on earlier validation/OOF predictions and versioned separately. Candidate methods include distribution location/scale correction, empirical residual calibration, Platt/logistic, beta, and sufficiently supported isotonic calibration. Model uncertainty remains numerical and decomposed where possible: predictive scale/quantiles, aleatoric and epistemic components, model disagreement, calibration interval, effective sample, data completeness, roster/QB/weather flags, and market dispersion. Phase 5 does not decide how Phase 6 converts these into stakes.
+
+The recommended first operational research horizon is 60 minutes before kickoff, with 24-hour and opening experiments reported separately. A historical row may use only source and feature records available at its cutoff, including both observation and ingestion time. Closing lines, final availability, realized weather, postgame corrections, and future opponent results cannot leak backward.
+
+Promotion requires reproducible versioned data/features/artifacts, automated leakage checks, chronological OOS evaluation, calibration, stable predefined segments, incremental proper-score evidence versus same-horizon market consensus, and prospective shadow performance. At least two genuinely out-of-sample seasons are proposed before recommendation influence; exact practical-effect thresholds and minimum samples remain unresolved until development variance is measured and must be frozen before the locked test.
+
+These semantics are specified in the five `NCAAF_*` research documents. They do not alter Phase 4: proprietary probability remains null, consensus remains the final fair-probability source, and integer spreads/totals remain excluded until push probability is actually modeled and validated.
+
 Model changes must be driven by reproducible out-of-sample evidence rather than short winning or losing streaks. Versioned portfolio-risk policies may adapt to equity, exposure, drawdown, uncertainty, and validated model performance, but any adaptation must be bounded, auditable, and evaluated separately from predictive-model changes. Straight-bet and future parlay-sleeve results must remain separately segmented.
 
 ## Testing requirements

@@ -1,0 +1,187 @@
+# NCAAF Experiment Plan
+
+Status: **Phase 5A plan; no experiment below has been run.** IDs and hypotheses are durable. Exact hyperparameter grids and promotion tolerances are frozen in a preregistered run manifest after the data audit and before the locked test is opened.
+
+## Decision sequence
+
+The tournament is deliberately staged. A model family earns additional complexity only after its data and simpler comparator work.
+
+1. Prove event, target and point-in-time feature correctness.
+2. Establish naive and sequential rating floors.
+3. Establish interpretable margin/total distributions with Ridge.
+4. Screen tree libraries under one bounded budget.
+5. Compare distribution and calibration choices.
+6. Acquire/audit fixed-horizon odds, then test market residual and market-as-feature candidates.
+7. Test learned blends only from chronological out-of-fold predictions.
+8. Run locked test once, then shadow prospectively.
+
+## Initial experiment matrix
+
+| ID | Target | Feature set | Candidate | Market input? | Distribution / calibration | Primary comparison |
+| --- | --- | --- | --- | --- | --- | --- |
+| D001 | Margin/total | targets only | Historical unconditional mean/variance by season regime | No | Empirical prior | Pipeline sanity floor |
+| D002 | Margin/total | `ncaaf_basic_v1` | Exponentially weighted team differential + learned HFA | No | OOF empirical residual | Naive baseline |
+| E001 | Home win / margin | prior results, venue | Standard Elo | No | Logistic Elo + calibration audit | D002 and market ML |
+| E002 | Margin | results/MOV, venue | MOV-adjusted Elo | No | OOF empirical margin residual | E001/D002 |
+| R001 | Margin | `ncaaf_basic_v1` | Ridge | No | Normal then OOF empirical | D002/E002 |
+| R002 | Total | `ncaaf_basic_v1` | Ridge | No | Normal then OOF empirical | D002 |
+| R003 | Margin/total | `ncaaf_efficiency_v1` | Ridge | No | Best prior distribution, recalibrated | R001/R002 ablation |
+| R004 | Margin/total | efficiency + compact matchup interactions | Elastic Net | No | Same as R003 | Ridge; coefficient stability |
+| P001 | Home/away points jointly | `ncaaf_efficiency_v1` | Two Ridge component models | No | Correlated OOF score residual simulation | Direct margin/total models |
+| T001 | Margin/total | `ncaaf_efficiency_v1` | XGBoost | No | OOF empirical / best common calibrator | R003 under equal budget |
+| T002 | Margin/total | same | LightGBM | No | Same protocol | R003/T001 |
+| T003 | Margin/total | same | CatBoost | No | Same protocol | R003/T001/T002 |
+| U001 | Margin/total | winning linear/tree features | Best simple candidate | No | Normal vs Student-t vs empirical residual | NLL/CRPS/calibration |
+| U002 | Margin/total | same | Heteroskedastic location-scale or NGBoost challenger | No | Conditional scale/distribution | U001; tail/coverage gain |
+| S001 | Margin/total | `ncaaf_preseason_v1` | Ridge / winning tree | No | Winning distribution | Weeks 0–3 and prior-only ablation |
+| M001 | Margin residual to fixed-horizon spread | efficiency + preseason + `ncaaf_market_v1` quality | Ridge | Yes, residual target | OOF residual distribution | Same-horizon consensus |
+| M002 | Total residual to fixed-horizon total | same | Ridge | Yes, residual target | OOF residual distribution | Same-horizon consensus |
+| M003 | Margin/total residual | same | Winning tree | Yes, residual target | Winning calibrator | M001/M002 and consensus |
+| M004 | Margin/total | full + market state | Ridge / winning tree | Yes, direct feature | Winning calibrator | Residual architecture |
+| W001 | Moneyline | football features | Logistic Ridge direct classifier | No | Platt vs beta | Margin-derived probability |
+| B001 | Line probability | OOF market + independent model | Constrained logistic stack on log-odds | Yes, learned blend | Beta/distribution calibration | Best single component |
+| B002 | Margin/total | market + residual candidate | Uncertainty-conditioned shrinkage, low degrees of freedom | Yes | Winning calibrator | B001; only if sample supports |
+| H001 | Margin | compact features | Dynamic hierarchical team/conference model | No | Posterior predictive | Ridge/Elo, early-season uncertainty |
+
+The first computational commitment ends at R003 and E002. Run T001–T003 as a small screen with identical folds, features, search trials, seeds and wall-time cap. Continue only the best operationally acceptable tree, unless differences are within uncertainty—in which case prefer the simpler artifact. H001 is deferred until baseline residuals demonstrate a pooling question worth its cost.
+
+## Ablation matrix
+
+For each winning model, remove exactly one predeclared family:
+
+- opponent adjustments;
+- EPA/success features;
+- explosives/finishing drives;
+- tempo;
+- preseason/team-continuity features;
+- coaching;
+- matchup interactions;
+- market state (market-aware candidates);
+- weather; and
+- availability/news.
+
+Only run weather and availability ablations after coverage audits. Report common-row comparisons and changed coverage. A family with unstable or negligible forward value is dropped even if individual feature importance looks impressive.
+
+## Early-season experiments
+
+S001 expands into four frozen variants:
+
+1. fully regressed prior-season rating only;
+2. prior plus recruiting/talent and returning production;
+3. prior plus QB/coach/transfer continuity;
+4. best prior with current-season evidence weighted by effective plays/games.
+
+Evaluate preseason (before Week 0), after one, two and three games, and Weeks 4+. Compare mean errors, proper scores, calibration and predictive interval coverage. Estimate uncertainty from posterior/bootstrap/fold dispersion and residual scale; do not assign subjective confidence labels.
+
+## Distribution and push experiments
+
+U001 compares normal, Student-t and out-of-fold empirical residuals for each target/horizon. It must report:
+
+- NLL and CRPS;
+- PIT/reliability and 50/80/90/95% coverage;
+- tail errors and key-number probability mass;
+- line Brier/log loss; and
+- integer-line win/push/loss calibration.
+
+U002 proceeds only if residual scale visibly changes with week, feature completeness, favorite magnitude, tempo, roster continuity or market dispersion. Quantile/distributional models must preserve a coherent monotone CDF. Component-score simulation must model covariance; independent home/away score draws are not accepted without evidence.
+
+## Market architecture experiments
+
+M001–M004 require audited exact historical market state at the same cutoff as the football features. Run at 24 hours and 60 minutes; opening is exploratory until consistently defined. For every row retain market policy version, book count/dispersion, observation IDs and snapshot IDs.
+
+M001/M002 test the most interpretable incremental hypothesis. M003 tests nonlinear residual interactions. M004 tests whether direct inclusion is more accurate but must expose reliance on the market. Compare all on the identical eligible intersection and separately report coverage.
+
+The independent model remains in the report even if worse. Its error diversity is necessary to evaluate complementarity. A closing line is evaluation-only for earlier horizons.
+
+## Ensemble experiments
+
+B001 receives only chronological out-of-fold component predictions. Candidate inputs are market log-odds, model log-odds, and at most a small set of predeclared quality/uncertainty interactions. Apply constrained/regularized stacking and calibrate in a later fold.
+
+B002 may condition shrinkage on early season, effective team history, QB/roster uncertainty, market book count/dispersion and model predictive scale. It is allowed only if B001 has stable gain and each regime retains sufficient OOS support. There is no fixed 50/50 blend and no forced blend.
+
+## Tuning budget and selection
+
+- Naive/Elo/Ridge: small explicit grids selected on inner forward folds.
+- Elastic Net: bounded alpha/l1-ratio grid.
+- Each tree library: same number of trials, seeds, maximum depth/leaves, early-stopping protocol and CPU/wall-time budget.
+- Bayesian/distributional: preregistered compact specifications, not open-ended posterior shopping.
+- Transformations, feature selection and calibration are fitted in-fold.
+- Primary selection uses proper probabilistic score plus calibration and operational constraints; point metrics are supporting evidence.
+
+Preserve all trials, including failures. The 2025 holdout is opened once after the candidate and practical-effect rule are frozen.
+
+## Required reports per experiment
+
+Each report contains:
+
+- hypothesis and falsification condition;
+- dataset/feature/model/calibration manifests and hashes;
+- exact folds, horizons, exclusions, coverage and missing reasons;
+- point, distribution, line-probability and calibration metrics;
+- same-horizon market comparison where available;
+- predeclared segment metrics with counts/intervals;
+- runtime, peak memory, artifact size and inference latency;
+- explanation examples generated from actual features;
+- leakage/time-travel test results;
+- whether the result advances, repeats or rejects the hypothesis; and
+- next action without consulting the locked test.
+
+## Phase 5B implementation sequence
+
+### 5B-0 — source and identity audit
+
+Confirm CFBD/cfbfastR terms and coverage, canonical team/venue/player mappings, correction behavior, historical odds sample, source timestamps and target reconciliation. Deliver a go/no-go dataset report.
+
+### 5B-1 — historical facts ingestion
+
+Add versioned, idempotent raw ingestion for NCAAF schedules/results, teams/venues, plays/drives, minimal rosters/coaches and source manifests. PostgreSQL stores canonical/time-sensitive indexes; immutable partitioned Parquet stores bulky PBP. No model code.
+
+### 5B-2 — as-of features and dataset builder
+
+Implement target generation, `ncaaf_basic_v1` and `ncaaf_efficiency_v1`, cutoff joins, opponent adjustment, missing semantics, manifests and time-travel/leakage tests. Emit immutable training matrices.
+
+### 5B-3 — falsification baselines
+
+Run D001/D002, E001/E002 and R001–R003 using chronological folds. Establish evaluation/reporting and OOF prediction artifacts before adding sophistication.
+
+### 5B-4 — distribution/calibration foundation
+
+Run U001 and integer-score discretization. Produce calibrated moneyline/spread/total probabilities and push mass offline. Do not expose them in production.
+
+### 5B-5 — controlled challengers
+
+Run R004/P001 and bounded T001–T003. Advance at most one tree family unless evidence distinguishes more. Run U002 only if heteroskedasticity evidence justifies it.
+
+### 5B-6 — preseason and personnel
+
+Audit and build `ncaaf_preseason_v1`; run S001 and quantify Weeks 0–3 uncertainty. Injury/weather remain optional parallel source audits.
+
+### 5B-7 — historical market comparison
+
+Purchase/import a bounded fixed-horizon odds corpus after sample audit. Reuse Phase 3/4 semantics; run M001–M004 and W001. Measure incremental value versus consensus and CLV readiness.
+
+### 5B-8 — blend and locked evaluation
+
+Run B001 and only justified B002; freeze the complete selection/promotion rule; evaluate 2025 once. A candidate may advance to shadow but not production recommendation influence.
+
+### 5B-9 — registry and prospective shadow
+
+Implement model/run/calibrator registry, immutable artifact verification, offline batch inference and 2026 prospective shadow predictions. Compare operational coverage, calibration and market increment without changing `/opportunities` fair probability.
+
+### 5B-10 — production-inference decision
+
+Only after promotion gates pass, design a separately reviewed API integration that exposes market, proprietary and final probabilities distinctly. A negative decision retains Phase 4 market consensus.
+
+## Human decisions before 5B
+
+- Approve the CFBD/SportsDataverse use and legal review path.
+- Approve a small historical The Odds API coverage/cost audit.
+- Confirm 60 minutes as the first operational horizon and 24 hours as secondary.
+- Confirm whether 2025 stays locked and 2026 is mandatory shadow evidence.
+- Set an experiment compute/time budget and artifact storage location.
+- Decide the minimum practical Brier/log-loss gain and calibration tolerance only after development variance is reported, then freeze them.
+- Decide whether a model may influence paper recommendations after one locked plus one prospective season, or requires additional evidence.
+
+## Explicit non-deliverables
+
+This plan does not implement a production model, proprietary probability in `/opportunities`, staking, portfolio allocation, parlays, automated execution, a web UI or arbitrary LLM probability adjustments.
