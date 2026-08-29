@@ -131,3 +131,5 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 - `tests/`: deterministic API, provider, pricing, replay, domain, ledger, migration-boundary, and service coverage.
 
 Read [`AGENTS.md`](AGENTS.md) and the durable product/architecture documents in [`docs/`](docs/) before making changes.
+
+Phase 5A NCAAF research is documented separately in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md). These are specifications only; market consensus remains the implemented pricing source.
