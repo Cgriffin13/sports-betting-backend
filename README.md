@@ -113,6 +113,8 @@ The flattened `/odds` game/offer shape remains compatible and now adds `snapshot
 
 `/opportunities` returns up to `top_n` qualified results per requested league; 10 is the default and zero is valid. It exposes each book's paired no-vig calculation, consensus dispersion/outliers, best executable price, implied probability, market-consensus fair probability, edge, EV, source observation/snapshot IDs, and policy versions. `proprietary_model_probability` is explicitly null and `final_fair_probability_source` is `market_consensus`. No stake is returned.
 
+Opportunity reads preserve all raw snapshot history for audit while using a bounded scalar SQL projection of only the latest time-eligible market state. Raw snapshot JSON is never selected or deserialized by the pricing path. Historical cutoffs continue to require both observation time and ingestion time at or before `as_of`.
+
 ## Render deployment
 
 Keep the existing web service and start command `uvicorn main:app`. Attach any PostgreSQL service reachable by `DATABASE_URL` (Render PostgreSQL is supported but not required), configure the environment variables above, run `alembic upgrade head` as a pre-deploy/release step, and deploy. A Render Disk is no longer required for primary portfolio state. Application database code contains no Render-specific host or credential logic.

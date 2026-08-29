@@ -591,3 +591,20 @@ Consequences:
 - Pricing calculations are transient rather than stored redundantly; source observations plus policy versions reproduce them.
 - Pricing replay is not an outcome backtest or portfolio simulation. Results, closing prices, and stakes are not fabricated when unavailable.
 
+## ADR-044 — Pricing reads use scalar projections and SQL-ranked latest states
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The opportunity/replay repository selects only the scalar event, sportsbook, observation, and snapshot-timestamp fields consumed by Phase 4. It must not select or materialize `MarketSnapshot` JSON documents. SQL window functions deterministically choose one representative row per snapshot and then the latest eligible snapshot state per canonical event, sportsbook, market type, and period before returning its complete selection rows.
+
+Consequences:
+
+- Phase 3 raw snapshots and metadata remain immutable and available for audit, re-normalization, and provenance, but their size cannot multiply across Phase 4 observation rows.
+- League, market, UTC event-date, observation-time, and ingestion-time predicates bound candidates before ranking; event-start eligibility remains in the shared pricing domain to preserve rejection semantics.
+- The ordering preserves replay semantics: observation time, snapshot request time, ingestion time, and stable UUID tie-breakers prevent future leakage and make repeated runs deterministic.
+- Result cardinality scales with the latest event/book/market state, not the number or raw-payload size of historical snapshots.
+- Provider-neutral pricing DTOs are constructed from mappings; no ORM snapshot, event, book, or observation entity is materialized on this read path.
+- Safe request diagnostics report only counts and elapsed times. Raw provider payloads, credentials, and URLs are never logged.
+- Pricing math, policies, response contracts, persistence schema, and historical source observations are unchanged.
+

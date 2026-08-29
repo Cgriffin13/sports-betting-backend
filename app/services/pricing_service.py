@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from time import perf_counter
 
 from app.domain.consensus import build_pricing_analysis
 from app.domain.markets import ALLOWED_MARKETS, MARKET_ALIASES
@@ -11,6 +13,7 @@ from app.domain.sports import SUPPORTED_SPORTS, normalize_sport
 from app.persistence.pricing_base import PricingObservationQuery, PricingObservationRepository
 
 CANONICAL_REQUEST_MARKETS = frozenset(CANONICAL_MARKET_TYPES.values())
+logger = logging.getLogger(__name__)
 
 
 class PricingService:
@@ -36,6 +39,7 @@ class PricingService:
             raise ValueError(f"Unsupported pricing policy version '{pricing_policy_version}'")
         if qualification_policy_version is not None and qualification_policy_version != self._policy.qualification_version:
             raise ValueError(f"Unsupported qualification policy version '{qualification_policy_version}'")
+        query_started = perf_counter()
         observations = self._repository.list_for_pricing(
             PricingObservationQuery(
                 leagues=normalized_leagues,
@@ -44,12 +48,28 @@ class PricingService:
                 event_date=event_date,
             )
         )
-        return build_pricing_analysis(
+        query_elapsed_ms = (perf_counter() - query_started) * 1_000
+        calculation_started = perf_counter()
+        analysis = build_pricing_analysis(
             observations,
             as_of=cutoff,
             policy=self._policy,
             top_n_per_league=top_n,
         )
+        calculation_elapsed_ms = (perf_counter() - calculation_started) * 1_000
+        logger.info(
+            "pricing_analysis_complete",
+            extra={
+                "observations_fetched": len(observations),
+                "snapshots_represented": len({item.snapshot_id for item in observations}),
+                "events_represented": len({item.event_id for item in observations}),
+                "books_represented": len({item.sportsbook_id for item in observations}),
+                "query_elapsed_ms": round(query_elapsed_ms, 3),
+                "calculation_elapsed_ms": round(calculation_elapsed_ms, 3),
+                "opportunities_returned": len(analysis.opportunities),
+            },
+        )
+        return analysis
 
 
 def build_pricing_policy(

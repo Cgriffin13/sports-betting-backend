@@ -147,6 +147,14 @@ The initial binary EV qualification supports two-outcome moneylines and half-poi
 
 Historical replay enforces `observed_at <= as_of` and `ingested_at <= as_of`. It then selects the latest snapshot state for each event/book/market/period, preventing a later ingestion or line move from leaking into an earlier replay and preventing superseded exact lines from remaining falsely executable. Event start, freshness, ambiguity, supported-book, pair, and qualification gates are evaluated at the cutoff. The cutoff is also the deterministic calculation timestamp. Pricing replay produces decision-time prices only; it is not an outcome backtest or bankroll simulation.
 
+#### Bounded pricing read path
+
+Raw Phase 3 snapshots remain the immutable audit source, but opportunity analysis does not retrieve their JSON documents. The SQLAlchemy pricing repository uses scalar projections and two deterministic SQL window rankings: first one representative row per snapshot state, then the latest eligible snapshot per event, sportsbook, market type, and period. The final projection retrieves only the normalized observation, event, sportsbook, and `requested_at` fields consumed by Phase 4.
+
+The query applies league, market, UTC event-date, `observed_at <= as_of`, and `ingested_at <= as_of` bounds before ranking. Event-start eligibility remains in the shared pricing domain so rejection semantics stay consistent. Result cardinality follows the latest market state rather than the number or size of retained historical snapshots. A prior implementation joined complete `MarketSnapshot` ORM entities—including `raw_payload` and other JSON metadata—to every observation row and reduced history in Python; repeated snapshots amplified deserialized JSON in memory and could exhaust a constrained Render process. The raw records were not themselves the defect and are not deleted.
+
+Each pricing request emits safe structured counts for fetched observations, represented snapshots/events/books, returned opportunities, and query/calculation elapsed milliseconds. It never logs raw payloads, credentials, or credential-bearing URLs.
+
 ### Freshness, retry, cache, and quota policy
 
 Freshness policy `market-freshness-v1` stores provider update time where available, effective observation time, ingestion time, age in seconds, the configured threshold, and materialized `is_stale`. The initial 120-second threshold is configurable through `MARKET_FRESHNESS_SECONDS`; it is an operational baseline, not a permanent empirical claim.
