@@ -1,4 +1,5 @@
 import os
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,7 @@ from app.db.session import create_session_factory
 from app.domain.identity import Principal
 from app.main import create_app
 from app.persistence.sqlalchemy_repository import SqlAlchemyPortfolioRepository
-from app.providers.base import MarketGame
+from app.providers.base import MarketGame, ProviderFetchResult
 from app.security import ApiKeyAuthenticator
 
 
@@ -40,11 +41,22 @@ class FakeProvider:
     def configured(self) -> bool:
         return self._configured
 
-    def fetch_current_odds(self, sport: str, markets: list[str]) -> list[MarketGame]:
+    def fetch_current_odds(self, sport: str, markets: list[str]) -> ProviderFetchResult:
         self.calls.append((sport, markets))
         if self.error:
             raise self.error
-        return self.games
+        return ProviderFetchResult(
+            provider_name="fake_provider",
+            provider_sport_key=f"fake_{sport.lower()}",
+            canonical_league=sport,
+            requested_at=datetime(2026, 8, 28, 12, 0, tzinfo=UTC),
+            provider_retrieved_at=None,
+            request_parameters={"markets": markets},
+            raw_payload=[],
+            response_metadata={},
+            warnings=(),
+            games=tuple(self.games),
+        )
 
 
 @pytest.fixture

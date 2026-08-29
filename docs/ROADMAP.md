@@ -77,20 +77,24 @@ Exit criteria status: **Satisfied for the current private paper-trading service.
 
 Goal: create reproducible, provider-neutral market snapshots.
 
-- Persist raw provider responses and normalized observations.
-- Normalize events, participants, start times, market periods, selections, exact spread/total points, books, and prices.
-- Implement event matching with confidence and review paths for ambiguity.
-- Add freshness, quota, cache, retry, and rate-limit policies.
-- Support scheduled snapshots and closing-price capture.
-- Design for additional providers without requiring a second provider immediately.
-- Add NCAAF/College Football as a first-class league identifier and provider mapping; never alias it to NCAAB.
-- Prioritize NCAAF full-game moneyline, spreads, and totals, followed by equivalent NFL and NBA game-market coverage.
+Status: **Completed in the Phase 3 market-data sprint on 2026-08-28.** Phase 3 stores source and normalized prices; it does not calculate probability, consensus, EV, recommendations, or CLV.
+
+- [x] Persist exact raw provider responses, credential-free request context, source/quota metadata, warnings/errors, and normalized observations transactionally.
+- [x] Normalize stable events, provider-event mappings, canonical/provider books, UTC starts, full-game periods, selection sides, exact spread/total points, and American prices.
+- [x] Match exact provider IDs deterministically and preserve confidence, provenance, and reviewable candidates instead of silently merging conflicts or missing IDs.
+- [x] Add versioned/configurable freshness fields and bounded configurable retry, exponential backoff, cache, quota metadata, and low-quota warning policies.
+- [x] Preserve multiple timestamped snapshots and exact market identity so first, latest pre-start, entry-time, and future closing observations can be selected reproducibly.
+- [x] Keep ingestion callable outside FastAPI through an application service and CLI for manual, cron, or future worker invocation; no scheduler is introduced.
+- [x] Keep The Odds API behind the provider interface and retain NCAAF as distinct from NCAAB.
+- [x] Validate NCAAF full-game moneyline, spread, and total observations across DraftKings, FanDuel, and BetMGM, including repeated snapshots and line movement.
 
 Exit criteria:
 
 - Every normalized price traces back to a raw observation.
 - Only truly equivalent markets are compared.
 - Stale or ambiguous data is identifiable and excluded from automated recommendations.
+
+Exit criteria status: **Satisfied.** Every observation has a raw snapshot/source path; canonical identity includes event, book, market, period, side, and exact point; repeat provider events reuse only consistent mappings; ambiguous/stale records are explicit; and retry/cache/quota behavior is bounded and tested. There is no automated recommendation path yet, so Phase 4 must enforce the stored stale and match-review flags when qualification is introduced.
 
 ## Phase 4 — Baseline pricing and EV engine
 
@@ -255,9 +259,8 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 
 ## Immediate recommended sequence
 
-1. Provision PostgreSQL, apply the Phase 2 migration, and explicitly import/reconcile any retained prototype JSON data.
-2. Build the normalized, persisted NCAAF market snapshot path.
-3. Implement the transparent consensus/EV baseline.
-4. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
-5. Add the conservative equity-scaled risk and approval engine before expanding scope.
+1. Apply the Phase 3 migration in each deployed PostgreSQL environment and begin collecting timestamped NCAAF snapshots.
+2. Implement the transparent consensus/EV baseline from stored equivalent, fresh, unambiguous observations.
+3. Run the opening-weekend NCAAF paper-trading milestone while beginning the NCAAF model track.
+4. Add the conservative equity-scaled risk and approval engine before expanding scope.
 

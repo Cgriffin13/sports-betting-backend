@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ncaaf-2026-001",
+    "sport_key": "americanfootball_ncaaf",
+    "sport_title": "NCAAF",
+    "commence_time": "2026-08-29T23:30:00Z",
+    "home_team": "Coastal Tech",
+    "away_team": "Mountain State",
+    "bookmakers": [
+      {
+        "key": "draftkings",
+        "title": "DraftKings",
+        "last_update": "2026-08-29T20:00:00Z",
+        "markets": [
+          {"key": "h2h", "last_update": "2026-08-29T20:00:00Z", "outcomes": [{"name": "Coastal Tech", "price": -155}, {"name": "Mountain State", "price": 135}]},
+          {"key": "spreads", "last_update": "2026-08-29T20:00:00Z", "outcomes": [{"name": "Coastal Tech", "price": -110, "point": -3.5}, {"name": "Mountain State", "price": -110, "point": 3.5}]},
+          {"key": "totals", "last_update": "2026-08-29T20:00:00Z", "outcomes": [{"name": "Over", "price": -108, "point": 52.5}, {"name": "Under", "price": -112, "point": 52.5}]}
+        ]
+      },
+      {
+        "key": "fanduel",
+        "title": "FanDuel",
+        "last_update": "2026-08-29T20:00:10Z",
+        "markets": [
+          {"key": "h2h", "last_update": "2026-08-29T20:00:10Z", "outcomes": [{"name": "Coastal Tech", "price": -160}, {"name": "Mountain State", "price": 138}]},
+          {"key": "spreads", "last_update": "2026-08-29T20:00:10Z", "outcomes": [{"name": "Coastal Tech", "price": -105, "point": -4.0}, {"name": "Mountain State", "price": -115, "point": 4.0}]},
+          {"key": "totals", "last_update": "2026-08-29T20:00:10Z", "outcomes": [{"name": "Over", "price": -110, "point": 53.0}, {"name": "Under", "price": -110, "point": 53.0}]}
+        ]
+      },
+      {
+        "key": "betmgm",
+        "title": "BetMGM",
+        "last_update": "2026-08-29T20:00:20Z",
+        "markets": [
+          {"key": "h2h", "last_update": "2026-08-29T20:00:20Z", "outcomes": [{"name": "Coastal Tech", "price": -150}, {"name": "Mountain State", "price": 130}]},
+          {"key": "spreads", "last_update": "2026-08-29T20:00:20Z", "outcomes": [{"name": "Coastal Tech", "price": -112, "point": -3.5}, {"name": "Mountain State", "price": -108, "point": 3.5}]},
+          {"key": "totals", "last_update": "2026-08-29T20:00:20Z", "outcomes": [{"name": "Over", "price": -115, "point": 52.5}, {"name": "Under", "price": -105, "point": 52.5}]}
+        ]
+      }
+    ]
+  }
+]

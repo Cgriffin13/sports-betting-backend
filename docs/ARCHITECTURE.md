@@ -13,13 +13,16 @@ private client -- X-API-Key / request ID --> FastAPI routers
                                         OddsService  PortfolioService
                                              |              |
                                              v              v
-                                    MarketDataProvider  PortfolioRepository
-                                             |              |
-                                             v              v
-                                    TheOddsApiProvider  SQLAlchemy repository
-                                             |              |
-                                             v              v
-                                      The Odds API      PostgreSQL
+                                  MarketIngestionService  PortfolioRepository
+                                      |              |          |
+                                      v              v          v
+                              MarketDataProvider  MarketDataRepo  Ledger Repo
+                                      |              |          |
+                                      v              +----+-----+
+                              TheOddsApiProvider          v
+                                      |               PostgreSQL
+                                      v
+                                The Odds API
 ```
 
 `GET /health` is public. `/odds`, portfolio reads, bet placement, settlement, and statistics require `X-API-Key`. Authentication resolves a replaceable `Principal`; every portfolio has an owner, and cross-owner access returns 403. This is a private single-user boundary, not a full identity platform.
@@ -27,10 +30,11 @@ private client -- X-API-Key / request ID --> FastAPI routers
 ### Module responsibilities
 
 - `app/api/`: Pydantic-backed HTTP contracts, authentication dependency, service calls, and known-error mapping. Routes contain no raw SQL or provider HTTP.
-- `app/services/`: provider and portfolio orchestration plus canonical idempotency request hashing.
-- `app/domain/`: sports/market normalization, money rules, principals, and application errors.
-- `app/providers/`: provider-neutral `MarketDataProvider` and The Odds API adapter. The adapter owns URL/auth construction, timeout, requests, sanitized errors, and parsing.
-- `app/db/`: SQLAlchemy 2.x metadata, relational models, database URL normalization, engine, and session factory.
+- `app/services/`: provider-neutral market ingestion, flattened odds behavior, portfolio orchestration, and canonical idempotency hashing. Ingestion is callable without FastAPI.
+- `app/domain/`: league, canonical book, market/period/side/point identity, money rules, principals, and errors.
+- `app/providers/`: provider-neutral fetch records and The Odds API adapter. The adapter owns URL/auth construction, bounded retry/backoff, cache, quota metadata, timeout, sanitized errors, raw response capture, and provider parsing.
+- `app/db/`: SQLAlchemy 2.x ledger and market-data models, database URL normalization, engine, and session factory.
+- `app/persistence/market_repository.py`: atomic raw snapshot, event matching, book mapping, and observation persistence.
 - `app/persistence/sqlalchemy_repository.py`: primary runtime persistence, transactions, row locking, ledger-derived balances, settlements, ownership, and idempotency records.
 - `app/persistence/json_repository.py`: legacy compatibility only; not composed into the runtime.
 - `app/persistence/memory_repository.py`: SQLAlchemy/SQLite test factory.
@@ -51,6 +55,12 @@ private client -- X-API-Key / request ID --> FastAPI routers
 | `settlements` | One auditable settlement per bet with outcome, net payout, source, closing metadata, and timestamp. Unique `bet_id` prevents a second settlement. |
 | `ledger_entries` | Immutable bankroll events with signed `NUMERIC(18,2)` amount, type, bet link, unique portfolio reference, optional idempotency key/metadata, and timestamp. |
 | `idempotency_records` | Owner + endpoint + key uniqueness, canonical request hash, and successful response snapshot. |
+| `market_snapshots` | Exact raw provider response, credential-free request parameters, provider/request timestamps, quota/source metadata, warnings/errors, and ingestion status. PostgreSQL uses JSONB. |
+| `canonical_events` | Stable internal event UUID, league/participants/start/status, and match confidence/review/provenance. Display strings are attributes, not identity. |
+| `provider_event_mappings` | Provider sport/event identifiers mapped to canonical event candidates with confidence and review state. Conflicts may retain multiple candidates. |
+| `sportsbooks` | Canonical book key, display name, active flag, and timestamps. |
+| `provider_sportsbooks` | Provider-specific book identifier/display mapped separately to a canonical sportsbook. |
+| `market_observations` | Snapshot-linked exact price: event, book, canonical market, period, side, exact point identity, American odds, source path, observation/ingestion times, freshness, and match review state. |
 
 Foreign keys use restrictive deletion because financial history must not cascade away. Check constraints bound statuses, results, entry types, and positive stakes. UUIDs are internal identities; existing external IDs preserve API compatibility.
 
@@ -91,7 +101,29 @@ Render remains the backend host. Configure a PostgreSQL `DATABASE_URL`, private 
 
 Odds behavior is unchanged: current/upcoming The Odds API results are filtered by timezone-aware `commence_time` to the requested UTC calendar date. NCAAF maps to `americanfootball_ncaaf` and remains distinct from NCAAB.
 
-## Proposed architecture after Phase 2
+### Market ingestion and identity
+
+A successful fetch produces a provider-neutral `ProviderFetchResult` containing the exact raw JSON payload, sanitized request parameters, response/quota metadata, warnings, provider retrieval time, and parsed games/offers. `MarketIngestionService` persists that fetch through `MarketDataRepository` in one transaction; raw snapshot, new event candidates, provider mappings, book mappings, and observations all commit or all roll back. Sanitized provider failures are recorded as failed snapshots when request context is available.
+
+The Odds API's provider event ID is the deterministic first matching key within its provider sport. A repeat with identical league, home team, away team, and UTC start reuses the canonical event. A reused provider ID with conflicting identity creates a distinct candidate and marks all candidates `conflict`; missing IDs create `needs_review` events and are never silently string-matched. Observations copy the match-review state so later automation can reject ambiguity.
+
+Initial normalized identity is:
+
+```text
+event UUID + canonical sportsbook + market type + period + selection side + exact point
+```
+
+Canonical market types are `moneyline`, `spread`, and `total`; initial period is `full_game`; sides are `home`, `away`, `draw`, `over`, or `under`. Moneyline point identity is `none`; spreads/totals require a `NUMERIC(10,3)` point and normalized point key. Therefore Over 52.5 differs from Over 53.5, and a future first-half spread will differ from a full-game spread without changing the core observation key design.
+
+Every observation retains its snapshot FK and raw payload indexes, making source reconstruction direct. Ordering equivalent identities by `observed_at` supports first-observed and most-recent-pre-start selection. The same records contain enough entry and pre-start timing/line identity for a later closing-price/CLV policy, but Phase 3 does not label a close or calculate CLV.
+
+### Freshness, retry, cache, and quota policy
+
+Freshness policy `market-freshness-v1` stores provider update time where available, effective observation time, ingestion time, age in seconds, the configured threshold, and materialized `is_stale`. The initial 120-second threshold is configurable through `MARKET_FRESHNESS_SECONDS`; it is an operational baseline, not a permanent empirical claim.
+
+The provider retries only timeouts, connection failures, HTTP 408/425/429, and 5xx, with configurable bounded attempts and exponential backoff. Authentication and other client errors are not retried. A configurable short process-local cache reduces duplicate calls; cache hits can still become separately timestamped persisted snapshots. Returned usage headers are stored as structured source metadata, and low remaining quota becomes a structured warning. API keys and credential-bearing URLs are never persisted or logged.
+
+## Proposed architecture after Phase 3
 
 ```text
 Odds providers -> normalization -> no-vig/consensus pricing ----+
@@ -107,6 +139,6 @@ Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
                                   bet ledger -> close -> settlement -> analytics/calibration
 ```
 
-Next phases add normalized market snapshots, pricing/EV, recommendation/risk policy, and an early NCAAF model track. Market consensus is the baseline and benchmark, not necessarily the final proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those engines exist.
+Next phases add pricing/EV, recommendation/risk policy, closing-label policy, and an early NCAAF model track. Market consensus is the baseline and benchmark, not necessarily the final proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those engines exist.
 
 Not implemented: implied-probability calculation, vig removal, consensus pricing, proprietary models, Kelly sizing, recommendation ranking, structured sports/news ingestion, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work.

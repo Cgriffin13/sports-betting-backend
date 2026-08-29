@@ -1,0 +1,38 @@
+from pathlib import Path
+
+import pytest
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, inspect
+
+
+def test_alembic_phase3_upgrade_downgrade_and_schema_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "phase3-migrations.db"
+    database_url = f"sqlite+pysqlite:///{database_path.as_posix()}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    config = Config("alembic.ini")
+
+    command.upgrade(config, "head")
+    engine = create_engine(database_url)
+    assert {
+        "market_snapshots",
+        "canonical_events",
+        "provider_event_mappings",
+        "sportsbooks",
+        "provider_sportsbooks",
+        "market_observations",
+    } <= set(inspect(engine).get_table_names())
+    engine.dispose()
+
+    command.downgrade(config, "-1")
+    engine = create_engine(database_url)
+    tables_after_downgrade = set(inspect(engine).get_table_names())
+    assert "portfolios" in tables_after_downgrade
+    assert "market_snapshots" not in tables_after_downgrade
+    engine.dispose()
+
+    command.upgrade(config, "head")
+    command.check(config)

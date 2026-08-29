@@ -3,19 +3,21 @@ from typing import Any, Final
 
 from app.domain.markets import normalize_markets
 from app.domain.sports import DEFAULT_SPORTS, SUPPORTED_SPORTS, normalize_sport
+from app.persistence.market_base import MarketDataRepository
 from app.providers.base import MarketDataProvider, MarketDataProviderError, MarketGame
+from app.services.market_ingestion_service import MarketIngestionService
 from app.time import commence_date_utc
 
 DEFAULT_ALLOWED_BOOKS: Final = frozenset({"DraftKings", "FanDuel", "BetMGM"})
 
 
 class OddsService:
-    def __init__(self, provider: MarketDataProvider) -> None:
-        self._provider = provider
+    def __init__(self, provider: MarketDataProvider, market_repository: MarketDataRepository | None = None) -> None:
+        self._ingestion = MarketIngestionService(provider, market_repository)
 
     @property
     def provider_configured(self) -> bool:
-        return self._provider.configured
+        return self._ingestion.provider_configured
 
     def get_odds(
         self,
@@ -26,7 +28,7 @@ class OddsService:
         allowed_books: list[str] | None,
         max_games_per_sport: int,
     ) -> dict[str, Any]:
-        if not self._provider.configured:
+        if not self._ingestion.provider_configured:
             return {
                 "error": "Missing ODDS_API_KEY in server environment.",
                 "date": str(requested_date),
@@ -39,13 +41,17 @@ class OddsService:
         selected_books = set(allowed_books) if allowed_books else set(DEFAULT_ALLOWED_BOOKS)
         all_games: list[dict[str, Any]] = []
         errors: list[dict[str, str]] = []
+        snapshot_ids: dict[str, str] = {}
 
         for sport in sports_to_query:
             if sport not in SUPPORTED_SPORTS:
                 errors.append({"sport": sport, "error": f"Unsupported sport '{sport}'"})
                 continue
             try:
-                games = self._provider.fetch_current_odds(sport, normalized_markets)
+                ingestion = self._ingestion.ingest(sport, normalized_markets)
+                games = list(ingestion.fetch.games)
+                if ingestion.persisted is not None:
+                    snapshot_ids[sport] = str(ingestion.persisted.snapshot_id)
             except MarketDataProviderError as exc:
                 errors.append({"sport": sport, "error": exc.public_message})
                 continue
@@ -54,7 +60,7 @@ class OddsService:
             ][:max_games_per_sport]
             all_games.extend(self._serialize_games(matching_games, selected_books))
 
-        return {
+        response: dict[str, Any] = {
             "date": str(requested_date),
             "date_timezone": "UTC",
             "sports": sports_to_query,
@@ -62,7 +68,11 @@ class OddsService:
             "allowed_books": sorted(selected_books),
             "games": all_games,
             "errors": errors,
+            "snapshot_ids": snapshot_ids,
         }
+        if len(snapshot_ids) == 1:
+            response["snapshot_id"] = next(iter(snapshot_ids.values()))
+        return response
 
     @staticmethod
     def _serialize_games(games: list[MarketGame], selected_books: set[str]) -> list[dict[str, Any]]:

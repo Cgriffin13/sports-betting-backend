@@ -333,7 +333,7 @@ Create separate ADR entries when these are resolved:
 - uncertainty representation, qualification thresholds, ranking, Top N tie-breaking, and per-league behavior;
 - portfolio-equity definition, unit display policy, fractional-Kelly multiplier, and exposure caps;
 - primary CLV definition and closing benchmark;
-- event matching and cross-provider identity;
+- cross-provider fuzzy matching, conflict review workflow, and mapping-resolution authority;
 - scheduler/background-job technology;
 - API versioning and migration policy;
 - exact calendar/scope and operational readiness criteria for the NCAAF opening-weekend milestone;
@@ -434,4 +434,85 @@ Consequences:
 - Performance is segmented from straight bets and includes entry EV, stake, outcome, realized P&L, ROI/yield, hit rate, sample size, and later CLV/calibration where meaningful.
 - The sleeve must be reducible or disableable when reproducible out-of-sample evidence shows that it damages risk-adjusted performance.
 - Exact leg counts, EV thresholds, joint-probability methods, Kelly multipliers, caps, and correlation/evidence policies remain unresolved pending empirical validation.
+
+## ADR-033 — Persist raw and normalized market snapshots together
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Each successful market fetch persists the exact raw provider JSON and normalized events/books/observations in one repository transaction. Sanitized request parameters, provider/request times, response/quota metadata, warnings, status, and raw array indexes preserve provenance. PostgreSQL stores JSON documents as JSONB; SQLite remains the deterministic test substitute.
+
+Consequences:
+
+- Every normalized price has a required snapshot foreign key and raw source path.
+- Raw and normalized rows commit or roll back together.
+- API credentials and credential-bearing URLs are excluded from persisted request/source metadata.
+- Raw snapshots are retained even when some provider rows are malformed; ingestion status and structured warnings expose partial normalization.
+
+## ADR-034 — Canonical market identity includes period, side, and exact point
+
+- Date: 2026-08-28
+- Status: Accepted
+
+An equivalent observation is identified by canonical event, canonical sportsbook, market type, period, selection side, and exact point key. Initial markets are full-game moneyline, spread, and total only. Moneyline has no point; spread/total point uses `NUMERIC(10,3)`.
+
+Consequences:
+
+- Over 52.5 cannot be combined with Over 53.5, and home -3.5 cannot be combined with home -4.0.
+- Future half/quarter markets use the existing period dimension rather than overloading full-game identity.
+- Phase 4 must group only complete, truly equivalent identities.
+
+## ADR-035 — Provider event IDs are deterministic matches; ambiguity is never silently merged
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Within a provider sport, an exact provider event ID plus consistent league, home/away teams, and UTC start reuses a canonical event. Conflicting identity produces a separate candidate and marks candidates as conflicts. Missing provider IDs produce review-required events rather than display-string matching.
+
+Consequences:
+
+- Canonical event UUID—not a display string—is the long-term event identity.
+- Mappings preserve confidence, review status, method, and provenance.
+- Observations copy match-review status so automated pricing/recommendation code can exclude uncertainty.
+- Cross-provider fuzzy matching and human conflict resolution remain unresolved future work.
+
+## ADR-036 — Freshness is explicit, versioned, and configurable
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Freshness policy `market-freshness-v1` records provider update time when available, effective observation time, ingestion time, age seconds, configured stale threshold, and stale result. The initial threshold is 120 seconds and is configurable through `MARKET_FRESHNESS_SECONDS`.
+
+Consequences:
+
+- The initial threshold is an operational starting point, not a permanent claim about market quality.
+- Historical stale determinations remain reproducible because policy version and threshold are stored per observation.
+- Phase 4 must exclude or explicitly handle stale prices.
+
+## ADR-037 — Provider retry and cache behavior is bounded
+
+- Date: 2026-08-28
+- Status: Accepted
+
+The Odds API adapter uses configurable timeout, bounded retry count, exponential backoff, and a short process-local successful-response cache. Only connection/timeouts, HTTP 408/425/429, and 5xx retry; authentication and other client errors do not. Usage headers and low-quota warnings are captured structurally.
+
+Consequences:
+
+- There is no uncontrolled retry loop and provider failures remain visible to callers.
+- Cached payloads retain original provider retrieval time while each ingestion records its own request/ingestion time.
+- Cache is an API-safety optimization, not a durable distributed cache or scheduler.
+- Credentials remain confined to transport parameters and never enter stored request metadata or logs.
+
+## ADR-038 — Phase 3 stores closing-price-ready history but does not define CLV
+
+- Date: 2026-08-28
+- Status: Accepted
+
+Multiple immutable observations retain exact market identity, source, provider/observation/ingestion times, and scheduled event start. This supports later selection of first observed, latest pre-start, entry-time, and closing observations.
+
+Consequences:
+
+- Phase 3 does not label an official close, select benchmark books, or calculate CLV.
+- A later decision must define closing cutoff, source/book set, stale/ambiguous handling, and CLV formula.
+- Line movement remains observable without overwriting earlier prices.
 

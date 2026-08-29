@@ -76,14 +76,16 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 - health information;
 - live/current odds retrieval from The Odds API;
 - first-class NCAAF mapping alongside NFL, NCAAB, NBA, MLB, NHL, and WNBA;
-- basic sport, market, sportsbook, and requested UTC calendar-date filtering;
+- provider-neutral raw market snapshots and normalized full-game moneyline, spread, and total observations;
+- stable events/provider mappings, canonical sportsbooks, exact line/period/side identity, freshness, and source provenance;
+- basic sport, market, sportsbook, and requested UTC calendar-date filtering in the compatibility API;
 - PostgreSQL-backed owned portfolios and an auditable relational bankroll ledger;
 - Decimal/NUMERIC money, transactional bet placement/settlement, persistent idempotency, and API-key authentication;
 - manual bet recording and settlement;
 - bankroll accounting; and
 - basic ROI and hit-rate summaries overall and by sport/market bucket.
 
-Phases 0–2 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
+Phases 0–3 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, a transactional ledger, raw and normalized market history, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
 The backend accepts optional probability, edge, and EV fields, but it does not calculate or verify them. It stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 

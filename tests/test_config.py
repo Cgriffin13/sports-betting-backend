@@ -1,5 +1,6 @@
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -44,6 +45,40 @@ def test_settings_require_database_url_and_api_key(monkeypatch: pytest.MonkeyPat
 )
 def test_database_url_normalization_is_vendor_neutral(configured: str, normalized: str) -> None:
     assert normalize_database_url(configured) == normalized
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"provider_max_retries": -1},
+        {"provider_max_retries": 6},
+        {"provider_backoff_seconds": -0.1},
+        {"provider_cache_ttl_seconds": -1},
+        {"provider_low_quota_threshold": -1},
+        {"market_freshness_seconds": 0},
+    ],
+)
+def test_settings_reject_invalid_provider_and_freshness_policy(overrides: dict[str, Any]) -> None:
+    with pytest.raises(ValueError):
+        Settings(**overrides)
+
+
+def test_settings_read_provider_and_freshness_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PROVIDER_TIMEOUT_SECONDS", "8.5")
+    monkeypatch.setenv("PROVIDER_MAX_RETRIES", "3")
+    monkeypatch.setenv("PROVIDER_BACKOFF_SECONDS", "0.1")
+    monkeypatch.setenv("PROVIDER_CACHE_TTL_SECONDS", "30")
+    monkeypatch.setenv("PROVIDER_LOW_QUOTA_THRESHOLD", "7")
+    monkeypatch.setenv("MARKET_FRESHNESS_SECONDS", "180")
+
+    settings = Settings.from_env()
+
+    assert settings.provider_timeout_seconds == 8.5
+    assert settings.provider_max_retries == 3
+    assert settings.provider_backoff_seconds == 0.1
+    assert settings.provider_cache_ttl_seconds == 30
+    assert settings.provider_low_quota_threshold == 7
+    assert settings.market_freshness_seconds == 180
 
 
 def test_settings_reject_malformed_environment_bankroll(monkeypatch: pytest.MonkeyPatch) -> None:

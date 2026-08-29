@@ -28,12 +28,18 @@ def test_schema_contains_phase2_tables_and_constraints(engine: Engine) -> None:
         "bet_approvals",
         "bet_state_transitions",
         "bets",
+        "canonical_events",
         "idempotency_records",
         "ledger_entries",
+        "market_observations",
+        "market_snapshots",
         "owners",
         "portfolios",
+        "provider_event_mappings",
+        "provider_sportsbooks",
         "recommendations",
         "settlements",
+        "sportsbooks",
     }
     assert {column["name"] for column in inspector.get_columns("bets")} >= {
         "provider_event_id",

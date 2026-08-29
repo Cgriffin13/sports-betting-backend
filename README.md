@@ -1,6 +1,6 @@
 # Sports Betting Portfolio Backend
 
-Experimental FastAPI backend for a quantitative sports-wagering portfolio manager. It retrieves current sportsbook odds, records explicitly approved paper bets, maintains an auditable bankroll ledger, settles results, and reports basic performance statistics. It does not place real-money wagers or yet calculate fair probability, EV, recommendations, or stakes.
+Experimental FastAPI backend for a quantitative sports-wagering portfolio manager. It stores raw sportsbook snapshots and provider-neutral market observations, records explicitly approved paper bets, maintains an auditable bankroll ledger, settles results, and reports basic performance statistics. It does not place real-money wagers or yet calculate fair probability, EV, recommendations, or stakes.
 
 NCAAF/College Football is the immediate league priority, followed by NFL and NBA. Python **3.12.x** is the supported development and CI runtime.
 
@@ -22,6 +22,12 @@ Activate `.venv`, copy `.env.example` to `.env`, and replace all placeholders. P
 | `APP_OWNER_NAME` | No | Owner display label; defaults to `Default Owner`. |
 | `ODDS_API_KEY` | For `/odds` | The Odds API credential. |
 | `STARTING_BANKROLL` | No | Positive paper capital for a newly created portfolio; defaults to `200.00`. |
+| `PROVIDER_TIMEOUT_SECONDS` | No | Per-request timeout; defaults to `12.0`. |
+| `PROVIDER_MAX_RETRIES` | No | Bounded retries after the first attempt for timeouts, connection failures, HTTP 408/425/429, and 5xx; defaults to `2`. |
+| `PROVIDER_BACKOFF_SECONDS` | No | Initial exponential-backoff delay; defaults to `0.25`. |
+| `PROVIDER_CACHE_TTL_SECONDS` | No | Process-local successful-fetch cache TTL; defaults to `15.0`. |
+| `PROVIDER_LOW_QUOTA_THRESHOLD` | No | Remaining-request threshold for a structured quota warning; defaults to `10`. |
+| `MARKET_FRESHNESS_SECONDS` | No | Versioned v1 stale-price threshold; defaults to `120`. |
 | `DATA_DIR` | No | Legacy JSON import location only; defaults to `data`. |
 
 Never commit `.env`, API keys, or database credentials.
@@ -46,6 +52,14 @@ python -m app.cli.import_json data/portfolio_db.json
 
 The importer reports portfolio, bet, and reconciliation-adjustment counts. Preserve the source JSON until the report and relational balances have been reviewed.
 
+Market ingestion is also callable without FastAPI, making it suitable for a manual run or a future Render cron/worker trigger:
+
+```bash
+python -m app.cli.ingest_market_data --sport NCAAF --markets h2h spreads totals
+```
+
+This command persists the exact raw response and normalized observations. It does not calculate implied probability, vig, consensus, fair probability, EV, CLV, or recommendations.
+
 ## Run and validate
 
 Apply migrations, then start the unchanged Render-compatible entry point:
@@ -69,13 +83,15 @@ python -m pytest
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /health` | Service, provider configuration, database dialect, and UTC time. |
-| `POST /odds` | Current/upcoming prices filtered by requested UTC calendar date. |
+| `POST /odds` | Current/upcoming prices filtered by requested UTC calendar date; successful runtime fetches also persist a snapshot. |
 | `GET /portfolio/{portfolio_id}` | Cash, reserved stake, equity, realized P&L, and recent bets. |
 | `POST /bets` | Record an approved paper bet and reserve stake transactionally. |
 | `POST /bet-result` | Settle a bet transactionally as win, loss, or push. |
 | `GET /portfolio/{portfolio_id}/stats` | Settled-bet and sport/market statistics plus ledger-derived balances. |
 
 `payout` remains a compatibility field meaning **net profit/loss**, not gross returned cash. Settlement adds `stake + payout` to cash. Open stake reduces available cash but remains part of equity as reserved exposure.
+
+The flattened `/odds` game/offer shape remains compatible and now adds `snapshot_ids` plus `snapshot_id` for a single successful league fetch. Raw provider payloads never include locally supplied credentials, and persisted request parameters omit `apiKey`.
 
 ## Render deployment
 
@@ -84,10 +100,10 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 ## Structure and durable context
 
 - `app/api/`: HTTP validation, authentication dependencies, and error mapping.
-- `app/services/`: odds and portfolio orchestration.
+- `app/services/`: independently callable market ingestion plus odds and portfolio orchestration.
 - `app/providers/`: provider-neutral interface and The Odds API adapter.
-- `app/db/`: SQLAlchemy schema and session/engine construction.
-- `app/persistence/`: database-neutral contract, transactional SQL repository, and legacy/test adapters.
+- `app/db/`: SQLAlchemy ledger and provider-neutral market-data schemas plus session/engine construction.
+- `app/persistence/`: transactional portfolio and market-data repositories plus legacy/test adapters.
 - `migrations/`: Alembic environment and revisions.
 - `app/migration/` and `app/cli/`: explicit legacy JSON import.
 - `tests/`: deterministic API, provider, domain, ledger, migration-boundary, and service coverage.

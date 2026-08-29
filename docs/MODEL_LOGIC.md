@@ -7,7 +7,8 @@ This document defines shared terminology and intended mathematical semantics. It
 | Capability | Current prototype | Planned V2 |
 | --- | --- | --- |
 | American odds retrieval | Implemented | Retain behind provider adapters |
-| First-class NCAAF support | Provider key, aliases, and core market retrieval implemented | Expand through normalized snapshots and modeling |
+| Raw and normalized market snapshots | Implemented for current game markets | Use as the reproducible input to pricing, closing capture, and backtests |
+| First-class NCAAF support | Provider key, aliases, raw snapshots, and normalized full-game markets implemented | Expand through pricing and modeling |
 | Implied-probability calculation | Not implemented | Deterministic pricing primitive |
 | Vig removal | Not implemented | Versioned method per market |
 | Multi-book consensus | Not implemented | Initial fair-price baseline and benchmark |
@@ -21,7 +22,7 @@ This document defines shared terminology and intended mathematical semantics. It
 | Closing line value | Data fields exist; calculation absent | Capture and calculate consistently |
 | Calibration/learning | Not implemented | Offline, evidence-based, and versioned |
 
-The current `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields are passive metadata supplied by the caller. Their names do not prove that a model or calculation occurred.
+The current `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields are passive metadata supplied by the caller. Their names do not prove that a model or calculation occurred. Phase 3 market observations contain source prices and identity only; they do not contain implied, no-vig, consensus, fair, or EV calculations.
 
 The prototype supports both NCAAF and NCAAB as distinct canonical leagues. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
 
@@ -36,6 +37,20 @@ Development priority is NCAAF, NFL, then NBA; MLB, NHL, and WNBA are secondary.
 Alternate spreads/totals and half/quarter markets follow only after the full-game pipeline is validated. Player props are later because they require player-level projections, market-specific settlement rules, and substantially more data/modeling.
 
 These are candidate feature domains, not permission to add them heuristically. Every historical variable must earn weight through reproducible out-of-sample evidence.
+
+## Canonical market observation identity
+
+Phase 3 defines an observation by stable event UUID, canonical sportsbook, canonical market type, period, selection side, and exact point identity. Initial canonical values are:
+
+- market type: `moneyline`, `spread`, or `total`;
+- period: `full_game`;
+- side: `home`, `away`, `draw`, `over`, or `under`;
+- point: null/`none` for moneyline and exact `NUMERIC(10,3)` for spread/total; and
+- price: valid integer American odds.
+
+Equivalent-price calculations in Phase 4 must additionally reject observations marked stale, suspended, `needs_review`, or `conflict`. For example, Over 52.5 and Over 53.5 are different identities, as are home -3.5 and home -4.0. Period is explicit so later first-half/quarter markets cannot collide with full-game markets.
+
+Every normalized observation points to an immutable raw snapshot and raw array indexes. Its provider update time, effective observation time, ingestion time, age, freshness-policy version, threshold, and stale flag are retained. The first and last pre-start observations can therefore be selected later by identity and time. Phase 3 does not define which book set/time is the official close and does not calculate CLV.
 
 ## Core terminology
 
