@@ -23,7 +23,7 @@ Run three information architectures:
 
 The initial algorithm tournament includes a naive opponent-adjusted baseline, Elo/power ratings, Ridge/Elastic Net, a controlled screen of XGBoost/LightGBM/CatBoost, and a deferred hierarchical Bayesian challenger. No family is “the model.” Learned blends are eligible only from out-of-fold predictions and must beat the Phase 4 market baseline on locked chronological data.
 
-The recommended first operational horizon is **60 minutes before scheduled kickoff**, with 24-hour and opening-market research horizons retained for comparison. This balances current information, weather/availability relevance, and executable prices. Historical evidence may force a different horizon.
+The approved first practical workflow is **one game-day-morning run before the first NCAAF kickoff of the day**. The exact fixed local time versus first-kickoff-relative rule remains deliberately unfrozen until the bounded historical-odds audit establishes which convention is consistently reconstructable. Continue evaluating 60 minutes and 24 hours before kickoff as separate research horizons; never combine their results or substitute one for missing morning data.
 
 ## 1. Modeling problem
 
@@ -403,19 +403,24 @@ Numeric practical-effect and calibration tolerances remain unresolved until Phas
 
 Phase 5B should answer: Does an independent model add stable information? Does residual learning improve the market? Which distribution calibrates at key lines? Which early-season priors reduce error without hiding uncertainty? If the answers are negative, keep consensus as final fair probability.
 
-## 14. Unresolved human decisions
+## 14. Resolved constraints and remaining decisions
 
-- Approve the proposed 60-minute first operational horizon and 24-hour comparison horizon.
-- Approve a bounded historical-odds purchase/coverage audit before market-relative experiments.
-- Confirm the intended 2025 locked test and 2026 prospective shadow seasons after the data audit.
-- Decide model artifact storage and an experiment compute/time budget.
-- After development variance is known, approve and freeze minimum practical proper-score gains, calibration tolerances, sample size and segment-failure limits before the locked test.
-- Confirm the legal/terms review standard for CFBD and SportsDataverse-derived data.
-- Decide whether one locked plus one prospective season is enough for paper-recommendation influence or whether a longer shadow is required.
+Approved for Phase 5B planning:
+
+- one game-day-morning operational run, with exact convention selected after the coverage audit;
+- separate 60-minute and 24-hour research horizons;
+- 2025 as the untouched locked test and 2026 as prospective shadow evidence;
+- only a bounded historical-odds audit before any full acquisition;
+- CFBD as the primary MVP source, starting on its free tier with immutable caching;
+- injuries/weather as later coverage and ablation tracks rather than baseline blockers; and
+- offline training with lean PostgreSQL metadata plus immutable Parquet/model-native artifacts.
+
+Still unresolved: the exact morning convention and audit tolerances; the SportsDataverse upstream-use determination; conservative availability rules for reconstructed fields; the operational 2025 access seal; numeric promotion tolerances; and whether evidence beyond one locked plus one shadow season is required. See `NCAAF_SOURCE_AUDIT.md`.
 
 ## Related specifications
 
 - `NCAAF_DATA_SOURCES.md`: source coverage, access, licensing, cost tiers and minimum dataset.
+- `NCAAF_SOURCE_AUDIT.md`: Phase 5B-0 measurements, identity/target contracts, bounded provider audits, costs and go/no-go gates.
 - `NCAAF_FEATURE_CATALOG.md`: feature definitions, timestamps, provenance, missingness and model eligibility.
 - `NCAAF_BACKTEST_DESIGN.md`: cutoff semantics, chronological folds, leakage controls, metrics and evidence rules.
 - `NCAAF_EXPERIMENT_PLAN.md`: concrete experiment matrix and Phase 5B implementation order.

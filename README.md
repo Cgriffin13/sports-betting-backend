@@ -132,4 +132,4 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 
 Read [`AGENTS.md`](AGENTS.md) and the durable product/architecture documents in [`docs/`](docs/) before making changes.
 
-Phase 5A NCAAF research is documented separately in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md). These are specifications only; market consensus remains the implemented pricing source.
+Phase 5 NCAAF research is documented separately in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_SOURCE_AUDIT.md`](docs/NCAAF_SOURCE_AUDIT.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md). These are research specifications/audits only; market consensus remains the implemented pricing source.

@@ -676,12 +676,12 @@ Consequences:
 - A future FastAPI inference path may load one approved small artifact after schema/hash and golden-fixture checks; heavier scheduled work may later justify a worker.
 - No artifact silently replaces another, and historical predictions retain their producing versions.
 - Untrusted arbitrary pickle loading is prohibited; transparent or model-native safe formats are preferred.
-- Artifact store, exact registry schema and future worker choice remain Phase 5B implementation decisions.
+- Initial storage is now resolved as PostgreSQL identity/manifest/registry metadata plus immutable Parquet and model-native artifacts; exact registry schema and any evidence-driven future worker choice remain Phase 5B implementation decisions.
 
 ## ADR-050 — CFBD is the MVP sports-data candidate; historical odds are a separate gate
 
 - Date: 2026-08-28
-- Status: Accepted for research, pending terms/coverage audit
+- Status: Accepted for MVP planning; credentialed terms/coverage execution pending
 
 CollegeFootballData is the recommended first source for schedules/results, PBP, teams/venues, coaches, recruiting, returning production and transfers. SportsDataverse/cfbfastR is a bootstrap and cross-check subject to upstream-use review. Existing Odds API snapshots support forward evaluation; a bounded paid historical-odds audit is required before market-relative backtest claims.
 
@@ -691,11 +691,13 @@ Consequences:
 - The first paid-data priority is exact fixed-horizon historical odds, after a small coverage audit.
 - Precomputed retrospective metrics must be audited and may not substitute for own as-of rolling features.
 - Injuries, archived forecasts and premium participation feeds enter later only if coverage and ablation evidence justify cost.
+- Phase 5B-0 measured 1,819,153 public PBP rows and 98.35% FBS-participant game coverage for 2014–2025, but found material 2021–2022 gaps and 2017 wall-clock missingness. Missingness must remain explicit.
+- Start CFBD on the free tier with immutable caching and bulk/year requests. The credentialed endpoint audit remains an acquisition gate because no key was available during Phase 5B-0.
 
 ## ADR-051 — Promotion requires locked chronological and shadow evidence
 
 - Date: 2026-08-28
-- Status: Accepted in principle; numeric tolerances unresolved
+- Status: Accepted; numeric tolerances unresolved
 
 A proprietary candidate cannot affect paper recommendations based on in-sample fit, a random split, ROI, hit rate or a short streak. Proposed evidence includes reproducible manifests, automated leakage checks, calibration, paired proper-score comparison with same-horizon consensus, stability across predeclared segments, a locked forward season and a prospective shadow season. At least two genuinely out-of-sample seasons are the initial requirement.
 
@@ -704,4 +706,45 @@ Consequences:
 - Market consensus remains production fair probability while candidates are experimental/candidate/shadow.
 - Exact minimum sample, practical Brier/log-loss improvement, calibration tolerance and acceptable segment degradation must be set after development variance is measured and frozen before opening the final holdout.
 - A model that fails to beat or complement consensus remains experimental; there is no forced promotion or blend.
+
+## ADR-052 — Operational morning and research horizons remain distinct
+
+- Date: 2026-08-29
+- Status: Accepted
+
+The first practical recommendation workflow is one game-day-morning run before the first scheduled NCAAF kickoff of the day. A bounded historical-odds audit compares a fixed 09:00 America/New_York convention with first kickoff minus three hours before freezing the operational rule. The 60-minute and 24-hour cutoffs remain separate historical research horizons.
+
+Consequences:
+
+- Morning, 60-minute, and 24-hour results are never combined, substituted, or imputed across horizons.
+- Top-N output remains a ceiling at the single daily operational run; no additional run manufactures opportunities.
+- The exact morning convention is unresolved until the predeclared coverage audit reports consistently reconstructable snapshots.
+- Opening and close may be evaluation benchmarks but are not substitutes for an unavailable operational horizon.
+
+## ADR-053 — The 2025 season is locked and 2026 is prospective shadow evidence
+
+- Date: 2026-08-29
+- Status: Accepted
+
+Use 2014–2024 only for development/model/hyperparameter decisions. Evaluate 2025 exactly once after the candidate, calibration, exclusions, and practical-effect rule are frozen. Use 2026 as prospective shadow evidence.
+
+Consequences:
+
+- Phase 5B-0 used only score-field non-nullness for coverage eligibility and inspected 2025 coverage/null metadata; it never printed, compared, or used score magnitudes or model performance. The holdout remains uncontaminated.
+- If any future work materially consults 2025 outcomes before freezing, it must disclose the contamination and replace the holdout structure rather than rationalize reuse.
+- The operational access-seal mechanism and whether more than one prospective shadow season is required remain unresolved.
+
+## ADR-054 — Phase 5B uses lean offline storage and staged source acquisition
+
+- Date: 2026-08-29
+- Status: Accepted
+
+Initial training and bulk transforms run offline. PostgreSQL stores canonical identities, time-sensitive indexes, manifests, registry metadata, and prediction provenance. Immutable Parquet or equivalent files store bulky research facts/matrices/OOF predictions, and safe model-native formats store trained artifacts. CFBD is free-tier-first and cached immutably. Only the frozen 76-request/2,280-credit historical-odds audit is authorized before a larger corpus decision.
+
+Consequences:
+
+- Do not add Spark, Databricks, distributed ML infrastructure, or a separate inference service without measured evidence.
+- Injuries and weather remain required future audits/ablations but do not block the first statistical baseline.
+- Backfilled archive source time and actual local ingestion time remain distinct; do not falsify ingestion time to simulate contemporaneous capture.
+- Full historical odds acquisition is conditional on predeclared sample tolerances, not enthusiasm after inspecting results.
 

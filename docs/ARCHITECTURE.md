@@ -179,7 +179,7 @@ Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
 
 Next phases add an early NCAAF proprietary-model track, recommendation/risk policy, and closing-label policy. Market consensus is the implemented baseline and benchmark, not a proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those future engines exist.
 
-### Phase 5A NCAAF research architecture (proposed, not implemented)
+### Phase 5 NCAAF research architecture (approved direction, not implemented)
 
 ```text
 CFBD / approved sports sources    historical/future odds    structured reports/weather
@@ -204,10 +204,10 @@ CFBD / approved sports sources    historical/future odds    structured reports/w
                 future distinct market/model/final probabilities
 ```
 
-PostgreSQL remains the system of record for canonical identities, time-sensitive source indexes, source/feature manifests, model/calibrator registry metadata, promotion history, and prediction provenance. Bulky immutable play-by-play extracts, feature matrices, out-of-fold predictions, reports, and model artifacts should be partitioned files (initially Parquet and safe model-native formats) referenced by URI and SHA-256. This is a proposed low-cost research data layer, not an implemented distributed data platform.
+PostgreSQL remains the system of record for canonical identities, time-sensitive source indexes, source/feature manifests, model/calibrator registry metadata, promotion history, and prediction provenance. Bulky immutable play-by-play extracts, feature matrices, out-of-fold predictions, reports, and model artifacts use partitioned files (initially Parquet and safe model-native formats) referenced by URI and SHA-256. Initial training runs offline. Spark, Databricks, distributed ML infrastructure, and a separate inference service are explicitly deferred unless measured scale requires them. This is an approved low-cost direction, not an implemented research data layer.
 
 Every time-sensitive model input must carry `effective_at`, `observed_at`, `ingested_at`, source, provenance, schema version, and reconstructed-versus-contemporaneous status. The as-of builder requires all applicable time boundaries to be at or before the prediction cutoff. Provider corrections supersede rather than overwrite historical versions. Large training and calibration jobs run offline; a future FastAPI inference path may load one approved small artifact only after schema/hash verification and a golden prediction check. Batch refresh or computationally heavy models may later justify a worker.
 
-The proposed research/news pipeline stores cited structured facts through source discovery, entity matching, extraction, reliability tier, corroboration, and versioning. An LLM may assist those steps and explanation rendering; it cannot directly adjust probability. See `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
+The proposed research/news pipeline stores cited structured facts through source discovery, entity matching, extraction, reliability tier, corroboration, and versioning. An LLM may assist those steps and explanation rendering; it cannot directly adjust probability. See `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_SOURCE_AUDIT.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
 
 Not implemented: proprietary models, model blending, push-probability modeling, Kelly sizing, bankroll-aware ranking/stakes, structured sports/news ingestion, outcome backtesting, portfolio simulation, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work.

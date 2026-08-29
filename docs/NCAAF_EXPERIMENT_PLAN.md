@@ -87,7 +87,7 @@ U002 proceeds only if residual scale visibly changes with week, feature complete
 
 ## Market architecture experiments
 
-M001–M004 require audited exact historical market state at the same cutoff as the football features. Run at 24 hours and 60 minutes; opening is exploratory until consistently defined. For every row retain market policy version, book count/dispersion, observation IDs and snapshot IDs.
+M001–M004 require audited exact historical market state at the same cutoff as the football features. Run separate game-day-morning, 24-hour, and 60-minute experiments; opening remains exploratory until consistently defined. Morning, 24-hour, and 60-minute results may not be combined or substituted. For every row retain market policy version, book count/dispersion, observation IDs and snapshot IDs.
 
 M001/M002 test the most interpretable incremental hypothesis. M003 tests nonlinear residual interactions. M004 tests whether direct inclusion is more accurate but must expose reliance on the market. Compare all on the identical eligible intersection and separately report coverage.
 
@@ -130,11 +130,11 @@ Each report contains:
 
 ### 5B-0 — source and identity audit
 
-Confirm CFBD/cfbfastR terms and coverage, canonical team/venue/player mappings, correction behavior, historical odds sample, source timestamps and target reconciliation. Deliver a go/no-go dataset report.
+**Completed as a conditional-go research audit on 2026-08-29.** `NCAAF_SOURCE_AUDIT.md` records public coverage, identities, targets, timing classifications, costs, and frozen designs for the credentialed CFBD and 2,280-credit odds audits. The provider calls were not executed because this workspace had no credentials; those are explicit Phase 5B-1/5B-7 acquisition gates, not fabricated results.
 
 ### 5B-1 — historical facts ingestion
 
-Add versioned, idempotent raw ingestion for NCAAF schedules/results, teams/venues, plays/drives, minimal rosters/coaches and source manifests. PostgreSQL stores canonical/time-sensitive indexes; immutable partitioned Parquet stores bulky PBP. No model code.
+Add versioned, idempotent raw ingestion for NCAAF calendars, schedules/results, teams/conferences, venues, plays/drives, game team stats and source manifests. PostgreSQL stores canonical/time-sensitive indexes; immutable partitioned Parquet stores bulky PBP. Defer rosters/coaches/personnel until the core facts reconcile. No model code.
 
 ### 5B-2 — as-of features and dataset builder
 
@@ -158,7 +158,7 @@ Audit and build `ncaaf_preseason_v1`; run S001 and quantify Weeks 0–3 uncertai
 
 ### 5B-7 — historical market comparison
 
-Purchase/import a bounded fixed-horizon odds corpus after sample audit. Reuse Phase 3/4 semantics; run M001–M004 and W001. Measure incremental value versus consensus and CLV readiness.
+Run the predeclared 76-request/2,280-credit sample first. Purchase/import a larger bounded fixed-horizon corpus only if it passes. Reuse Phase 3/4 semantics under an explicit provider-archive availability policy; run M001–M004 and W001. Measure incremental value versus consensus and CLV readiness.
 
 ### 5B-8 — blend and locked evaluation
 
@@ -172,15 +172,11 @@ Implement model/run/calibrator registry, immutable artifact verification, offlin
 
 Only after promotion gates pass, design a separately reviewed API integration that exposes market, proprietary and final probabilities distinctly. A negative decision retains Phase 4 market consensus.
 
-## Human decisions before 5B
+## Approved constraints and remaining human decisions
 
-- Approve the CFBD/SportsDataverse use and legal review path.
-- Approve a small historical The Odds API coverage/cost audit.
-- Confirm 60 minutes as the first operational horizon and 24 hours as secondary.
-- Confirm whether 2025 stays locked and 2026 is mandatory shadow evidence.
-- Set an experiment compute/time budget and artifact storage location.
-- Decide the minimum practical Brier/log-loss gain and calibration tolerance only after development variance is reported, then freeze them.
-- Decide whether a model may influence paper recommendations after one locked plus one prospective season, or requires additional evidence.
+Approved: CFBD primary MVP/free-tier-first; a small historical-odds audit before full acquisition; one game-day-morning operational run; separate 60-minute and 24-hour research horizons; locked 2025 and prospective 2026; offline training; PostgreSQL metadata plus immutable Parquet/artifacts; and injuries/weather as later ablation tracks.
+
+Remaining decisions are limited to the exact morning convention and predeclared odds-audit tolerances, upstream SportsDataverse-use determination, conservative reconstructed-data delays, 2025 access-seal mechanism, numeric promotion rule, and whether longer shadow evidence is required.
 
 ## Explicit non-deliverables
 

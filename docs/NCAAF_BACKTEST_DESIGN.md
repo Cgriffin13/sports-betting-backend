@@ -47,7 +47,7 @@ Evaluate these distinct snapshots where data permits:
 - 60 minutes before kickoff; and
 - last eligible pre-start snapshot (“close”), for evaluation only.
 
-Recommend **60 minutes pre-kickoff** as the first operational paper-recommendation horizon: it captures much current information while leaving a plausible execution window. It is a hypothesis. The 24-hour horizon tests whether the system has earlier actionable signal. Do not mix horizons in one metric or fill a missing 60-minute observation with a closing price.
+The approved first operational workflow is one **game-day-morning** paper run before the day's first NCAAF kickoff. The bounded odds audit compares a fixed 09:00 America/New_York candidate with a first-kickoff-minus-three-hours candidate; the convention is frozen only after coverage is measured. The 60-minute and 24-hour cutoffs remain separate research estimands. Do not mix horizons in one metric or fill a missing horizon with morning, closing, or another horizon's data.
 
 ## Dataset and season plan
 

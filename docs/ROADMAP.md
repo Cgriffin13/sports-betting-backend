@@ -142,14 +142,15 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A research and architecture completed on 2026-08-28; Phase 5B implementation has not begun.** Phase 5A selected no production algorithm and changed no application behavior. Its durable specifications are `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
+Status: **Phase 5A completed on 2026-08-28; Phase 5B-0 public source/identity audit completed with a conditional-go decision on 2026-08-29.** No model has been trained and no production probability changed. `NCAAF_SOURCE_AUDIT.md` records the empirical coverage findings and the credentialed CFBD/historical-odds gates that remain before source acquisition is complete.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
 - [x] Define a model tournament across naive, Elo, regularized regression, boosted-tree, component-score, hierarchical, and evidence-learned ensemble candidates.
 - [x] Define margin and total predictive distributions as primary targets, with direct win and component-score challengers.
 - [x] Define calibration, uncertainty, integer push-probability, registry, explanation, promotion, and falsification requirements.
-- [ ] Audit and ingest the minimum viable historical dataset with versioned manifests and correction semantics.
+- [x] Complete the Phase 5B-0 public source/identity audit, target contract, cost model, and bounded provider-audit designs.
+- [ ] Execute the credentialed CFBD audit and ingest the minimum viable historical dataset with versioned manifests and correction semantics.
 - [ ] Build reproducible, time-aware feature pipelines with provenance and leakage/time-travel tests.
 - [ ] Run naive, Elo, Ridge/Elastic Net, distribution, and controlled boosted-tree experiments under frozen chronological folds.
 - [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
@@ -168,7 +169,7 @@ Exit criteria:
 
 Phase 5B implementation order:
 
-1. source/identity/terms audit;
+1. credentialed source acquisition and identity implementation, following the completed 5B-0 audit;
 2. raw historical facts ingestion and immutable manifests;
 3. as-of feature/dataset builder;
 4. naive, Elo, and Ridge falsification baselines;
