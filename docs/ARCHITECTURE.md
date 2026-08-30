@@ -236,7 +236,13 @@ Normalized artifacts preserve source-manifest IDs/hashes, transformation/schema 
 
 ### Phase 5 model architecture (planned, not implemented)
 
-The current research layer implements feature engineering but not model training, feature selection, learned imputation, calibration, proprietary probability inference, or market/model blending. Those remain later Phase 5B steps built over versioned source and feature manifests.
+### Phase 5B-3 baseline-model architecture (implemented offline)
+
+`app/research/ncaaf/modeling.py` consumes the immutable horizon-specific feature Parquet files and freezes a model-input manifest before training. Reusable expanding folds evaluate 2019–2023 as development seasons and 2024 as validation; 2025 is rejected. Every Ridge fold owns its median imputation, missing indicators, constant-column removal, scaling, and fit. Sequential power ratings predict before updating. Naive, power, and Ridge OOF rows plus JSON-safe fold parameters are written beneath ignored `.ncaaf-data/models/` with dataset, feature, preprocessing, fold, package, and artifact hashes.
+
+The three horizons are never pooled. The first full run found small legitimate feature differences caused by their point-in-time availability boundaries, so each horizon is fitted independently. No database migration or production dependency was added. FastAPI does not import the research modeling stack, and market consensus remains the production pricing source.
+
+Phase 5B-3 does not implement probability calibration, production inference, model/market blending, recommendations, or stake sizing. Those require later promotion gates and the still-sealed holdout.
 
 Every time-sensitive model input must carry `effective_at`, `observed_at`, `ingested_at`, source, provenance, schema version, and reconstructed-versus-contemporaneous status. The as-of builder requires all applicable time boundaries to be at or before the prediction cutoff. Provider corrections supersede rather than overwrite historical versions. Large training and calibration jobs run offline; a future FastAPI inference path may load one approved small artifact only after schema/hash verification and a golden prediction check. Batch refresh or computationally heavy models may later justify a worker.
 

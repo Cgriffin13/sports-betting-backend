@@ -869,3 +869,43 @@ Consequences:
 - Exact play-level equality is not required across differing taxonomies and processing pipelines.
 - PBP-dependent features carry coverage flags; season/source sensitivity remains a Phase 5B-3 validation concern.
 
+## ADR-064 — Phase 5B-3 uses chronological fold-local falsification baselines
+
+- Date: 2026-08-29
+- Status: Accepted and implemented offline
+
+The first proprietary NCAAF point-model tournament uses reusable expanding folds: 2014–2018 is the earliest training history, 2019–2023 are development evaluations, and 2024 is validation/model selection. Naive baselines, a sequential margin power rating, and Ridge margin/total models run separately for each horizon. Imputation, missing indicators, constant removal, scaling, and fitting are fold-local. OOF predictions and transparent JSON parameter artifacts remain outside Git under `.ncaaf-data/models/`.
+
+Consequences:
+
+- The 2025 holdout remains sealed and is rejected by ordinary model commands.
+- Football point predictions are experimental proprietary candidates, not calibrated fair probabilities, recommendations, or evidence of betting edge.
+- No model runtime or dependency enters FastAPI/Render; scikit-learn and NumPy remain research-only dependencies.
+- Hyperparameters use only development OOF evidence; 2024 is not used to tune the alpha grid.
+
+## ADR-065 — Unstable Elastic Net is deferred and Ridge retains the simplicity preference
+
+- Date: 2026-08-29
+- Status: Accepted for Phase 5B-3
+
+The small predeclared Elastic Net grid was attempted under the same fold-local pipeline, but low-regularization configurations did not converge reliably on the wide v1 matrix. Phase 5B-3 therefore records the attempted grid and defers Elastic Net instead of publishing unstable metrics or expanding the search after seeing results. Ridge uses a modest four-value alpha grid and remains the regularized linear candidate.
+
+Consequences:
+
+- Nonconvergence is negative operational evidence, not a reason for an unplanned tuning campaign.
+- A future Elastic Net retry requires a new predeclared experiment/version and a convergence criterion.
+- Complexity must still demonstrate a practical, stable improvement before advancement.
+
+## ADR-066 — Phase 5B-3 keeps horizons separate and model artifacts transient
+
+- Date: 2026-08-29
+- Status: Accepted and implemented
+
+Exact input comparison found that the three horizon matrices are not fully identical under point-in-time availability, even though most independent-football features coincide. Each horizon is therefore fitted and evaluated independently. OOF/model files remain content-hashed local Parquet/JSON artifacts; only aggregate non-holdout reports are committed. No relational schema is added.
+
+Consequences:
+
+- Results cannot be pooled or copied across horizons.
+- Future weather, availability, and market features can extend the same horizon boundary without redesign.
+- Model persistence remains reproducible and lean; a production registry/inference path is deferred until promotion evidence exists.
+

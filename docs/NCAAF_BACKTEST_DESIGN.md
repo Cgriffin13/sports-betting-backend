@@ -1,6 +1,8 @@
 # NCAAF Backtest Design
 
-Status: **Phase 5B-2 point-in-time dataset and fold metadata implemented; no model or outcome backtest implemented.** Phase 4 still implements pricing replay only.
+Status: **Phase 5B-3 chronological point-model tournament implemented offline.** OOF point predictions and residual diagnostics are research evidence, not an outcome/portfolio backtest, calibrated probability, production model, or market-relative result. Phase 4 still implements pricing replay only.
+
+The implemented folds train on 2014 through the season immediately preceding evaluation, evaluate development seasons 2019–2023, and reserve 2024 for documented validation/model selection. The builder rejects 2025. Median imputation, missing indicators, constant removal, scaling, and Ridge fitting occur inside each fold. OOF artifacts retain game, horizon, target, fold, training cutoff, preprocessing/model version, parameters, dataset/feature hashes, and quality indicators.
 
 ## Objective and estimands
 

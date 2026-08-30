@@ -143,7 +143,7 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 
 Read [`AGENTS.md`](AGENTS.md) and the durable product/architecture documents in [`docs/`](docs/) before making changes.
 
-Phase 5B-2 now implements an offline, content-addressed normalized-Parquet and point-in-time feature factory over the Phase 5B-1 corpus. It does **not** train a model or produce proprietary probabilities; market consensus remains the implemented pricing source. The research contract is documented in [`NCAAF_MODEL_RESEARCH.md`](docs/NCAAF_MODEL_RESEARCH.md), [`NCAAF_DATA_SOURCES.md`](docs/NCAAF_DATA_SOURCES.md), [`NCAAF_SOURCE_AUDIT.md`](docs/NCAAF_SOURCE_AUDIT.md), [`NCAAF_FEATURE_CATALOG.md`](docs/NCAAF_FEATURE_CATALOG.md), [`NCAAF_BACKTEST_DESIGN.md`](docs/NCAAF_BACKTEST_DESIGN.md), and [`NCAAF_EXPERIMENT_PLAN.md`](docs/NCAAF_EXPERIMENT_PLAN.md).
+Phase 5B-3 adds an offline chronological baseline tournament over the Phase 5B-2 point-in-time feature artifacts. It creates naive, sequential power-rating, and fold-local Ridge out-of-fold predictions for margin and total, while keeping all three horizons separate. These are research candidates only: they are not loaded by FastAPI, do not change `/opportunities`, and do not establish betting edge. Market consensus remains the implemented pricing source. See [`NCAAF_BASELINE_MODEL_REPORT.md`](docs/NCAAF_BASELINE_MODEL_REPORT.md) and the durable research contracts linked there.
 
 The completed aggregate corpus evidence is available as [`NCAAF_CORPUS_REPORT.md`](docs/NCAAF_CORPUS_REPORT.md) and machine-readable [`NCAAF_CORPUS_2014_2024.json`](docs/reports/NCAAF_CORPUS_2014_2024.json).
 
@@ -173,5 +173,16 @@ python -m app.cli.inspect_ncaaf_features --feature home_off_ppa_blend
 python -m app.cli.inspect_ncaaf_features --game-id 401628334
 python -m app.cli.report_ncaaf_features
 ```
+
+Phase 5B-3 uses the research-only dependency stack and is also offline/fail-closed:
+
+```powershell
+python -m app.cli.run_ncaaf_baselines --plan
+python -m app.cli.run_ncaaf_baselines
+python -m app.cli.validate_ncaaf_models
+python -m app.cli.inspect_ncaaf_model --metric-prefix "24_hours_before_kickoff|margin"
+```
+
+Binary fold-model artifacts and OOF predictions remain under ignored `.ncaaf-data/`; only aggregate, non-holdout reports are committed.
 
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

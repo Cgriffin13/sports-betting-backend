@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-2 completed through the point-in-time feature factory on 2026-08-29.** No model has been trained and no production probability changed. The source, PBP-reconciliation, and feature-dataset reports record the measured corpus and remaining historical-odds/model gates.
+Status: **Phase 5A through Phase 5B-3 completed through the chronological baseline tournament on 2026-08-29.** Experimental point models and OOF residuals now exist offline, but no production probability changed. The source, PBP-reconciliation, feature-dataset, and baseline-model reports record measured evidence and remaining gates.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -155,6 +155,7 @@ Status: **Phase 5A through Phase 5B-2 completed through the point-in-time featur
 - [x] Add reproducible audit/ingestion/manifest/corpus-report CLIs and reconcile measured CFBD coverage against the Phase 5B-0 cfbfastR QA baseline.
 - [x] Phase 5B-2: freeze a versioned fact normalization/dataset contract, retain the known non-final game with its exclusion, and build leakage-tested pregame feature tables from 2014–2024 without normalizing unrelated lower-division identities.
 - [x] Build reproducible, time-aware feature pipelines with provenance and leakage/time-travel tests.
+- [x] Phase 5B-3: run naive, chronological power-rating, and fold-local Ridge falsification baselines for margin/total across each horizon; persist deterministic OOF predictions and residual diagnostics. Elastic Net is explicitly deferred after bounded convergence failures.
 - [ ] Run naive, Elo, Ridge/Elastic Net, distribution, and controlled boosted-tree experiments under frozen chronological folds.
 - [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
@@ -175,7 +176,7 @@ Phase 5B implementation order:
 1. credentialed source acquisition and identity implementation, following the completed 5B-0 audit;
 2. raw historical facts ingestion and immutable manifests (**complete in 5B-1**);
 3. as-of feature/dataset builder (**complete in 5B-2**);
-4. naive, Elo, and Ridge falsification baselines;
+4. naive, Elo, and Ridge falsification baselines (**complete in 5B-3; Elastic Net deferred with evidence**);
 5. distributions, calibration, and integer push probabilities offline;
 6. bounded tree/component/preseason challengers;
 7. fixed-horizon market residual/comparison experiments;

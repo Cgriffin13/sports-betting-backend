@@ -3,3 +3,5 @@
 # Offline Phase 5 research only. These are intentionally not installed in the Render web service.
 psutil==7.0.0
 pyarrow==21.0.0
+numpy==2.3.3
+scikit-learn==1.7.2

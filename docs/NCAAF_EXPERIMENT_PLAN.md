@@ -142,6 +142,10 @@ Each report contains:
 
 ### 5B-3 — falsification baselines
 
+Implemented 2026-08-29 as `ncaaf-baseline-tournament-v1`: training-mean, home-field, prior-team-average, chronological margin power rating, and Ridge margin/total regressions. The Ridge alpha grid is `{0.1, 1, 10, 100}` and selection uses 2019–2023 development OOF only. Five predeclared feature views test context/priors, raw efficiency, opponent-adjusted, full v1, and full without opponent adjustment. Separate exclusion runs assess 2014 and 2021–2022 training sensitivity. The three horizons remain separate and were fitted independently after exact comparison showed small point-in-time input differences.
+
+Elastic Net's bounded grid was attempted but did not converge reliably on the wide v1 matrix. It is deferred rather than promoted or reported with unstable metrics. Trees, probability distributions, calibration, historical markets, and blending remain later experiments.
+
 Run D001/D002, E001/E002 and R001–R003 using chronological folds. Establish evaluation/reporting and OOF prediction artifacts before adding sophistication.
 
 ### 5B-4 — distribution/calibration foundation

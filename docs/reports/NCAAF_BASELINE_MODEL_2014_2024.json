@@ -1,0 +1,40 @@
+{
+  "availability_policy_version": "cfbd-reconstructed-kickoff-plus-24h-v1",
+  "dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+  "elastic_net": {
+    "attempted_alpha": [0.001, 0.01, 0.1],
+    "attempted_l1_ratio": [0.1, 0.5],
+    "reason": "bounded grid did not converge reliably on the wide v1 matrix",
+    "status": "deferred"
+  },
+  "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+  "folds": [
+    {"evaluation": 2019, "train": [2014, 2018]},
+    {"evaluation": 2020, "train": [2014, 2019]},
+    {"evaluation": 2021, "train": [2014, 2020]},
+    {"evaluation": 2022, "train": [2014, 2021]},
+    {"evaluation": 2023, "train": [2014, 2022]},
+    {"evaluation": 2024, "role": "validation", "train": [2014, 2023]}
+  ],
+  "horizon_inputs_identical": false,
+  "horizons": ["24_hours_before_kickoff", "60_minutes_before_kickoff", "game_day_morning"],
+  "holdout_accessed": false,
+  "metrics_24h": {
+    "margin_power": {"bias": -0.756207, "mae": 13.417835, "rmse": 16.940601, "rows": 4444},
+    "margin_ridge_full": {"bias": 0.634192, "mae": 13.560388, "rmse": 17.072402, "rows": 4444},
+    "margin_prior_team": {"bias": -3.085145, "mae": 15.355673, "rmse": 19.277581, "rows": 4444},
+    "total_ridge_full": {"bias": -0.541439, "mae": 13.202723, "rmse": 16.624366, "rows": 4444},
+    "total_ridge_without_opponent_adjustment": {"bias": -0.536912, "mae": 13.201891, "rmse": 16.617657, "rows": 4444},
+    "total_prior_team": {"bias": 0.699236, "mae": 13.495906, "rmse": 17.011851, "rows": 4444}
+  },
+  "prediction_rows": 267504,
+  "provider_calls": 0,
+  "season_block_bootstrap_95": {
+    "margin_power_minus_full_ridge": [-0.375640, 0.091477],
+    "total_reduced_ridge_minus_full_ridge": [-0.013218, 0.009846],
+    "total_reduced_ridge_minus_prior_team": [-0.600888, 0.023429]
+  },
+  "run_hash": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb",
+  "runtime_seconds": 571.642,
+  "tournament_version": "ncaaf-baseline-tournament-v1"
+}
