@@ -964,3 +964,56 @@ Consequences:
 - Expected component scores remain a diagnostic, including checks for impossible negative expectations.
 - Reconsider joint simulation if richer football inputs, market conditioning, or later empirical evidence produces material dependence.
 
+## ADR-071 — Phase 5B-5 uses an equal-budget controlled tree tournament
+
+- Date: 2026-08-30
+- Status: Accepted and implemented offline
+
+XGBoost, LightGBM, and CatBoost receive the same three bounded configurations, folds, targets, horizons, features, and advancement gates. Configuration choice uses 2019–2023 development evidence at 24 hours; 2024 remains validation. No margin tree advances. CatBoost total clears the frozen point gates and advances only as an offline challenger.
+
+Consequences:
+
+- Tree complexity earns no automatic production role.
+- Research dependencies remain outside Render production requirements.
+- The chronological power rating remains the margin benchmark.
+- CatBoost total cannot affect fair probability, recommendations, or stakes without later probability, market-relative, locked, shadow, and integration evidence.
+
+## ADR-072 — Chronological empirical-discrete mass advances for offline key-number research
+
+- Date: 2026-08-30
+- Status: Accepted as an experimental probability candidate
+
+A versioned empirical residual-ratio correction is learned from strictly earlier OOF seasons and applied to the quality-aware Normal integer lattice. It improves paired NLL/CRPS and represents observed mass near football key margins much better without hand-editing those margins. It also widens the 90% interval and overcovers, which remains an explicit limitation.
+
+Consequences:
+
+- Integer push mass is learned and normalized, never inserted as an arbitrary key-number bonus.
+- Phase 4's production integer-line exclusion remains unchanged.
+- The method proceeds to offline market-relative evaluation only; it is not a production fair probability.
+
+## ADR-073 — Retain Ridge empirical total probability despite CatBoost point improvement
+
+- Date: 2026-08-30
+- Status: Accepted for the current offline benchmark
+
+CatBoost total improves point MAE and remains an offline challenger. Its empirical-residual pairing has slightly better NLL and CRPS than Ridge empirical, but both paired 95% intervals cross zero. Under the frozen simplicity rule, Ridge empirical remains the probability benchmark.
+
+Consequences:
+
+- Point accuracy and distribution quality remain separate promotion questions.
+- Small uncertain proper-score gains do not justify replacing a simpler benchmark.
+- Later fixed-horizon market comparison should include both only if acquisition and compute budgets permit.
+
+## ADR-074 — Future portfolio evaluation separates strategy and executed books
+
+- Date: 2026-08-30
+- Status: Accepted for Phase 6 design
+
+Future paper operation must persist a frozen strategy/model book containing every qualified recommendation, including recommendations a human declines, separately from the actual/executed paper book. Human approval remains required. Performance attribution must distinguish model/qualification quality, human selection, price/execution, and portfolio sizing.
+
+Consequences:
+
+- Declined recommendations are immutable research observations, not deleted opportunities.
+- Selection bias can be measured instead of silently contaminating model evaluation.
+- This decision does not authorize automated wager execution or implement Phase 6 behavior now.
+

@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-4 completed through offline probability calibration on 2026-08-30.** Experimental point models, chronological distributions, push-aware probabilities, and OOF calibration evidence now exist offline, but no production probability changed. The source, PBP-reconciliation, feature-dataset, baseline-model, and probability-calibration reports record measured evidence and remaining gates.
+Status: **Phase 5A through Phase 5B-5 completed through controlled strong-model and key-number experiments on 2026-08-30.** CatBoost total advances only as an offline point challenger; the margin power rating and Ridge-plus-empirical total probability benchmark remain. A chronological empirical-discrete margin method advances for offline push/key-number work. No production probability changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -157,7 +157,8 @@ Status: **Phase 5A through Phase 5B-4 completed through offline probability cali
 - [x] Build reproducible, time-aware feature pipelines with provenance and leakage/time-travel tests.
 - [x] Phase 5B-3: run naive, chronological power-rating, and fold-local Ridge falsification baselines for margin/total across each horizon; persist deterministic OOF predictions and residual diagnostics. Elastic Net is explicitly deferred after bounded convergence failures.
 - [x] Phase 5B-4: fit predeclared Normal, Student-t, empirical, quality-aware, and total skew-normal distributions chronologically; emit deterministic moneyline/spread/total probabilities with explicit integer push mass; report proper scores, interval/PIT, key-number, segment, and paired-bootstrap diagnostics.
-- [ ] Run naive, Elo, Ridge/Elastic Net, distribution, and controlled boosted-tree experiments under frozen chronological folds.
+- [x] Run naive, power-rating, Ridge, distribution, and equal-budget XGBoost/LightGBM/CatBoost experiments under frozen chronological folds; defer unstable Elastic Net with evidence.
+- [x] Evaluate chronological empirical-discrete margin mass without manually boosting key numbers; retain its wider interval coverage as an explicit limitation.
 - [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
@@ -179,7 +180,7 @@ Phase 5B implementation order:
 3. as-of feature/dataset builder (**complete in 5B-2**);
 4. naive, Elo, and Ridge falsification baselines (**complete in 5B-3; Elastic Net deferred with evidence**);
 5. distributions, calibration, and integer push probabilities offline (**complete in 5B-4; quality-aware margin and empirical total candidates advanced for later offline comparison**);
-6. bounded tree/component/preseason challengers;
+6. bounded tree and key-number challengers (**complete in 5B-5; CatBoost total advances only as a point challenger, empirical-discrete margin advances offline**);
 7. fixed-horizon market residual/comparison experiments;
 8. learned blend and once-only locked evaluation;
 9. registry plus prospective shadow operation; and
@@ -199,6 +200,7 @@ Goal: turn positive-EV observations into conservative, reviewable portfolio reco
 - Define ranking rules that consider EV, uncertainty, liquidity/freshness, and portfolio impact—not edge alone.
 - Make “no bet” a first-class decision.
 - Implement immutable recommendation snapshots and explicit human approve/reject actions.
+- Preserve both a frozen strategy/model book (every qualified recommendation, including declines) and the actual/executed paper book. Attribution must separate model/selection quality from approval and execution effects.
 - Keep official bets as paper bets; do not add autonomous sportsbook execution.
 
 Exit criteria:

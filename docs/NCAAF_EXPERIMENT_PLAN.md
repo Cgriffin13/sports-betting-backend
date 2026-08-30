@@ -156,6 +156,8 @@ The frozen design and measured evidence are in `NCAAF_DISTRIBUTION_EXPERIMENT_PL
 
 ### 5B-5 — controlled challengers
 
+Completed offline on 2026-08-30 under [`NCAAF_STRONG_MODEL_EXPERIMENT_PLAN.md`](NCAAF_STRONG_MODEL_EXPERIMENT_PLAN.md). The equal-budget tournament retained the margin power rating, advanced CatBoost total only as a point challenger, retained Ridge empirical as the total probability benchmark, and advanced chronological empirical-discrete margin mass for offline key-number/push research. See [`NCAAF_STRONG_MODEL_REPORT.md`](NCAAF_STRONG_MODEL_REPORT.md).
+
 Run R004/P001 and bounded T001–T003. Advance at most one tree family unless evidence distinguishes more. Run U002 only if heteroskedasticity evidence justifies it.
 
 ### 5B-6 — preseason and personnel

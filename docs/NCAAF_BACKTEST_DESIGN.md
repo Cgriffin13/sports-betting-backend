@@ -1,6 +1,6 @@
 # NCAAF Backtest Design
 
-Status: **Phase 5B-4 chronological distribution tournament implemented offline.** OOF point predictions now feed strictly prior residual pools, push-aware line probabilities, and calibration diagnostics. This remains football-outcome research—not a portfolio backtest, production model, or market-relative result. Phase 4 still implements pricing replay only.
+Status: **Phase 5B-5 controlled strong-model and key-number experiments implemented offline.** OOF point predictions feed strictly prior residual pools, including a chronological empirical-discrete margin challenger. This remains football-outcome research—not a portfolio backtest, production model, or market-relative result. Phase 4 still implements pricing replay only.
 
 The implemented folds train on 2014 through the season immediately preceding evaluation, evaluate development seasons 2019–2023, and reserve 2024 for documented validation/model selection. The builder rejects 2025. Median imputation, missing indicators, constant removal, scaling, and Ridge fitting occur inside each fold. OOF artifacts retain game, horizon, target, fold, training cutoff, preprocessing/model version, parameters, dataset/feature hashes, and quality indicators.
 
@@ -222,6 +222,8 @@ PostgreSQL should store registry/run metadata and point-in-time source indexes. 
 ## Promotion evidence
 
 Before affecting paper recommendations, a candidate needs reproducible as-of data, leakage tests, frozen hyperparameters/calibration, stability across predefined segments, and at least two genuinely out-of-sample seasons (for example a locked 2025 test plus 2026 shadow). A market-aware candidate must improve mean Brier and log loss over same-horizon consensus under a predeclared practical threshold and paired interval, without material calibration or segment failures.
+
+When paper recommendations eventually begin, evaluate two immutable books: (1) the strategy/model book containing every qualified recommendation at its frozen decision price, including human declines, and (2) the actual/executed book containing approved paper positions and realized execution details. Report model, human-selection, execution-price, and sizing attribution separately.
 
 Exact numeric thresholds and minimum game counts remain unresolved until Phase 5B measures variance. Freeze them before evaluating the final holdout. A negative result—keeping market consensus—is valid.
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, Sequence
 
 import numpy as np
@@ -12,6 +12,7 @@ CALIBRATION_VERSION = "ncaaf-distribution-calibration-v1"
 NORMAL_VERSION = "normal-homoskedastic-v1"
 STUDENT_T_VERSION = "student-t-bounded-grid-v1"
 EMPIRICAL_VERSION = "empirical-kernel-v1"
+EMPIRICAL_DISCRETE_MARGIN_VERSION = "empirical-discrete-margin-v1"
 HETEROSKEDASTIC_VERSION = "quality-grouped-scale-v1"
 SKEW_NORMAL_VERSION = "skew-normal-total-v1"
 MIN_SCALE = 0.25
@@ -162,6 +163,133 @@ class EmpiricalGridDistribution:
             "pool_id": self.pool_id,
             "bandwidth": self.bandwidth,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class EmpiricalDiscreteDistribution:
+    """Finite integer lattice with endpoint bins carrying the remaining tails."""
+
+    support: np.ndarray
+    mass: np.ndarray
+    pool_id: str
+    family: str = EMPIRICAL_DISCRETE_MARGIN_VERSION
+    cumulative_mass: np.ndarray = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if len(self.support) < 3 or len(self.support) != len(self.mass):
+            raise ValueError("empirical discrete arrays are invalid")
+        if not np.all(np.diff(self.support) == 1):
+            raise ValueError("empirical discrete support must be consecutive integers")
+        if not np.all(np.isfinite(self.mass)) or np.any(self.mass < 0):
+            raise ValueError("empirical discrete mass must be finite and nonnegative")
+        if not math.isclose(float(np.sum(self.mass)), 1.0, abs_tol=1e-10):
+            raise ValueError("empirical discrete mass must sum to one")
+        object.__setattr__(self, "cumulative_mass", np.cumsum(self.mass))
+
+    @property
+    def location(self) -> float:
+        return float(np.sum(self.support * self.mass))
+
+    @property
+    def scale(self) -> float:
+        return float(np.sqrt(np.sum(((self.support - self.location) ** 2) * self.mass)))
+
+    def cdf(self, value: float) -> float:
+        index = int(np.searchsorted(self.support, math.floor(value), side="right"))
+        return _probability(0.0 if index == 0 else float(self.cumulative_mass[index - 1]))
+
+    def pdf(self, value: float) -> float:
+        integer = int(round(value))
+        if not math.isclose(value, integer, abs_tol=1e-9):
+            return PROBABILITY_EPSILON
+        index = integer - int(self.support[0])
+        if index < 0 or index >= len(self.mass):
+            return PROBABILITY_EPSILON
+        return max(PROBABILITY_EPSILON, float(self.mass[index]))
+
+    def ppf(self, probability: float) -> float:
+        index = int(np.searchsorted(self.cumulative_mass, _open_probability(probability), side="left"))
+        return float(self.support[min(index, len(self.support) - 1)])
+
+    def parameters(self) -> Mapping[str, Any]:
+        return {
+            "support_min": int(self.support[0]),
+            "support_max": int(self.support[-1]),
+            "pool_id": self.pool_id,
+        }
+
+
+def normal_integer_lattice(
+    location: float,
+    scale: float,
+    *,
+    support_min: int = -80,
+    support_max: int = 80,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Discretize a Normal distribution; endpoint bins retain all outside tail mass."""
+    _validate_location_scale(location, scale)
+    support = np.arange(support_min, support_max + 1, dtype=np.int16)
+    edges = support.astype(float)
+    upper = stats.norm.cdf(edges + 0.5, loc=location, scale=scale)
+    lower = stats.norm.cdf(edges - 0.5, loc=location, scale=scale)
+    mass = np.asarray(upper - lower, dtype=float)
+    mass[0] += float(stats.norm.cdf(support_min - 0.5, loc=location, scale=scale))
+    mass[-1] += 1.0 - float(stats.norm.cdf(support_max + 0.5, loc=location, scale=scale))
+    mass /= np.sum(mass)
+    return support, mass
+
+
+def fit_empirical_discrete_ratios(
+    actuals: Sequence[float],
+    locations: Sequence[float],
+    scales: Sequence[float],
+    *,
+    support_min: int = -80,
+    support_max: int = 80,
+    pseudo_observations: float = 200.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Learn a shrunk observed/expected lattice correction from prior rows only."""
+    if not (len(actuals) == len(locations) == len(scales)) or len(actuals) < 400:
+        raise ValueError("empirical discrete fitting requires at least 400 aligned rows")
+    support = np.arange(support_min, support_max + 1, dtype=np.int16)
+    observed = np.zeros(len(support), dtype=float)
+    expected = np.zeros(len(support), dtype=float)
+    for actual, location, scale in zip(actuals, locations, scales, strict=True):
+        if not all(math.isfinite(value) for value in (actual, location, scale)) or scale <= 0:
+            raise ValueError("empirical discrete fitting inputs must be finite with positive scales")
+        _, lattice = normal_integer_lattice(location, scale, support_min=support_min, support_max=support_max)
+        expected += lattice
+        clipped = min(support_max, max(support_min, int(round(actual))))
+        observed[clipped - support_min] += 1.0
+    prior = pseudo_observations * expected / float(len(actuals))
+    ratios = (observed + prior) / np.maximum(expected + prior, PROBABILITY_EPSILON)
+    return support, np.clip(ratios, 0.25, 4.0)
+
+
+def empirical_discrete_distribution(
+    location: float,
+    scale: float,
+    support: np.ndarray,
+    ratios: np.ndarray,
+    *,
+    pool_id: str,
+) -> EmpiricalDiscreteDistribution:
+    if len(support) != len(ratios) or np.any(ratios <= 0) or not np.all(np.isfinite(ratios)):
+        raise ValueError("empirical discrete correction is invalid")
+    _, baseline = normal_integer_lattice(
+        location,
+        scale,
+        support_min=int(support[0]),
+        support_max=int(support[-1]),
+    )
+    mass = baseline * ratios
+    mass /= np.sum(mass)
+    return EmpiricalDiscreteDistribution(support.copy(), mass, pool_id)
+
+
+def discrete_crps(distribution: EmpiricalDiscreteDistribution, actual: float) -> float:
+    observed_cdf = (distribution.support >= int(round(actual))).astype(float)
+    return float(np.sum((np.cumsum(distribution.mass) - observed_cdf) ** 2))
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,58 @@
+{
+  "status": "phase-5b-5-complete-offline",
+  "holdout_accessed": false,
+  "provider_calls": 0,
+  "dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+  "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+  "baseline_run_hash": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb",
+  "probability_run_hash": "4813f18a64fa5ae0d53038d07947ff47b135107fbf97f03825f25212332ff51b",
+  "strong_run_hash": "8d168885a452466d92b8a97d650ce672710703e91e0af329632b111496a1cbfb",
+  "key_number_run_hash": "38d21e9743db9e65b3f0f20f6118db9b18e00c7d778a7f1dbdde461d42b508e6",
+  "challenger_distribution_run_hash": "f3d566354c8bd7854a7cb32d30238fb14a2495557289be18ec9c07e0ac1afc37",
+  "fit_budget": {"actual_total": 238, "tuning": 90, "primary_oof": 108, "ablation": 36, "sensitivity": 2, "importance": 2},
+  "runtime": {
+    "strong_seconds": 2042.635,
+    "strong_peak_rss_bytes": 1073520640,
+    "key_number_seconds": 168.128,
+    "key_number_peak_rss_bytes": 718745600,
+    "challenger_distribution_seconds": 23.654,
+    "challenger_distribution_peak_rss_bytes": 648069120
+  },
+  "artifact_bytes": {"strong": 2770806, "key_number": 10605978, "challenger_distribution": 2077079},
+  "primary_24h": {
+    "margin": {
+      "retained": "chronological-power-rating-v1",
+      "baseline_mae": 13.4178347605,
+      "catboost_mae": 13.5223490045,
+      "xgboost_mae": 13.5211994278,
+      "lightgbm_mae": 13.5627101581
+    },
+    "total": {
+      "probability_benchmark": "ridge-full-without-opponent-adjustment-plus-empirical",
+      "point_challenger": "catboost-conservative-full-v1",
+      "baseline_mae": 13.2018911288,
+      "catboost_mae": 13.0937943521,
+      "catboost_mae_difference": -0.1080967768,
+      "catboost_mae_difference_ci": [-0.1843211747, -0.0303189763]
+    }
+  },
+  "key_number_24h": {
+    "normal_nll": 4.2418780924,
+    "empirical_discrete_nll": 4.1108483577,
+    "normal_discrete_crps": 9.4975802451,
+    "empirical_discrete_crps": 9.4232903784,
+    "nll_difference_ci": [-0.1465561516, -0.1137940737],
+    "crps_difference_ci": [-0.0917581653, -0.0605234492],
+    "other_common_positive_margins": {"21": 90, "17": 86, "4": 78, "2": 71, "28": 68},
+    "advances_offline": true
+  },
+  "catboost_total_distribution_24h": {
+    "catboost_empirical_nll": 4.2149232247,
+    "catboost_empirical_crps": 9.2112274750,
+    "ridge_empirical_nll": 4.2248053502,
+    "ridge_empirical_crps": 9.3042254987,
+    "nll_difference_ci": [-0.0249422634, 0.0001176798],
+    "crps_difference_ci": [-0.2374393023, 0.0071840470],
+    "advances_probability_pairing": false
+  }
+}

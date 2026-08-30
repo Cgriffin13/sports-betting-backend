@@ -424,3 +424,4 @@ Still unresolved: the exact morning convention and audit tolerances; the SportsD
 - `NCAAF_FEATURE_CATALOG.md`: feature definitions, timestamps, provenance, missingness and model eligibility.
 - `NCAAF_BACKTEST_DESIGN.md`: cutoff semantics, chronological folds, leakage controls, metrics and evidence rules.
 - `NCAAF_EXPERIMENT_PLAN.md`: concrete experiment matrix and Phase 5B implementation order.
+> Phase 5B-5 implementation note (2026-08-30): the controlled tree tournament and empirical-discrete key-number experiment are complete offline. No margin tree displaced the power rating; CatBoost total advanced only as a point challenger; Ridge empirical remains the total probability benchmark; empirical-discrete margin advances for offline evaluation. See [`NCAAF_STRONG_MODEL_REPORT.md`](NCAAF_STRONG_MODEL_REPORT.md).

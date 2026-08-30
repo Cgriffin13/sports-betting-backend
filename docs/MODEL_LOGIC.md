@@ -451,6 +451,20 @@ The integer lattice assigns `P(X = k) = F(k + 0.5) - F(k - 0.5)`. A home spread 
 
 V1 advances the chronological margin power rating with quality-grouped Normal scale and total Ridge without opponent adjustment with an empirical residual distribution for later offline comparison. Normal remains the falsification benchmark. No post-hoc binary transform is promoted, and no market odds are used. This does **not** remove Phase 4's integer-line exclusion because the offline distribution has not passed locked/shadow or market-relative promotion gates and is not connected to pricing.
 
+### Phase 5B-5 strong challengers and empirical discrete mass
+
+XGBoost, LightGBM, and CatBoost use the same frozen folds, feature groups, three-configuration budget, and predeclared advancement gates. No margin tree displaced the chronological power rating. CatBoost `full_v1` improved total point MAE enough to advance as an offline point challenger, but its empirical-residual probability pairing did not beat Ridge plus empirical residual with paired intervals wholly below zero. Ridge therefore remains the total probability benchmark.
+
+The empirical-discrete margin method starts with the quality-aware Normal probability mass on each integer margin `k` and applies a chronological residual-ratio correction learned only from earlier OOF seasons:
+
+```text
+base_mass(k) = F(k + 0.5) - F(k - 0.5)
+ratio(r) = smoothed_observed_residual_mass(r) / smoothed_Normal_reference_mass(r)
+adjusted_mass(k) proportional_to base_mass(k) * ratio(k - rounded_location)
+```
+
+The finite lattice is normalized exactly. This captures observed key-number clustering without hand-assigning probability to 3, 7, 10, or 14. It advances only for offline evaluation. Phase 4 still excludes integer-line EV because offline probability research has not passed locked 2025, prospective 2026 shadow, market-relative, and integration gates.
+
 Distribution evaluation uses NLL, quantile-integrated CRPS, PIT bins, 50/80/90/95% coverage and width, moneyline Brier/log loss, and synthetic three-way line scoring. Score clipping is used only to avoid `log(0)`; stored probabilities are not rounded. Full evidence and limitations are in `NCAAF_PROBABILITY_CALIBRATION_REPORT.md`.
 
 Calibration is fitted only on earlier validation/OOF predictions and versioned separately. Candidate methods include distribution location/scale correction, empirical residual calibration, Platt/logistic, beta, and sufficiently supported isotonic calibration. Model uncertainty remains numerical and decomposed where possible: predictive scale/quantiles, aleatoric and epistemic components, model disagreement, calibration interval, effective sample, data completeness, roster/QB/weather flags, and market dispersion. Phase 5 does not decide how Phase 6 converts these into stakes.

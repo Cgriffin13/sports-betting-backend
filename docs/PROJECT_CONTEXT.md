@@ -204,3 +204,4 @@ The following are known current-state problems, not solved capabilities:
 
 V2 should first become a trustworthy paper-trading system: reproducible prices, explicit financial semantics, durable data, conservative risk policy, human approval, deterministic tests, and honest measurement. The first vertical target is a complete NCAAF paper-trading baseline, followed closely by an evidence-based NCAAF model track. Predictive sophistication is valuable only when the foundations make experiments auditable.
 
+> Current research status (2026-08-30): Phase 5B-5 completed controlled offline strong-model and key-number experiments. These candidates do not feed the live API; market consensus remains the implemented fair-probability source, and 2025 remains sealed.

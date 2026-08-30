@@ -198,4 +198,17 @@ python -m app.cli.inspect_ncaaf_probability 401628334 --target margin
 
 The probability engine is research-only and is not connected to `/opportunities`. Phase 4 market consensus remains the production fair-probability source, and its conservative integer-line EV exclusion remains in force. See [`NCAAF_PROBABILITY_CALIBRATION_REPORT.md`](docs/NCAAF_PROBABILITY_CALIBRATION_REPORT.md).
 
+Phase 5B-5 adds an equal-budget offline XGBoost/LightGBM/CatBoost tournament and chronological empirical-discrete margin refinement. The tree libraries remain in `requirements-research.txt`; Render's production `requirements.txt` is unchanged:
+
+```powershell
+python -m app.cli.run_ncaaf_strong_models --plan
+python -m app.cli.run_ncaaf_strong_models
+python -m app.cli.run_ncaaf_key_numbers
+python -m app.cli.run_ncaaf_challenger_distribution
+python -m app.cli.validate_ncaaf_strong_models
+python -m app.cli.calculate_ncaaf_discrete_margin --mean 6.5 --scale 17 --line -7
+```
+
+These commands are offline, reject 2025+, and do not affect FastAPI. See [`NCAAF_STRONG_MODEL_REPORT.md`](docs/NCAAF_STRONG_MODEL_REPORT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

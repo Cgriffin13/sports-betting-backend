@@ -196,6 +196,12 @@ Phase 5B-3 OOF point predictions and residuals
 
 This layer is deliberately absent from the FastAPI dependency graph. It adds no endpoint, migration, Render dependency, or production inference path. `/opportunities` continues to use Phase 4 market consensus, with proprietary probability null. Large probability artifacts remain content-hashed under ignored `.ncaaf-data/models/probability-v1/`.
 
+### Phase 5B-5 strong-model layer (implemented offline)
+
+`app.research.ncaaf.strong_models` consumes the frozen Phase 5B-2 matrices and Phase 5B-3 fold contract. It runs an equal-budget, deterministic XGBoost/LightGBM/CatBoost tournament with bounded configurations, fold-local missing-value handling, OOF predictions, ablations, sensitivity checks, permutation diagnostics, and content-hashed manifests. `app.research.ncaaf.key_numbers` fits chronological empirical-discrete margin mass from strictly earlier OOF residuals. `app.research.ncaaf.challenger_distribution` performs only the frozen limited distribution pairing for a point challenger that clears its gates.
+
+All dependencies and artifacts remain research-only. The web service does not import these modules, production requirements are unchanged, and no endpoint or migration was added. A future Phase 6 recommendation boundary must retain two immutable views: the strategy/model book of every qualified opportunity and the actual/executed paper book after human approval. That separation is required for selection-bias and execution attribution.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text
@@ -251,7 +257,7 @@ Phase 5B-1 immutable raw JSON.gz + PostgreSQL identity/manifests
 
 Normalized artifacts preserve source-manifest IDs/hashes, transformation/schema versions, row counts, input hashes, exact file hashes, and immutable paths. The feature manifest records the normalized input, feature-set/availability/fold policy versions, season range, eligibility counts, schema hash, and content hash. A mutable `current.json` pointer is only a convenience reference and never mutates prior content-addressed artifacts.
 
-### Phase 5 model architecture (planned, not implemented)
+### Broader Phase 5 production architecture (planned, not implemented)
 
 ### Phase 5B-3 baseline-model architecture (implemented offline)
 
@@ -265,4 +271,4 @@ Every time-sensitive model input must carry `effective_at`, `observed_at`, `inge
 
 The proposed research/news pipeline stores cited structured facts through source discovery, entity matching, extraction, reliability tier, corroboration, and versioning. An LLM may assist those steps and explanation rendering; it cannot directly adjust probability. See `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_SOURCE_AUDIT.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
 
-Not implemented: proprietary models, model blending, push-probability modeling, Kelly sizing, bankroll-aware ranking/stakes, structured sports/news ingestion, outcome backtesting, portfolio simulation, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work.
+Not implemented in production: proprietary-model inference, model blending, push-aware EV integration, Kelly sizing, bankroll-aware ranking/stakes, structured sports/news ingestion, portfolio simulation, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work. Offline proprietary point models and push-aware probability research now exist but do not feed FastAPI.
