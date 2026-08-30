@@ -435,7 +435,23 @@ Candidates must produce predictive distributions from which moneyline, spread an
 
 Phase 5B-3 implements the first falsification tier: training-mean/home-field/prior-team naive baselines, a chronological margin power rating, and fold-local Ridge for margin and total. Ridge uses training-fold median imputation with missing indicators, constant removal, standardization, and a four-value alpha grid selected only on 2019–2023 development OOF error. Elastic Net was attempted on its predeclared small grid but deferred because the wide v1 design did not converge reliably; unstable complexity is not reported as a challenger result.
 
-All three horizons are evaluated independently. Residuals are point-error diagnostics only and are not yet win, cover, total, or push probabilities. The artifacts are the first proprietary football point-prediction candidates, but none is a production model, final fair probability, recommendation, or claim of betting edge. Phase 5B-4 must select and validate an explicit residual distribution before probability use.
+All three horizons are evaluated independently. Phase 5B-4 now converts earlier OOF point residuals into experimental distributions and probabilities offline. These are still not a production model, final fair probability, recommendation, or claim of betting edge.
+
+### Phase 5B-4 offline predictive distributions
+
+For target point prediction `mu` and a residual distribution fitted only from earlier OOF seasons:
+
+```text
+outcome = mu + residual
+```
+
+The implemented candidates are homoskedastic Normal, bounded-grid Student-t, chronological kernel-smoothed empirical residual, a transparent early/late × high/low-quality Normal scale, and a total-only skew-normal. Each output preserves target, horizon, point model/version, fit cutoff, residual-pool ID/rows, distribution parameters, dataset/feature hashes, and calibration version.
+
+The integer lattice assigns `P(X = k) = F(k + 0.5) - F(k - 0.5)`. A home spread `s` settles against integer margin `M + s`; a total `L` settles against integer `T - L`. Integer lines can therefore have nonzero push mass and half-points have exactly zero. Win/push/loss is normalized to one without presentation rounding. Modern completed NCAAF moneyline outcomes cannot tie, so the zero-margin lattice mass is retained as an audit field and home/away probabilities are conditioned on non-tie settlement.
+
+V1 advances the chronological margin power rating with quality-grouped Normal scale and total Ridge without opponent adjustment with an empirical residual distribution for later offline comparison. Normal remains the falsification benchmark. No post-hoc binary transform is promoted, and no market odds are used. This does **not** remove Phase 4's integer-line exclusion because the offline distribution has not passed locked/shadow or market-relative promotion gates and is not connected to pricing.
+
+Distribution evaluation uses NLL, quantile-integrated CRPS, PIT bins, 50/80/90/95% coverage and width, moneyline Brier/log loss, and synthetic three-way line scoring. Score clipping is used only to avoid `log(0)`; stored probabilities are not rounded. Full evidence and limitations are in `NCAAF_PROBABILITY_CALIBRATION_REPORT.md`.
 
 Calibration is fitted only on earlier validation/OOF predictions and versioned separately. Candidate methods include distribution location/scale correction, empirical residual calibration, Platt/logistic, beta, and sufficiently supported isotonic calibration. Model uncertainty remains numerical and decomposed where possible: predictive scale/quantiles, aleatoric and epistemic components, model disagreement, calibration interval, effective sample, data completeness, roster/QB/weather flags, and market dispersion. Phase 5 does not decide how Phase 6 converts these into stakes.
 

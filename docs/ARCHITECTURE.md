@@ -179,6 +179,23 @@ Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
 
 Next phases add an early NCAAF proprietary-model track, recommendation/risk policy, and closing-label policy. Market consensus is the implemented baseline and benchmark, not a proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those future engines exist.
 
+### Phase 5B-4 probability layer (implemented offline)
+
+```text
+Phase 5B-3 OOF point predictions and residuals
+  -> strictly prior-season residual pool per target/horizon/point model
+  -> versioned Normal / Student-t / empirical / grouped-scale candidates
+  -> predictive CDF, PDF, quantiles, scale, and fit provenance
+  -> integer-score lattice discretization
+  -> moneyline win/loss and spread/total win/push/loss probabilities
+  -> proper scores, PIT, intervals, buckets, segments, and paired uncertainty
+  -> ignored Parquet/JSON research artifacts
+```
+
+`app.research.ncaaf.probability` is a provider- and market-source-neutral distribution/settlement library. `app.research.ncaaf.calibration` owns the chronological tournament, artifact manifests, proper-score summaries, and validation. CLI entry points run, validate, inspect, and calculate synthetic-line probabilities without provider access.
+
+This layer is deliberately absent from the FastAPI dependency graph. It adds no endpoint, migration, Render dependency, or production inference path. `/opportunities` continues to use Phase 4 market consensus, with proprietary probability null. Large probability artifacts remain content-hashed under ignored `.ncaaf-data/models/probability-v1/`.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text

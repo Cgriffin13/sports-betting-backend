@@ -185,4 +185,17 @@ python -m app.cli.inspect_ncaaf_model --metric-prefix "24_hours_before_kickoff|m
 
 Binary fold-model artifacts and OOF predictions remain under ignored `.ncaaf-data/`; only aggregate, non-holdout reports are committed.
 
+Phase 5B-4 converts the frozen OOF point predictions into offline, push-aware probability distributions. These commands also reject network access and 2025+:
+
+```powershell
+python -m app.cli.run_ncaaf_probability_calibration --plan
+python -m app.cli.run_ncaaf_probability_calibration
+python -m app.cli.validate_ncaaf_probabilities
+python -m app.cli.summarize_ncaaf_calibration
+python -m app.cli.calculate_ncaaf_line_probability --market spread --mean 6.5 --scale 17 --line -7
+python -m app.cli.inspect_ncaaf_probability 401628334 --target margin
+```
+
+The probability engine is research-only and is not connected to `/opportunities`. Phase 4 market consensus remains the production fair-probability source, and its conservative integer-line EV exclusion remains in force. See [`NCAAF_PROBABILITY_CALIBRATION_REPORT.md`](docs/NCAAF_PROBABILITY_CALIBRATION_REPORT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

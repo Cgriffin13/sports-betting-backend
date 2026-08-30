@@ -909,3 +909,58 @@ Consequences:
 - Future weather, availability, and market features can extend the same horizon boundary without redesign.
 - Model persistence remains reproducible and lean; a production registry/inference path is deferred until promotion evidence exists.
 
+## ADR-067 — Phase 5B-4 fits distributions only from earlier OOF residuals
+
+- Date: 2026-08-30
+- Status: Accepted and implemented offline
+
+Phase 5B-4 begins calibration evaluation in 2020, using 2019 OOF residuals as the first seed. For each evaluation season, target, horizon, and point model, a distribution may use only OOF residuals from strictly earlier seasons. The minimum v1 pool is 400 rows. Normal, bounded Student-t, kernel-smoothed empirical, transparent grouped-scale, and total-only skew-normal candidates were frozen before results.
+
+Consequences:
+
+- Future residuals, the current evaluation outcome, and 2025 cannot affect an earlier probability.
+- Distribution/calibration version is separate from point-model, dataset, and feature versions.
+- No post-hoc binary transform is promoted in v1; a future transform requires a separately nested chronological fit.
+- Research artifacts remain ignored and do not enter FastAPI or Render dependencies.
+
+## ADR-068 — Integer lattice mass defines experimental push-aware settlement probabilities
+
+- Date: 2026-08-30
+- Status: Accepted and implemented offline
+
+For a continuous outcome CDF `F`, integer result `k` receives `F(k + 0.5) - F(k - 0.5)`. Spread and total win/push/loss use exact integer settlement against the requested line. Half-point lines have zero push mass. For modern completed NCAAF moneylines, zero-margin mass is retained for audit and home/away probabilities condition on the non-tie outcomes.
+
+Consequences:
+
+- Integer-line probabilities are explicit, finite, normalized, deterministic, and testable.
+- No arbitrary fixed push rate is invented.
+- Phase 4's production integer-line EV exclusion remains unchanged until the offline candidate passes locked, shadow, and market-relative promotion gates and receives separate integration review.
+- Synthetic grids measure probability behavior only; they do not establish market edge.
+
+## ADR-069 — Advance quality-aware margin scale and empirical total residuals only to offline comparison
+
+- Date: 2026-08-30
+- Status: Accepted as experimental candidates
+
+On 2020–2024 chronological OOF evidence, the margin power rating with early/late × high/low-quality grouped Normal scale improved NLL and CRPS slightly but consistently over homoskedastic Normal. Total Ridge without opponent adjustment with chronological empirical residuals improved both scores more clearly. These pairings advance to later offline market comparison, while Normal remains the mandatory falsification benchmark.
+
+Consequences:
+
+- “Advance” is not production promotion and does not change final fair probability, recommendations, EV, or staking.
+- Student-t was operationally indistinguishable from Normal; total skew-normal improved CRPS but did not beat Normal decisively on paired NLL.
+- Low-quality and early-season rows receive measured uncertainty rather than exclusion or arbitrary confidence penalties.
+- Market consensus remains the implemented fair-probability source.
+
+## ADR-070 — Do not advance a joint margin-total simulator in Phase 5B-4
+
+- Date: 2026-08-30
+- Status: Accepted for the v1 distribution tournament
+
+Matched OOF margin/total residual correlation was approximately 0.041 across all three horizons, below the predeclared 0.10 materiality threshold. Phase 5B-4 therefore retains separate marginal distributions and does not add a joint score simulator merely for architectural symmetry.
+
+Consequences:
+
+- Separate marginal probabilities must not be described as a coherent joint score distribution.
+- Expected component scores remain a diagnostic, including checks for impossible negative expectations.
+- Reconsider joint simulation if richer football inputs, market conditioning, or later empirical evidence produces material dependence.
+

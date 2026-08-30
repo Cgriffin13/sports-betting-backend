@@ -1,0 +1,41 @@
+{
+  "status": "phase_5b_4_completed_offline",
+  "provider_calls": 0,
+  "holdout_accessed": false,
+  "evaluation_seasons": [2020, 2024],
+  "input_tournament_hash": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb",
+  "dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+  "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+  "probability_run_hash": "4813f18a64fa5ae0d53038d07947ff47b135107fbf97f03825f25212332ff51b",
+  "probability_content_hash": "efc02720a6c9eb569805afa224ef2ce8394cd096a235e8db0bd499bbbcf5d915",
+  "rows": 198180,
+  "fits": 270,
+  "empirical_pools": 60,
+  "runtime_seconds": 168.793,
+  "peak_rss_bytes": 1604968448,
+  "primary_24h": {
+    "margin": {
+      "point_model": "elo|ncaaf-margin-power-v1",
+      "advanced_distribution": "quality-grouped-scale-v1",
+      "nll": 4.241874994567547,
+      "crps": 9.45926238795968,
+      "moneyline_brier": 0.19443664618397052,
+      "moneyline_log_loss": 0.5707755178027114,
+      "coverage_90": 0.9010899182561308,
+      "normal_nll": 4.245312409030477,
+      "normal_crps": 9.46786988396485
+    },
+    "total": {
+      "point_model": "ridge|full_without_opponent_adjustment",
+      "advanced_distribution": "empirical-kernel-v1",
+      "nll": 4.224805350178137,
+      "crps": 9.304225498748595,
+      "coverage_90": 0.911716621253406,
+      "normal_nll": 4.230383603351018,
+      "normal_crps": 9.326812051182522
+    }
+  },
+  "joint_residual_correlation_24h": 0.041491191145001764,
+  "joint_simulator_advanced": false,
+  "claims_excluded": ["market_edge", "profitability", "production_readiness", "sportsbook_comparison"]
+}

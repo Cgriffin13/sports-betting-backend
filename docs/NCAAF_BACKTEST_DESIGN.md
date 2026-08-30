@@ -1,6 +1,6 @@
 # NCAAF Backtest Design
 
-Status: **Phase 5B-3 chronological point-model tournament implemented offline.** OOF point predictions and residual diagnostics are research evidence, not an outcome/portfolio backtest, calibrated probability, production model, or market-relative result. Phase 4 still implements pricing replay only.
+Status: **Phase 5B-4 chronological distribution tournament implemented offline.** OOF point predictions now feed strictly prior residual pools, push-aware line probabilities, and calibration diagnostics. This remains football-outcome research—not a portfolio backtest, production model, or market-relative result. Phase 4 still implements pricing replay only.
 
 The implemented folds train on 2014 through the season immediately preceding evaluation, evaluate development seasons 2019–2023, and reserve 2024 for documented validation/model selection. The builder rejects 2025. Median imputation, missing indicators, constant removal, scaling, and Ridge fitting occur inside each fold. OOF artifacts retain game, horizon, target, fold, training cutoff, preprocessing/model version, parameters, dataset/feature hashes, and quality indicators.
 
@@ -134,6 +134,8 @@ Candidate calibrators:
 - isotonic regression only when calibration sample size supports it.
 
 Fit calibration artifacts only on prior out-of-fold predictions. Version target, horizon, source model, training cutoff/rows, algorithm, parameters and hash. For each candidate report calibration intercept/slope, reliability diagram, Brier decomposition when practical, expected calibration error with fixed bins, and uncertainty intervals. ECE is descriptive and bin-sensitive, not a sole selection metric.
+
+Phase 5B-4 implements the first distribution-level pass with 2019 as the residual seed and 2020–2024 as expanding chronological evaluations. It does not fit a post-hoc binary transform; this avoids evaluating a calibrator on its own fitting outcomes without an additional nested split. Fixed decile reliability data, Brier/log loss, NLL/CRPS, PIT, intervals, push calibration, and season-block paired uncertainty are persisted. A future Platt/beta/isotonic experiment must predeclare and nest its fit boundary.
 
 ## Market comparison
 

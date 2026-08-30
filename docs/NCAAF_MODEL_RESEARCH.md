@@ -2,7 +2,7 @@
 
 Status: **Phase 5A research specification; no proprietary production model is implemented.**
 
-This document defines the recommended NCAAF modeling architecture and the questions Phase 5B must answer empirically. Phase 5B-3 has now produced the first offline naive, power-rating, and Ridge point-prediction evidence; [`NCAAF_BASELINE_MODEL_REPORT.md`](NCAAF_BASELINE_MODEL_REPORT.md) records the measured result. Market consensus remains the implemented benchmark. None of these candidates affects `/opportunities`, official bets, or staking until it passes the promotion process in this document and `NCAAF_BACKTEST_DESIGN.md`.
+This document defines the recommended NCAAF modeling architecture and the questions Phase 5B must answer empirically. Phase 5B-3 produced offline point-model evidence, and Phase 5B-4 now adds chronological distributions, push-aware probabilities, and calibration diagnostics; [`NCAAF_BASELINE_MODEL_REPORT.md`](NCAAF_BASELINE_MODEL_REPORT.md) and [`NCAAF_PROBABILITY_CALIBRATION_REPORT.md`](NCAAF_PROBABILITY_CALIBRATION_REPORT.md) record the measured results. Market consensus remains the implemented benchmark. None of these candidates affects `/opportunities`, official bets, or staking until it passes the promotion process in this document and `NCAAF_BACKTEST_DESIGN.md`.
 
 ## Executive recommendation
 

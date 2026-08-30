@@ -150,7 +150,9 @@ Run D001/D002, E001/E002 and R001–R003 using chronological folds. Establish ev
 
 ### 5B-4 — distribution/calibration foundation
 
-Run U001 and integer-score discretization. Produce calibrated moneyline/spread/total probabilities and push mass offline. Do not expose them in production.
+**Completed offline on 2026-08-30.** U001 compared predeclared Normal, Student-t, empirical residual, quality-grouped scale, and total skew-normal candidates with strict prior-season residual pools. Integer-score discretization now produces moneyline and spread/total win/push/loss probabilities, and the run reports NLL, CRPS, intervals, PIT, buckets, key numbers, regimes, quality, and paired uncertainty. Quality-aware Normal margin and empirical-residual total advance only to later offline comparison; no production exposure or market claim exists.
+
+The frozen design and measured evidence are in `NCAAF_DISTRIBUTION_EXPERIMENT_PLAN.md` and `NCAAF_PROBABILITY_CALIBRATION_REPORT.md`. A margin empirical-discrete key-number challenger and any post-hoc binary transform require a new predeclared experiment.
 
 ### 5B-5 — controlled challengers
 
