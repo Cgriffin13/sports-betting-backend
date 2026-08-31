@@ -130,7 +130,7 @@ Each report contains:
 
 ### 5B-0 — source and identity audit
 
-**Completed as a conditional-go research audit on 2026-08-29.** `NCAAF_SOURCE_AUDIT.md` records public coverage, identities, targets, timing classifications, costs, and frozen provider-audit designs. The CFBD credentialed gate was subsequently completed in 5B-1; the 2,280-credit historical-odds gate remains unexecuted for later market-aware work.
+**Completed as a conditional-go research audit on 2026-08-29.** `NCAAF_SOURCE_AUDIT.md` records public coverage, identities, targets, timing classifications, costs, and frozen provider-audit designs. The CFBD credentialed gate was subsequently completed in 5B-1. Phase 5B-7A then executed the historical-odds gate for 2,010 credits under its 2,280-credit ceiling.
 
 ### 5B-1 — historical facts ingestion
 
@@ -166,7 +166,7 @@ Run R004/P001 and bounded T001–T003. Advance at most one tree family unless ev
 
 ### 5B-7 — historical market comparison
 
-Run the predeclared 76-request/2,280-credit sample first. Purchase/import a larger bounded fixed-horizon corpus only if it passes. Reuse Phase 3/4 semantics under an explicit provider-archive availability policy; run M001–M004 and W001. Measure incremental value versus consensus and CLV readiness.
+Phase 5B-7A completed the predeclared sample with 76 logical/67 unique requests and 2,010 credits. Its conditional GO permits a separately bounded acquisition for FBS-vs-FBS morning and 60-minute h2h/spreads/totals, plus near-close spreads/totals. Do not include 24h or near-close h2h in the primary experiment. Reuse Phase 3/4 semantics under `the-odds-api-provider-archive-snapshot-v1`; run M001–M004 and W001 only where the same-horizon market exists. Measure incremental value versus consensus and CLV readiness.
 
 ### 5B-8 — blend and locked evaluation
 
@@ -184,7 +184,7 @@ Only after promotion gates pass, design a separately reviewed API integration th
 
 Approved: CFBD primary MVP/free-tier-first; a small historical-odds audit before full acquisition; one game-day-morning operational run; separate 60-minute and 24-hour research horizons; locked 2025 and prospective 2026; offline training; PostgreSQL metadata plus immutable Parquet/artifacts; and injuries/weather as later ablation tracks.
 
-Remaining decisions are limited to the exact morning convention and predeclared odds-audit tolerances, upstream SportsDataverse-use determination, production-grade 2025 access-seal mechanism, numeric promotion rule, and whether longer shadow evidence is required. The reconstructed CFBD delay is fixed for v1 at kickoff plus 24 hours and may become stricter only through a new version.
+Remaining decisions include the scope/cost ceiling of the next approved historical acquisition, upstream SportsDataverse-use determination, production-grade 2025 access-seal mechanism, numeric promotion rule, and whether longer shadow evidence is required. The morning convention and audit tolerances are now resolved. The reconstructed CFBD delay is fixed for v1 at kickoff plus 24 hours and may become stricter only through a new version.
 
 ## Explicit non-deliverables
 

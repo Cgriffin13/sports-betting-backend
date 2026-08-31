@@ -23,7 +23,7 @@ Run three information architectures:
 
 The initial algorithm tournament includes a naive opponent-adjusted baseline, Elo/power ratings, Ridge/Elastic Net, a controlled screen of XGBoost/LightGBM/CatBoost, and a deferred hierarchical Bayesian challenger. No family is “the model.” Learned blends are eligible only from out-of-fold predictions and must beat the Phase 4 market baseline on locked chronological data.
 
-The approved first practical workflow is **one game-day-morning run before the first NCAAF kickoff of the day**. The exact fixed local time versus first-kickoff-relative rule remains deliberately unfrozen until the bounded historical-odds audit establishes which convention is consistently reconstructable. Continue evaluating 60 minutes and 24 hours before kickoff as separate research horizons; never combine their results or substitute one for missing morning data.
+The approved first practical workflow is **one game-day-morning run at first scheduled kickoff minus three hours**. Phase 5B-7A froze that convention after both candidates tied on coverage; the relative rule handles atypical kickoff windows more coherently. Continue evaluating the approved 60-minute horizon separately. The 24-hour horizon failed the bounded 2020 coverage gate and must not enter the first market-aware corpus. Never combine results or substitute one horizon for missing data.
 
 ## 1. Modeling problem
 
@@ -415,7 +415,7 @@ Approved for Phase 5B planning:
 - injuries/weather as later coverage and ablation tracks rather than baseline blockers; and
 - offline training with lean PostgreSQL metadata plus immutable Parquet/model-native artifacts.
 
-Still unresolved: the exact morning convention and audit tolerances; the SportsDataverse upstream-use determination; conservative availability rules for reconstructed fields; the operational 2025 access seal; numeric promotion tolerances; and whether evidence beyond one locked plus one shadow season is required. See `NCAAF_SOURCE_AUDIT.md`.
+Still unresolved: the size and exact season range of the next bounded approved-horizon odds pull; the SportsDataverse upstream-use determination; conservative availability rules for future reconstructed fields; the operational 2025 access seal; numeric promotion tolerances; and whether evidence beyond one locked plus one shadow season is required. See `NCAAF_SOURCE_AUDIT.md`.
 
 ## Related specifications
 

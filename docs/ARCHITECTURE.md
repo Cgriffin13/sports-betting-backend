@@ -220,6 +220,12 @@ The source facts are reconstructed, not historical publication snapshots. Return
 
 No Phase 5B-6 module is imported by FastAPI. PyArrow, psutil, scikit-learn, and CatBoost remain research-only dependencies; all large/binary artifacts stay ignored. No endpoint, migration, production requirement, pricing probability, recommendation, or Render process changed.
 
+### Phase 5B-7A historical-odds audit layer (implemented offline)
+
+`app.providers.odds_api_historical` owns the credential-bearing historical transport, sanitized failures, provider usage metadata, and exact returned snapshot timestamp. `app.research.ncaaf.historical_odds_audit` owns the frozen 76-logical-request plan, immutable credential-free cache/manifests, deterministic event reconciliation, market completeness checks, predeclared gates, and aggregate reporting. `app.cli.audit_ncaaf_historical_odds` plans by default and requires explicit `--execute` before any historical request.
+
+Raw JSON gzip responses and manifests stay beneath ignored `.ncaaf-data/odds-audit-v1/`; Git contains only code and aggregate reports. Backfilled rows use `the-odds-api-provider-archive-snapshot-v1`: the provider archive timestamp is the historical market-state boundary while local retrieval remains its real 2026 time. This is not equivalent to contemporaneous Phase 3 ingestion. No audit code is imported by FastAPI, and no production endpoint, database schema, dependency, or Render process changed.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text

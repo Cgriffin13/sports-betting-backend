@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-6 completed through reconstructed preseason/personnel research on 2026-08-30.** A bounded preseason-adjusted power model and recruiting/talent family advance only for further offline margin research; preseason CatBoost total remains a point challenger. Existing empirical-discrete margin and Ridge-empirical total probability benchmarks remain. No production probability changed.
+Status: **Phase 5A through Phase 5B-7A completed through the bounded historical-odds acquisition gate on 2026-08-30.** The gate is a conditional GO for explicitly approved FBS-vs-FBS horizon/market combinations. Existing offline model candidates remain unchanged and no production probability changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -160,7 +160,8 @@ Status: **Phase 5A through Phase 5B-6 completed through reconstructed preseason/
 - [x] Phase 5B-6: audit/cache bounded CFBD preseason/personnel sources; materialize reconstructed point-in-time program-season features; run targeted power/Ridge/CatBoost comparisons, family ablations, uncertainty segments, and limited probability checks without opening 2025.
 - [x] Run naive, power-rating, Ridge, distribution, and equal-budget XGBoost/LightGBM/CatBoost experiments under frozen chronological folds; defer unstable Elastic Net with evidence.
 - [x] Evaluate chronological empirical-discrete margin mass without manually boosting key numbers; retain its wider interval coverage as an explicit limitation.
-- [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
+- [x] Audit a frozen 2020/2022/2024 historical-odds sample under predeclared timestamp, coverage, book-depth, pairing, and identity gates; preserve raw payloads outside Git and publish aggregate evidence.
+- [ ] Acquire the larger bounded fixed-horizon corpus for only the Phase 5B-7A-approved combinations before claiming market-relative or residual performance.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
 - Create a model registry/versioning and promotion process.
@@ -183,10 +184,11 @@ Phase 5B implementation order:
 5. distributions, calibration, and integer push probabilities offline (**complete in 5B-4; quality-aware margin and empirical total candidates advanced for later offline comparison**);
 6. bounded tree and key-number challengers (**complete in 5B-5; CatBoost total advances only as a point challenger, empirical-discrete margin advances offline**);
 7. reconstructed preseason/personnel research (**complete in 5B-6; recruiting/talent and a bounded power-prior adjustment advance offline; transfer-era coverage is not accepted for the common cohort**);
-8. fixed-horizon market residual/comparison experiments;
-9. learned blend and once-only locked evaluation;
-10. registry plus prospective shadow operation; and
-11. separately reviewed production-inference decision only if gates pass.
+8. bounded historical-odds audit (**complete in 5B-7A; conditional GO for morning and 60-minute ML/spread/total plus near-close spread/total**);
+9. fixed-horizon market residual/comparison experiments using only approved combinations;
+10. learned blend and once-only locked evaluation;
+11. registry plus prospective shadow operation; and
+12. separately reviewed production-inference decision only if gates pass.
 
 Phase 5 exit criteria remain **unsatisfied** until implementation evidence exists. Phase 5A documentation is not a model, backtest, or promotion.
 

@@ -51,7 +51,7 @@ Evaluate these distinct snapshots where data permits:
 - 60 minutes before kickoff; and
 - last eligible pre-start snapshot (“close”), for evaluation only.
 
-The approved first operational workflow is one **game-day-morning** paper run before the day's first NCAAF kickoff. The bounded odds audit compares a fixed 09:00 America/New_York candidate with a first-kickoff-minus-three-hours candidate; the convention is frozen only after coverage is measured. The 60-minute and 24-hour cutoffs remain separate research estimands. Do not mix horizons in one metric or fill a missing horizon with morning, closing, or another horizon's data.
+The approved first operational workflow is one **game-day-morning** paper run before the day's first NCAAF kickoff. Phase 5B-7A found the fixed 09:00 America/New_York and first-kickoff-minus-three-hours candidates tied on aggregate coverage and identical on eight of nine audited slates. The operational convention is therefore frozen as **first scheduled kickoff minus three hours**, which remains well-defined for atypical slate start times. The 60-minute cutoff remains a separately approved research estimand. The 24-hour cutoff failed the 2020 per-season coverage gate and is not approved for the first market-aware corpus. Do not mix horizons or fill a missing horizon with morning, closing, or another horizon's data.
 
 ## Dataset and season plan
 

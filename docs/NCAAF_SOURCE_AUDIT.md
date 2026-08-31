@@ -1,10 +1,10 @@
 # NCAAF Source, Coverage, and Identity Audit
 
-Status: **Phase 5B-1 credentialed CFBD audit and 2014–2024 development ingestion completed on 2026-08-29. No model was trained and no production probability changed.**
+Status: **Phase 5B-1 credentialed CFBD ingestion and Phase 5B-7A bounded historical-odds coverage audit are complete. No production probability changed.**
 
 ## Decision
 
-Proceed to Phase 5B-2 feature/dataset construction using CFBD as the primary MVP statistical source and public cfbfastR/SportsDataverse as QA only. The CFBD credential gate is now satisfied. The separately bounded historical The Odds API sample remains unexecuted and is still required before market-relative historical modeling.
+CFBD remains the primary MVP statistical source and public cfbfastR/SportsDataverse remains QA only. Phase 5B-7A executed the separately bounded The Odds API sample; its conditional-GO result and exact scope are recorded in `NCAAF_HISTORICAL_ODDS_AUDIT.md`.
 
 ## Phase 5B-1 credentialed execution evidence
 
@@ -53,11 +53,11 @@ The audit used CFBD's official OpenAPI document and documentation, official GitH
 
 Temporary files are deleted. PyArrow is deliberately not an application dependency. The scripts do not read credentials or persist datasets in the repository.
 
-At Phase 5B-0 the local environment contained neither `CFBD_API_KEY` nor `ODDS_API_KEY`. That historical limitation is now resolved for CFBD only. The Odds API historical credential/sample remains pending. Therefore:
+At Phase 5B-0 the local environment contained neither `CFBD_API_KEY` nor `ODDS_API_KEY`. Both later credential gates were satisfied without persisting either secret. Therefore:
 
 - CFBD quota and response behavior are now measured above;
 - selected endpoint response sizes, live headers, retrieval determinism, correction behavior, and `/info` accounting are measured above; sampled responses had `Date`/`ETag` but no rate-limit headers;
-- no historical odds credits were spent; and
+- historical odds credits were spent only under the frozen Phase 5B-7A ceiling; and
 - no claim below presents a proposed odds sample as an executed sample.
 
 ## CFBD endpoint audit
@@ -213,7 +213,7 @@ Never falsify `ingested_at` to make a backfill appear contemporaneous. Research 
 
 ## Bounded historical-odds audit
 
-Do not purchase or ingest the full corpus yet. The approved sample is designed to answer coverage questions at known cost while avoiding the locked 2025 season.
+The approved sample was executed once on 2026-08-30. It answered coverage questions at known cost while avoiding the locked 2025 season; do not infer that this authorizes an unbounded corpus pull.
 
 ### Request design
 
@@ -228,7 +228,7 @@ Do not purchase or ingest the full corpus yet. The approved sample is designed t
 - Anchor horizons: 24 hours, 60 minutes, and five minutes before kickoff as a closing proxy
 - Boundary probes: four adjacent timestamp requests to confirm closest-prior behavior
 
-This is 72 normal requests plus four probes: **76 requests**. Historical featured-market cost is `10 × regions × markets`, so one region and three markets costs 30 credits. Exact audit budget: **2,280 credits**.
+This is 72 normal requests plus four probes: **76 logical requests**. Nine duplicate timestamps were satisfied by the immutable cache/request-hash boundary, leaving **67 unique provider requests**. Historical featured-market cost is `10 × regions × markets`, so one region and three markets costs 30 credits. Actual consumption was **2,010 credits**, below the frozen **2,280-credit** ceiling.
 
 Each response is a sport-wide slate, so the two morning requests assess every returned event; anchor horizons focus detailed continuity. Record request time, provider snapshot time, event/book/market counts, DraftKings/FanDuel/BetMGM presence, paired-market completeness, exact points, provider-event mapping, snapshot-at-or-before compliance, missingness, and errors. Never record the credential-bearing URL.
 
@@ -245,7 +245,20 @@ Before execution, freeze quantitative tolerances for:
 
 Do not choose tolerances after seeing results. Keep horizons separate; do not fill a missing 60-minute observation with morning, 24-hour, or close data. The audit is an acquisition gate for market-aware experiments, not a gate for independent football baselines.
 
-At current published pricing, the audit costs $0 incrementally if an existing plan has at least 2,280 credits; otherwise the smallest displayed historical-capable plan is approximately $30 for 20,000 credits. Confirm current account eligibility and prices before purchase. No purchase was made in this audit.
+The actual audit used existing account capacity. Prices and plan eligibility remain provider-controlled and must be rechecked before a larger acquisition.
+
+### Phase 5B-7A result
+
+The predeclared gates produced a **CONDITIONAL GO** for the primary FBS-vs-FBS cohort:
+
+- approve game-day morning for h2h, spreads, and totals;
+- approve 60 minutes before kickoff for h2h, spreads, and totals;
+- approve the near-close proxy for spreads and totals, but not h2h;
+- do not approve 24 hours before kickoff because 2020 failed the per-season coverage gate;
+- require at least two complete supported books (DraftKings, FanDuel, BetMGM set) per usable row; and
+- preserve 2020 as usable only for the combinations that passed its per-season gate; 2022 and 2024 were materially stronger.
+
+The two morning candidates tied on aggregate coverage and shared the same timestamp on eight of nine slates. Freeze **first scheduled kickoff minus three hours** as the operational convention because it stays explicitly before the first game when slate start times vary. The provider returned the closest prior archive snapshot, with median/p90 offsets of roughly 262/300 seconds. Exact results, boundary probes, context-cohort evidence, and machine-readable aggregates are in `NCAAF_HISTORICAL_ODDS_AUDIT.md`.
 
 ## CFBD call and storage budget
 
@@ -306,14 +319,13 @@ Phase 5B-1 ingested 2014–2024 for development. The implementation rejects 2025
 
 **Phase 5B-1 source completion evidence:** credentialed response audit, official-contract version, field/season coverage report, correction test, row-count reconciliation, exact free-tier call log, idempotent zero-call rerun, migration validation, and holdout tests are recorded here and in the automated suite.
 
-**Must pass before Phase 5B-7 market-aware work:** the frozen 2,280-credit historical-odds sample and a distinct provider-archive replay policy.
+**Phase 5B-7A gate:** passed conditionally for only the approved cohort/horizon/market combinations under `the-odds-api-provider-archive-snapshot-v1`. Phase 5B-7 must not substitute horizons or include rejected combinations.
 
 **Must pass before model promotion:** frozen folds/thresholds, untouched 2025 evaluation, prospective 2026 shadow evidence, leakage checks, calibration, and same-horizon market comparisons where applicable.
 
 ## Genuinely unresolved decisions
 
-- Exact morning convention: fixed 09:00 ET or a rule relative to the day's first kickoff. Resolve only from the frozen coverage audit.
-- Quantitative odds-audit pass/fail tolerances, frozen before retrieval.
+- Whether the next paid acquisition should include every approved combination or initially limit spend to morning and 60-minute snapshots.
 - Whether SportsDataverse's upstream ESPN-derived data is acceptable for internal commercial training or remains QA-only.
 - Source-specific conservative publication delays for reconstructed CFBD fields; the credentialed audit found no source publication timestamps that resolve this automatically.
 - Whether the explicit 2025 CLI gate is sufficient operationally or should be strengthened with separate credentials/storage before frozen evaluation.

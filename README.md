@@ -230,4 +230,13 @@ python -m app.cli.summarize_ncaaf_preseason
 
 The source command requires `CFBD_API_KEY` only when `--execute` is present. It never includes credentials in parameters, hashes, filenames, manifests, or output. Repeated source requests use the Phase 5B-1 immutable cache unless `--refresh` explicitly checks for corrections. See [`NCAAF_PRESEASON_SOURCE_AUDIT.md`](docs/NCAAF_PRESEASON_SOURCE_AUDIT.md) and [`NCAAF_PRESEASON_MODEL_REPORT.md`](docs/NCAAF_PRESEASON_MODEL_REPORT.md).
 
+Phase 5B-7A adds a bounded The Odds API historical coverage audit. Planning is the default and cannot spend credits; `--execute` requires `ODDS_API_KEY`, performs only the frozen 76-logical-request plan, and writes raw responses only beneath ignored `.ncaaf-data/`:
+
+```powershell
+python -m app.cli.audit_ncaaf_historical_odds
+python -m app.cli.audit_ncaaf_historical_odds --execute
+```
+
+The completed audit used 67 unique requests and 2,010 credits. Its conditional-GO result approves FBS-vs-FBS morning h2h/spreads/totals and 60-minute h2h/spreads/totals, plus near-close spreads/totals, subject to the documented two-supported-book and completeness gates. It does not establish market edge. See [`NCAAF_HISTORICAL_ODDS_AUDIT.md`](docs/NCAAF_HISTORICAL_ODDS_AUDIT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).
