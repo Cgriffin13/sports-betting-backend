@@ -240,6 +240,12 @@ Every observation retains canonical/provider event identity, programs, kickoff, 
 
 Four content-addressed offline artifacts sit beneath ignored `.ncaaf-data/market-comparison/`: market consensus, same-horizon football/market joins, residual targets, and model-ready market features. Morning maps explicitly from `morning_first_kickoff_minus_3h` to the OOF `game_day_morning` identifier. Sixty-minute rows are `diagnostic_only`; near-close remains consensus-only because no same-horizon football prediction exists. Exact canonical identity, OOF fold provenance, training cutoff, and at-or-before snapshot checks reject invalid joins. No FastAPI import, database schema, production dependency, or provider call was added.
 
+### Phase 5B-7 market-aware tournament (implemented offline)
+
+`app.research.ncaaf.market_aware_modeling` consumes the immutable 7C comparison artifacts, the frozen morning football feature matrix, and prior OOF finalist artifacts. It fits expanding 2020-through-prior-year residual/direct models, learns constrained blend weights only from earlier OOF rows, constructs chronological empirical residual distributions, and writes point/probability Parquet artifacts beneath ignored `.ncaaf-data/market-aware-v1/`. `app.cli.run_ncaaf_market_aware_tournament` runs, validates, and inspects the offline artifacts.
+
+The module rejects 2025, non-morning selection rows, in-sample football predictions, and training cutoffs at or after evaluation season. It preserves integer-line push mass and keeps the small 60-minute/near-close sample diagnostic-only. No research model is imported by FastAPI, no migration was required, and Render/production dependencies and fair-probability behavior remain unchanged.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text
