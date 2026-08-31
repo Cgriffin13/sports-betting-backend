@@ -25,6 +25,8 @@ The initial algorithm tournament includes a naive opponent-adjusted baseline, El
 
 The approved first practical workflow is **one game-day-morning run at first scheduled kickoff minus three hours**. Phase 5B-7A froze that convention after both candidates tied on coverage; the relative rule handles atypical kickoff windows more coherently. Continue evaluating the approved 60-minute horizon separately. The 24-hour horizon failed the bounded 2020 coverage gate and must not enter the first market-aware corpus. Never combine results or substitute one horizon for missing data.
 
+Phase 5B-7B provides complete-cohort 2020–2024 morning acquisition for the next market-aware experiment. The 60-minute and near-close data are a bounded, outcome-blind robustness sample only. Model selection must use morning as the primary cohort and label later-horizon findings as secondary; sample results cannot be generalized as full-cohort performance.
+
 ## 1. Modeling problem
 
 ### 1.1 Primary targets

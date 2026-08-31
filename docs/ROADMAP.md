@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-7A completed through the bounded historical-odds acquisition gate on 2026-08-30.** The gate is a conditional GO for explicitly approved FBS-vs-FBS horizon/market combinations. Existing offline model candidates remain unchanged and no production probability changed.
+Status: **Phase 5A through Phase 5B-7B completed through the canonical historical-market dataset on 2026-08-31.** The full 2020–2024 morning cohort is primary evidence; the 60-minute/near-close cohort is a bounded secondary robustness sample. Existing offline model candidates remain unchanged and no production probability changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -161,7 +161,7 @@ Status: **Phase 5A through Phase 5B-7A completed through the bounded historical-
 - [x] Run naive, power-rating, Ridge, distribution, and equal-budget XGBoost/LightGBM/CatBoost experiments under frozen chronological folds; defer unstable Elastic Net with evidence.
 - [x] Evaluate chronological empirical-discrete margin mass without manually boosting key numbers; retain its wider interval coverage as an explicit limitation.
 - [x] Audit a frozen 2020/2022/2024 historical-odds sample under predeclared timestamp, coverage, book-depth, pairing, and identity gates; preserve raw payloads outside Git and publish aggregate evidence.
-- [ ] Acquire the larger bounded fixed-horizon corpus for only the Phase 5B-7A-approved combinations before claiming market-relative or residual performance.
+- [x] Phase 5B-7B: acquire, reconcile, normalize, and validate the full 2020–2024 morning corpus plus the deterministic bounded 60-minute/near-close robustness cohort under immutable source manifests and strict cutoff rules.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
 - Create a model registry/versioning and promotion process.
@@ -185,10 +185,11 @@ Phase 5B implementation order:
 6. bounded tree and key-number challengers (**complete in 5B-5; CatBoost total advances only as a point challenger, empirical-discrete margin advances offline**);
 7. reconstructed preseason/personnel research (**complete in 5B-6; recruiting/talent and a bounded power-prior adjustment advance offline; transfer-era coverage is not accepted for the common cohort**);
 8. bounded historical-odds audit (**complete in 5B-7A; conditional GO for morning and 60-minute ML/spread/total plus near-close spread/total**);
-9. fixed-horizon market residual/comparison experiments using only approved combinations;
-10. learned blend and once-only locked evaluation;
-11. registry plus prospective shadow operation; and
-12. separately reviewed production-inference decision only if gates pass.
+9. canonical same-horizon market dataset (**complete in 5B-7B; full morning primary cohort and bounded later-horizon robustness cohort**);
+10. fixed-horizon market residual/comparison experiments using only approved combinations;
+11. learned blend and once-only locked evaluation;
+12. registry plus prospective shadow operation; and
+13. separately reviewed production-inference decision only if gates pass.
 
 Phase 5 exit criteria remain **unsatisfied** until implementation evidence exists. Phase 5A documentation is not a model, backtest, or promotion.
 

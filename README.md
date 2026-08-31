@@ -239,4 +239,21 @@ python -m app.cli.audit_ncaaf_historical_odds --execute
 
 The completed audit used 67 unique requests and 2,010 credits. Its conditional-GO result approves FBS-vs-FBS morning h2h/spreads/totals and 60-minute h2h/spreads/totals, plus near-close spreads/totals, subject to the documented two-supported-book and completeness gates. It does not establish market edge. See [`NCAAF_HISTORICAL_ODDS_AUDIT.md`](docs/NCAAF_HISTORICAL_ODDS_AUDIT.md).
 
+Phase 5B-7B materializes the approved canonical research dataset. Network access is explicit; `plan` is offline, `execute` enforces phase-specific call/credit ceilings and a 5,000-credit reserve, and every later build uses the immutable cache:
+
+```powershell
+python -m app.cli.historical_market_dataset plan --phase morning
+python -m app.cli.historical_market_dataset execute --phase morning
+python -m app.cli.historical_market_dataset validate-cache --phase morning
+python -m app.cli.historical_market_dataset plan --phase later
+python -m app.cli.historical_market_dataset execute --phase later
+python -m app.cli.historical_market_dataset validate-cache --phase later
+python -m app.cli.historical_market_dataset build
+python -m app.cli.historical_market_dataset validate
+python -m app.cli.historical_market_dataset summarize
+python -m app.cli.historical_market_dataset inspect --event-id EVENT_UUID --horizon morning_first_kickoff_minus_3h
+```
+
+The complete 2020–2024 morning cohort is primary evidence. The deterministic 60-minute/near-close sample is robustness evidence only; it is not full-cohort coverage. Raw payloads and normalized Parquet remain ignored under `.ncaaf-data/`. See [`NCAAF_HISTORICAL_MARKET_DATASET_REPORT.md`](docs/NCAAF_HISTORICAL_MARKET_DATASET_REPORT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

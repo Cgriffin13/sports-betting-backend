@@ -209,3 +209,5 @@ V2 should first become a trustworthy paper-trading system: reproducible prices, 
 > Current research status (2026-08-30): Phase 5B-6 completed bounded reconstructed preseason/personnel research. Recruiting/talent and a preseason-adjusted margin power candidate advance only offline; the existing probability benchmarks remain. These candidates do not feed the live API; market consensus remains the implemented fair-probability source, and 2025 remains sealed.
 
 > Phase 5B-7A then completed the bounded historical-odds acquisition gate with 67 unique requests and 2,010 credits. It is a conditional GO for specified FBS-vs-FBS morning/60-minute/near-close market combinations only. It establishes data feasibility, not model edge, profitability, or production readiness.
+>
+> Phase 5B-7B subsequently built the canonical 2020–2024 historical-market dataset. Complete-cohort morning observations are primary evidence; an outcome-blind stratified 60-minute/near-close sample is secondary robustness evidence only. The dataset remains offline and does not alter production pricing, recommendations, or fair probabilities.

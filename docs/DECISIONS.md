@@ -1117,3 +1117,31 @@ Consequences:
 - The 60-minute horizon remains separate and must not be pooled with morning.
 - This operational convention may be replaced only by a new version backed by better coverage evidence; it is not retroactively rewritten.
 
+## ADR-082 — Full morning is primary; later horizons use a bounded robustness cohort
+
+- Date: 2026-08-31
+- Status: Accepted and implemented for Phase 5B-7B research
+
+The canonical market-aware development corpus uses every eligible 2020–2024 FBS-vs-FBS game at first scheduled kickoff minus three hours for h2h, spreads, and totals. Full-cohort 60-minute and near-close acquisition was rejected on cost. Instead, a stable-hash sample selected two games per season and early/middle/late regular-season or postseason stratum while preferring distinct kickoff windows; eligible 7A anchors were added through cache reuse. Selection used schedule identity and timing only, never outcomes or model performance.
+
+Consequences:
+
+- Morning is the primary 5B-7C cohort.
+- The 60-minute h2h/spread/total and near-close spread/total sample is secondary robustness evidence only.
+- The later sample cannot support full-cohort claims or be pooled with morning.
+- The executed plans consumed 10,290 morning credits and 1,900 later-horizon credits, leaving the required 5,800-credit reserve.
+
+## ADR-083 — Historical market normalization preserves books and rejects incomplete groups
+
+- Date: 2026-08-31
+- Status: Accepted and implemented for offline research
+
+Phase 5B-7B stores deterministic Parquet observations at canonical event, horizon, sportsbook, market, side, and exact-point granularity. Every row traces to an immutable credential-free raw manifest and retains requested versus returned snapshot time. A research-comparable group requires a reliable event match, a closest-prior snapshot within the frozen cadence tolerance, coherent opposing sides and exact lines, valid prices, and at least two complete supported books.
+
+Consequences:
+
+- Missing or ambiguous events and incomplete book/market groups remain explicitly unusable; prices are never interpolated.
+- Individual books remain available for later no-vig and consensus construction; 7B does not collapse them.
+- Provider-archive availability is not rewritten as contemporaneous ingestion.
+- Consensus, model comparison, residual targets, edge, EV, and CLV remain 5B-7C or later work.
+
