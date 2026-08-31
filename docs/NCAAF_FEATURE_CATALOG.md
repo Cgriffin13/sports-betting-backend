@@ -1,6 +1,6 @@
 # NCAAF Feature Catalog
 
-Status: **Phase 5B-2 feature contract implemented; predictive value untested.** A materialized feature is a reproducible research input, not an approved predictor. Phase 5B-3 and later must measure stability, incremental forward value, calibration, and missingness before any promotion.
+Status: **Phase 5B-2 efficiency and Phase 5B-6 reconstructed preseason/personnel feature contracts implemented offline.** A materialized feature is a reproducible research input, not an approved predictor. Chronological ablation evidence is required before any promotion.
 
 ## Implemented Phase 5B-2 release
 
@@ -92,6 +92,24 @@ Raw win/loss record is not team quality: schedules differ, one-score outcomes ar
 
 Coaching changes may alter preseason priors or uncertainty, but there is no automatic positive/negative point adjustment.
 
+### Implemented reconstructed preseason release
+
+`ncaaf-preseason-personnel-v1` is an additive offline registry with hash `699a92b434f7421ac9fd61e803bd32b613d3c412bdf19085858b3d3425841a4b`. It is joined to, and does not replace, `ncaaf-efficiency-point-in-time-v1`. Its model-ready dataset hash is recorded in the current content-addressed manifest because data-content corrections create a new dataset without silently changing the registry definition.
+
+Implemented fields are:
+
+- CFBD team returning-production PPA percentages and offense/pass/rush/receive usage;
+- current/prior roster count, provider-player-ID overlap, and QB/offensive-skill/offensive-line/defensive position-group continuity;
+- prior-season leading passer attempts, attempt share, yards share, and presence on the current reconstructed roster;
+- transfer in/out counts, provider-rating sums/counts, and position-group counts using only transfers dated on or before the season's first FBS kickoff;
+- team recruiting rank/points and talent composite;
+- head-coach change, consecutive-season tenure, and continuity-known state; and
+- source coverage, missing-family count, source count, reconstructed-state, and strict-live-fidelity indicators.
+
+The common reconstructed availability boundary is the season's first scheduled FBS kickoff under `preseason-reconstructed-season-start-v1`. That boundary is deliberately conservative for within-season experiments but cannot prove what an operator knew before Week 0. Portal rows also require their provider transfer date to precede the season boundary. Historical ingestion remains the real 2026 retrieval time.
+
+Missing source coverage is null, not zero. In particular, the absent 2014–2020 portal product is not encoded as zero transfers. Exact provider team/player IDs are used where available; display-name conflicts are excluded rather than merged. The leading-passer proxy is not labeled as the Week 1 starter, and coaching data does not infer coordinators or subjective quality.
+
 ## Situational, venue and schedule
 
 | Feature | Definition/source | Timing / leakage | Treatment | Models |
@@ -172,7 +190,7 @@ Weeks 0–3 require wider reported epistemic uncertainty and segmented evaluatio
 - `ncaaf_basic_v1`: pregame Elo, regressed scoring/efficiency, home/neutral, rest, effective sample and missingness.
 - `ncaaf-efficiency-point-in-time-v1`: **implemented in Phase 5B-2** with the bounded corpus-supported efficiency, rolling, prior, context, quality, and opponent-adjustment definitions above.
 - `ncaaf_efficiency_v2`: proposed extensions such as finishing-opportunity and more robust game-state metrics after source-specific coverage studies.
-- `ncaaf_preseason_v1`: recruiting/talent, returning production, QB and coaching continuity, transfers/departures with provenance.
+- `ncaaf-preseason-personnel-v1`: **implemented offline in Phase 5B-6** with reconstructed recruiting/talent, returning production, provider-ID roster/QB continuity, transfer, head-coach, and explicit quality/provenance fields.
 - `ncaaf_market_v1`: fixed-horizon consensus state and quality, for residual/market-aware candidates only.
 - `ncaaf_weather_v1` and `ncaaf_availability_v1`: deferred until historical timestamp coverage clears an explicit audit.
 

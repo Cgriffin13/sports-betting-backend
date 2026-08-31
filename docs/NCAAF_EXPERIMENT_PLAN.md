@@ -162,7 +162,7 @@ Run R004/P001 and bounded T001–T003. Advance at most one tree family unless ev
 
 ### 5B-6 — preseason and personnel
 
-Audit and build `ncaaf_preseason_v1`; run S001 and quantify Weeks 0–3 uncertainty. Injury/weather remain optional parallel source audits.
+**Implemented offline on 2026-08-30.** The source plan was frozen before 68 bounded CFBD calls. `ncaaf-preseason-personnel-v1` materializes reconstructed returning-production, roster/QB continuity, transfer, recruiting/talent, head-coach, and quality fields, then runs S001 through the existing expanding folds. Results and advancement decisions are recorded in `NCAAF_PRESEASON_MODEL_REPORT.md`; injury/weather remain separate future audits.
 
 ### 5B-7 — historical market comparison
 

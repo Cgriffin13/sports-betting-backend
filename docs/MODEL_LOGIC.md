@@ -465,6 +465,16 @@ adjusted_mass(k) proportional_to base_mass(k) * ratio(k - rounded_location)
 
 The finite lattice is normalized exactly. This captures observed key-number clustering without hand-assigning probability to 3, 7, 10, or 14. It advances only for offline evaluation. Phase 4 still excludes integer-line EV because offline probability research has not passed locked 2025, prospective 2026 shadow, market-relative, and integration gates.
 
+### Phase 5B-6 reconstructed preseason/personnel experiment
+
+The additive `ncaaf-preseason-personnel-v1` feature layer evaluates source-supported preseason state without assigning hand-authored point values. Returning production, recruiting/talent, roster continuity, prior-leading-passer continuity, dated transfer activity, and head-coach continuity enter only through fold-local candidate models. The existing efficiency feature set and chronological power rating remain frozen benchmarks.
+
+Historical CFBD preseason products retrieved in 2026 are reconstructed evidence, not genuine historical publication snapshots. Under `preseason-reconstructed-season-start-v1`, a team-season fact becomes eligible at the season's first scheduled FBS kickoff; a portal record also requires `transferDate` at or before that boundary. Actual ingestion time remains 2026. This permits an offline usefulness test but not a strict claim about what a game-day operator knew.
+
+Missing coverage is distinct from a true zero. Portal counts before provider coverage begins are null with `portal_available=false`; a covered team-season with no observed movement may be zero. Reconstructed roster membership supports provider-ID overlap and whether the prior leading passer appears on the season roster, but does not identify the announced starter. Coach IDs support continuity/tenure only; they are excluded as categorical model features, and no coordinator or subjective coach-quality value is inferred.
+
+The bounded experiment compares a preseason-residual adjustment to the chronological margin power rating, preseason-augmented Ridge to its frozen margin/total baselines, and a preseason-augmented CatBoost total challenger. Advancement uses predeclared paired, early-week, segment, validation, and complexity gates. Any successful candidate remains offline and cannot alter Phase 4 fair probability, EV, or recommendations.
+
 Distribution evaluation uses NLL, quantile-integrated CRPS, PIT bins, 50/80/90/95% coverage and width, moneyline Brier/log loss, and synthetic three-way line scoring. Score clipping is used only to avoid `log(0)`; stored probabilities are not rounded. Full evidence and limitations are in `NCAAF_PROBABILITY_CALIBRATION_REPORT.md`.
 
 Calibration is fitted only on earlier validation/OOF predictions and versioned separately. Candidate methods include distribution location/scale correction, empirical residual calibration, Platt/logistic, beta, and sufficiently supported isotonic calibration. Model uncertainty remains numerical and decomposed where possible: predictive scale/quantiles, aleatoric and epistemic components, model disagreement, calibration interval, effective sample, data completeness, roster/QB/weather flags, and market dispersion. Phase 5 does not decide how Phase 6 converts these into stakes.

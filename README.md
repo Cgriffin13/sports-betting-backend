@@ -211,4 +211,23 @@ python -m app.cli.calculate_ncaaf_discrete_margin --mean 6.5 --scale 17 --line -
 
 These commands are offline, reject 2025+, and do not affect FastAPI. See [`NCAAF_STRONG_MODEL_REPORT.md`](docs/NCAAF_STRONG_MODEL_REPORT.md).
 
+Phase 5B-6 adds a bounded CFBD source audit and reconstructed preseason/personnel feature experiment. Network access is opt-in only for the source command; normalization, validation, inspection, and modeling are offline. The standard commands reject 2025+:
+
+```powershell
+python -m app.cli.ingest_ncaaf_preseason
+python -m app.cli.ingest_ncaaf_preseason --execute
+python -m app.cli.ingest_ncaaf_preseason --info-only --execute --refresh
+python -m app.cli.build_ncaaf_preseason
+python -m app.cli.validate_ncaaf_preseason
+python -m app.cli.inspect_ncaaf_preseason --season 2024 --program-id PROGRAM_UUID
+python -m app.cli.run_ncaaf_preseason_models --plan
+python -m app.cli.run_ncaaf_preseason_models
+python -m app.cli.validate_ncaaf_preseason_models
+python -m app.cli.run_ncaaf_preseason_supplement
+python -m app.cli.validate_ncaaf_preseason_supplement
+python -m app.cli.summarize_ncaaf_preseason
+```
+
+The source command requires `CFBD_API_KEY` only when `--execute` is present. It never includes credentials in parameters, hashes, filenames, manifests, or output. Repeated source requests use the Phase 5B-1 immutable cache unless `--refresh` explicitly checks for corrections. See [`NCAAF_PRESEASON_SOURCE_AUDIT.md`](docs/NCAAF_PRESEASON_SOURCE_AUDIT.md) and [`NCAAF_PRESEASON_MODEL_REPORT.md`](docs/NCAAF_PRESEASON_MODEL_REPORT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

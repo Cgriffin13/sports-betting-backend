@@ -37,6 +37,8 @@ ingested_at  <= as_of
 
 Where a reconstructed historical dataset lacks a genuine historical ingestion timestamp, mark `availability_mode = reconstructed` and apply a source-specific conservative publication rule. Phase 5B-2 implements `cfbd-reconstructed-kickoff-plus-24h-v1`: postgame game/PBP/drive/stat facts are unavailable until scheduled kickoff plus 24 hours. Actual local ingestion remains the real 2026 timestamp and is not backdated. Such a row may support exploratory football-model research but cannot claim strict live replay equivalence.
 
+Phase 5B-6 separately implements `preseason-reconstructed-season-start-v1` for retrospectively retrieved team-season returning-production, recruiting/talent, roster, and coach state. These facts become eligible at the season's first scheduled FBS kickoff, retain the actual 2026 ingestion timestamp, and carry `strict_live_fidelity=false`. Portal activity also requires a provider `transferDate` on or before that boundary. Missing pre-provider-era coverage remains null. This experiment measures reconstructed usefulness; it is not interchangeable with a contemporaneous Week 0 archive.
+
 Phase 3 market replay retains both observation-time and ingestion-time boundaries. A provider update observed before cutoff but ingested afterward is unavailable. Final scores, corrections, closing lines, realized weather and later roster/injury states are labels or evaluation data only.
 
 ## Prediction horizons
