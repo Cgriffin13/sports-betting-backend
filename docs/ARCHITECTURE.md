@@ -246,6 +246,12 @@ Four content-addressed offline artifacts sit beneath ignored `.ncaaf-data/market
 
 The module rejects 2025, non-morning selection rows, in-sample football predictions, and training cutoffs at or after evaluation season. It preserves integer-line push mass and keeps the small 60-minute/near-close sample diagnostic-only. No research model is imported by FastAPI, no migration was required, and Render/production dependencies and fair-probability behavior remain unchanged.
 
+### Phase 5B-8 finalist-freeze layer (implemented offline)
+
+`app.research.ncaaf.finalist_freeze` is a deterministic policy and integrity boundary. It records the Phase 5B-7 source/artifact hashes, candidate allowlist and rejection list, fixed total-blend weight, push-aware versions, common-cohort policy, numeric promotion gates, fallbacks, and one-time holdout protocol. `app.cli.freeze_ncaaf_finalists` rebuilds the committed machine manifest and can validate ignored local Phase 5B-7 artifacts without reading 2025 or contacting a provider.
+
+This layer does not fit a model, add a database table, load research dependencies into FastAPI, or alter production inference. Its output is a precondition for a separate explicit Phase 5B-9 holdout run.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text

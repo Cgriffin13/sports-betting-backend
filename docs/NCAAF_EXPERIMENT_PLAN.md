@@ -172,11 +172,11 @@ Phase 5B-7C freezes the comparison inputs without fitting M001–M004: proportio
 
 **Completed offline on 2026-08-31.** Full 5B-7 ran M001–M004 and a bounded B001-style point blend without reopening earlier searches. Market consensus won margin/ML; residual/direct candidates failed; and only the constrained market plus Ridge-no-opponent-adjustment total blend showed a tiny paired improvement. Phase 5B-8 must freeze a practical-effect rule before the one-time 2025 evaluation. The bounded later-horizon rows remain diagnostic and played no selection role.
 
-### 5B-8 — blend and locked evaluation
+### 5B-8 — finalist and gate freeze
 
-Freeze the complete selection/promotion rule, then evaluate 2025 once. The locked slate is market consensus for margin/ML/spread plus market consensus and the single constrained Ridge total blend challenger. B002 and broader blend searches are not justified by 5B-7 evidence. A candidate may advance to shadow but not production recommendation influence.
+**Completed offline on 2026-08-31 without accessing 2025.** The locked slate is market consensus for margin/ML/spread, diagnostic-only football power, and market consensus versus the single fixed constrained Ridge total blend. `NCAAF_FINALIST_FREEZE.md` and its machine manifest freeze artifacts, weight, practical-effect/proper-score/calibration/segment gates, fallbacks, and one-time access protocol. Broader blends and rejected residual/direct candidates cannot re-enter.
 
-### 5B-9 — registry and prospective shadow
+### 5B-9 — one-time 2025 holdout, registry, and prospective shadow
 
 Implement model/run/calibrator registry, immutable artifact verification, offline batch inference and 2026 prospective shadow predictions. Compare operational coverage, calibration and market increment without changing `/opportunities` fair probability.
 

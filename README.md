@@ -277,4 +277,13 @@ python -m app.cli.run_ncaaf_market_aware_tournament inspect --root .ncaaf-data
 
 The tournament writes content-addressed point and push-aware probability artifacts beneath ignored `.ncaaf-data/market-aware-v1/`. It rejects 2025 and non-morning selection rows and makes no provider calls. See [`NCAAF_MARKET_AWARE_MODEL_REPORT.md`](docs/NCAAF_MARKET_AWARE_MODEL_REPORT.md).
 
+Phase 5B-8 freezes the exact pre-2025 finalist slate and promotion/fallback gates without retraining or provider access:
+
+```powershell
+python -m app.cli.freeze_ncaaf_finalists build
+python -m app.cli.freeze_ncaaf_finalists validate --require-local-artifacts
+```
+
+The committed manifest is reproducible without local binary artifacts; `--require-local-artifacts` additionally checks ignored Phase 5B-7 source hashes. See [`NCAAF_FINALIST_FREEZE.md`](docs/NCAAF_FINALIST_FREEZE.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).
