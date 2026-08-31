@@ -267,4 +267,14 @@ python -m app.cli.market_comparison inspect --event-id EVENT_UUID
 
 The `consensus`, `join`, `residuals`, and `features` actions expose the same deterministic pipeline boundaries for automation. Outputs remain ignored beneath `.ncaaf-data/market-comparison/`; only the aggregate [`NCAAF_MARKET_COMPARISON_DATASET_REPORT.md`](docs/NCAAF_MARKET_COMPARISON_DATASET_REPORT.md) and machine-readable summary are committed.
 
+Full Phase 5B-7 runs the frozen morning market-aware tournament entirely offline:
+
+```powershell
+python -m app.cli.run_ncaaf_market_aware_tournament run --root .ncaaf-data
+python -m app.cli.run_ncaaf_market_aware_tournament validate --root .ncaaf-data
+python -m app.cli.run_ncaaf_market_aware_tournament inspect --root .ncaaf-data
+```
+
+The tournament writes content-addressed point and push-aware probability artifacts beneath ignored `.ncaaf-data/market-aware-v1/`. It rejects 2025 and non-morning selection rows and makes no provider calls. See [`NCAAF_MARKET_AWARE_MODEL_REPORT.md`](docs/NCAAF_MARKET_AWARE_MODEL_REPORT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

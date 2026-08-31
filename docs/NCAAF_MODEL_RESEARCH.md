@@ -27,6 +27,8 @@ The approved first practical workflow is **one game-day-morning run at first sch
 
 Phase 5B-7B provides complete-cohort 2020–2024 morning acquisition for the next market-aware experiment. The 60-minute and near-close data are a bounded, outcome-blind robustness sample only. Model selection must use morning as the primary cohort and label later-horizon findings as secondary; sample results cannot be generalized as full-cohort performance.
 
+Full Phase 5B-7 subsequently found that the independent football models did not improve the morning margin/ML market baseline, and direct/residual candidates were worse. A constrained total blend produced only a tiny improvement. Phase 5B-8 should therefore test a narrow market-only versus market/Ridge-total slate rather than expanding model complexity. The negative margin result is a valid research outcome, not a reason to mine subgroups or invent a blend.
+
 ## 1. Modeling problem
 
 ### 1.1 Primary targets

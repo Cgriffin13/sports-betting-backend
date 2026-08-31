@@ -170,9 +170,11 @@ Phase 5B-7A completed the predeclared sample with 76 logical/67 unique requests 
 
 Phase 5B-7C freezes the comparison inputs without fitting M001–M004: proportional no-vig per exact complete book pair, unweighted-median consensus at the most-supported exact line, exact canonical-event/same-horizon joins to selected 5B-3 OOF predictions, explicit push labels, and distinct residual/model-ready artifacts. The primary model-selection cohort is morning 2020–2023 development plus 2024 validation. Sixty-minute data is diagnostic only; near-close has no football join until a same-horizon OOF prediction exists. Full 5B-7 must use the frozen common cohorts rather than compare models on different populations.
 
+**Completed offline on 2026-08-31.** Full 5B-7 ran M001–M004 and a bounded B001-style point blend without reopening earlier searches. Market consensus won margin/ML; residual/direct candidates failed; and only the constrained market plus Ridge-no-opponent-adjustment total blend showed a tiny paired improvement. Phase 5B-8 must freeze a practical-effect rule before the one-time 2025 evaluation. The bounded later-horizon rows remain diagnostic and played no selection role.
+
 ### 5B-8 — blend and locked evaluation
 
-Run B001 and only justified B002; freeze the complete selection/promotion rule; evaluate 2025 once. A candidate may advance to shadow but not production recommendation influence.
+Freeze the complete selection/promotion rule, then evaluate 2025 once. The locked slate is market consensus for margin/ML/spread plus market consensus and the single constrained Ridge total blend challenger. B002 and broader blend searches are not justified by 5B-7 evidence. A candidate may advance to shadow but not production recommendation influence.
 
 ### 5B-9 — registry and prospective shadow
 

@@ -1161,3 +1161,19 @@ Consequences:
 - Consensus, joins, residual targets, and model-ready inputs are reproducible transient research artifacts, not production fair-probability changes.
 - No claim of edge, profitability, model promotion, EV, or staking follows from the plumbing diagnostics.
 
+## ADR-085 — Morning consensus remains the margin/ML benchmark; one tiny total blend advances to the locked gate
+
+- Date: 2026-08-31
+- Status: Accepted for Phase 5B-8 candidate narrowing
+
+Full Phase 5B-7 compared market-only, frozen football finalists, market-residual, market-as-feature, and constrained OOF blend candidates on the 7C common cohorts. Morning spread consensus beat every standalone margin architecture. Moneyline no-vig consensus also beat the proprietary probability candidates. Residual/direct models did not identify stable systematic market errors. A constrained market plus Ridge-no-opponent-adjustment total blend improved paired MAE by about 0.026 points and three-way Brier by about 0.001, with season-block intervals excluding zero, but the practical effect is very small.
+
+Consequences:
+
+- Phase 5B-8 keeps market consensus as the clear margin, moneyline, spread, and total benchmark.
+- No proprietary margin replacement or margin blend advances; football power remains an independent diagnostic only.
+- The constrained total Ridge blend is the only proprietary market-aware challenger advanced to the locked gate. The preseason CatBoost blend is a sensitivity comparator, not another finalist.
+- Practical-effect, calibration, segment-degradation, artifact, and one-time-access rules must be frozen before 2025 is opened. A failure retains market consensus; there is no forced proprietary model.
+- The 60-minute and near-close samples remain diagnostic and cannot affect selection.
+- This research decision does not change Phase 4 fair probability, production APIs, EV, staking, recommendations, or model lifecycle status.
+

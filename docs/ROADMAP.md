@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-7C completed through deterministic market-comparison plumbing on 2026-08-31.** The full 2020–2024 morning cohort is primary evidence; the 60-minute/near-close cohort is a bounded secondary robustness sample. Existing offline model candidates remain unchanged and no production probability changed.
+Status: **Phase 5A through full Phase 5B-7 completed offline on 2026-08-31.** The market-aware tournament found no margin/ML proprietary replacement for morning consensus and only a very small total-blend improvement worthy of locked-test scrutiny. Later horizons remained diagnostic, and no production probability changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -163,7 +163,8 @@ Status: **Phase 5A through Phase 5B-7C completed through deterministic market-co
 - [x] Audit a frozen 2020/2022/2024 historical-odds sample under predeclared timestamp, coverage, book-depth, pairing, and identity gates; preserve raw payloads outside Git and publish aggregate evidence.
 - [x] Phase 5B-7B: acquire, reconcile, normalize, and validate the full 2020–2024 morning corpus plus the deterministic bounded 60-minute/near-close robustness cohort under immutable source manifests and strict cutoff rules.
 - [x] Phase 5B-7C: construct versioned exact-line no-vig consensus, join selected same-horizon OOF football predictions, preserve push-aware labels, and emit deterministic common-cohort/residual/model-feature artifacts without fitting a market-aware model.
-- [ ] Full Phase 5B-7: fit and evaluate the predeclared residual and market-as-feature candidates on the frozen 7C common cohorts; keep later horizons diagnostic and 2025 sealed.
+- [x] Full Phase 5B-7: fit and evaluate market-only, frozen football finalists, residual, market-as-feature, and bounded OOF blend candidates on identical 7C common cohorts; keep later horizons diagnostic and 2025 sealed. See `NCAAF_MARKET_AWARE_MODEL_REPORT.md`.
+- [ ] Phase 5B-8: freeze practical-effect and promotion gates, then perform the one-time 2025 locked evaluation of market-only plus the single narrow total-blend challenger. Retain market consensus if the challenger fails.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
 - Create a model registry/versioning and promotion process.

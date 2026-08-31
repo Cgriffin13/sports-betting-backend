@@ -1,0 +1,72 @@
+{
+  "report_version": "ncaaf-market-aware-tournament-v1",
+  "status": "offline_research_only",
+  "provider_calls": 0,
+  "holdout_accessed": false,
+  "primary_horizon": "morning_first_kickoff_minus_3h",
+  "development_seasons": [2020, 2021, 2022, 2023],
+  "validation_season": 2024,
+  "policies": {
+    "vig_removal": "proportional-v1",
+    "market_consensus": "unweighted-median-v1",
+    "minimum_complete_books": 2,
+    "blend": "constrained-oof-least-squares-v1",
+    "probability": "chronological-empirical-market-aware-v1"
+  },
+  "hashes": {
+    "source_market_comparison": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc",
+    "source_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+    "source_feature_dataset": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+    "feature_set": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+    "run_dataset": "6305a430fd43d74feaf2dad8d326c809d0c2758521db60e5aaa8cc5502e72fad",
+    "point_artifact": "71c33513361d1065eb9e45fe62fd97759f4350ce0e0a630bf9d0c9b7e22aff03",
+    "probability_artifact": "707d836dffd7c689a341efc4720268a4ddcc202f8daccabfa704d76160e9d9f9",
+    "summary": "8cf4d84e08795eaf5367ce8b36fc9f27ed29f9bce2f9773fcb4daea9d81edf6a"
+  },
+  "row_counts": {
+    "point_predictions": 41384,
+    "probability_predictions": 36006,
+    "full_margin_common_games": 2433,
+    "full_total_common_games": 2417,
+    "market_aware_margin_games_2021_2024": 2199,
+    "market_aware_total_games_2021_2024": 2198,
+    "probability_margin_games_2022_2024": 1834,
+    "probability_total_games_2022_2024": 1847
+  },
+  "point_metrics": {
+    "margin_market": {"mae": 12.0993, "rmse": 15.1975, "bias": -0.0606, "validation_2024_mae": 12.1352},
+    "margin_power": {"mae": 13.1119, "rmse": 16.4479, "bias": -0.6117, "validation_2024_mae": 13.2198},
+    "margin_power_preseason": {"mae": 13.1351, "rmse": 16.3982, "bias": -0.2752, "validation_2024_mae": 13.3120},
+    "margin_ridge": {"mae": 13.3229, "rmse": 16.7187, "bias": 0.7019, "validation_2024_mae": 13.5232},
+    "margin_residual_ridge": {"mae": 12.6395, "rmse": 15.9319, "bias": 1.9302, "validation_2024_mae": 12.7197},
+    "margin_market_feature_ridge": {"mae": 12.7503, "rmse": 16.0959, "bias": 2.0863, "validation_2024_mae": 12.7481},
+    "margin_power_blend": {"mae": 12.0458, "rmse": 15.1214, "bias": -0.0576, "validation_2024_mae": 12.1352, "paired_mae_minus_market": 0.0085, "paired_ci": [0.0, 0.03243]},
+    "total_market": {"mae": 12.5921, "rmse": 15.9235, "bias": -0.8213, "validation_2024_mae": 12.6736},
+    "total_catboost": {"mae": 12.8749, "rmse": 16.2725, "bias": 0.0239, "validation_2024_mae": 12.7472},
+    "total_ridge": {"mae": 12.9794, "rmse": 16.3675, "bias": -0.3139, "validation_2024_mae": 12.8831},
+    "total_residual_catboost": {"mae": 12.7314, "rmse": 15.9870, "bias": 0.0859, "validation_2024_mae": 12.8047},
+    "total_market_feature_catboost": {"mae": 12.8509, "rmse": 16.1111, "bias": 0.0933, "validation_2024_mae": 12.6993},
+    "total_ridge_blend": {"mae": 12.4808, "rmse": 15.7802, "bias": -0.5669, "validation_2024_mae": 12.6330, "paired_mae_minus_market": -0.025830312453446788, "paired_ci": [-0.03813288057992986, -0.008253273130195275]}
+  },
+  "probability_metrics": {
+    "margin_market": {"moneyline_brier": 0.18232469210652805, "moneyline_log_loss": 0.5400386578730565, "line_multiclass_brier": 0.5120835394560452, "line_multiclass_log_loss": 0.7362669992193251, "mean_push_probability": 0.005191746520388809},
+    "margin_power_blend": {"moneyline_brier": 0.18464053341326747, "moneyline_log_loss": 0.5448844141695056, "line_multiclass_brier": 0.5128937345505724, "line_multiclass_log_loss": 0.7392274339105689, "mean_push_probability": 0.0055194622227485194},
+    "total_market": {"line_multiclass_brier": 0.5042349814607736, "line_multiclass_log_loss": 0.7042878023100849, "mean_push_probability": 0.002295190703251612},
+    "total_ridge_blend": {"line_multiclass_brier": 0.5012531006513753, "line_multiclass_log_loss": 0.7010701185699383, "mean_push_probability": 0.002403784242839844, "paired_brier_minus_market": -0.0009968343529218322, "paired_brier_ci": [-0.0011300608597000978, -0.000727174447718206], "paired_log_loss_minus_market": -0.0010184981847537803, "paired_log_loss_ci": [-0.00114866186291421, -0.0007525234123411302]}
+  },
+  "diagnostic_later_horizons": {
+    "selection_eligible": false,
+    "sixty_minute_margin_games": 36,
+    "sixty_minute_total_games": 37,
+    "near_close_spread_consensus_rows": 32,
+    "near_close_total_consensus_rows": 31
+  },
+  "decisions": {
+    "margin": "advance market consensus benchmark; retain football power as an independent diagnostic only",
+    "moneyline": "advance market no-vig consensus benchmark; no proprietary challenger",
+    "total": "advance market benchmark plus one narrow constrained market/Ridge blend challenger",
+    "spread_probability": "retain market-centered push-aware distribution benchmark",
+    "rejected": ["market residual Ridge margin", "market feature Ridge margin", "market residual Ridge total", "market feature Ridge total", "market residual CatBoost total", "market feature CatBoost total", "preseason variants as market replacements"],
+    "production_status": "not promoted; Phase 5B-8 gates and locked evaluation remain"
+  }
+}
