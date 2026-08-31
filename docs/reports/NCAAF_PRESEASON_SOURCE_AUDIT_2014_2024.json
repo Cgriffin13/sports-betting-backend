@@ -1,0 +1,41 @@
+{
+  "audit_version": "ncaaf-preseason-source-audit-v1",
+  "availability_policy_version": "preseason-reconstructed-season-start-v1",
+  "billable_calls": 68,
+  "cfbd_usage_after": 484,
+  "cfbd_usage_before": 416,
+  "credential_exposed": false,
+  "feature_artifact_bytes": 30373248,
+  "feature_coverage": {
+    "24_hours_before_kickoff": 0.9964963150900085,
+    "60_minutes_before_kickoff": 0.999395916394829,
+    "game_day_morning": 0.9969795819741453
+  },
+  "feature_dataset_hash": "1d6137b1c6100629eaddcbec9e24be7de89acec69ac52ad90186c711ac732a93",
+  "feature_manifest_id": "aa4a1d05427e7dac6e8721f818e8384a30f492e586ac0057fe3eab8e3b4c7221",
+  "feature_rows_per_horizon": 8277,
+  "preseason_feature_set_hash": "699a92b434f7421ac9fd61e803bd32b613d3c412bdf19085858b3d3425841a4b",
+  "provider": "CFBD",
+  "provider_calls_remaining": 516,
+  "response_bytes": {
+    "coaches": 402963,
+    "player_portal": 2094030,
+    "player_returning": 460767,
+    "recruiting_teams": 140711,
+    "roster": 50247975,
+    "stats_player_season": 10150735,
+    "talent": 106855
+  },
+  "rows": {
+    "coaches": 357,
+    "player_portal": 9923,
+    "player_returning": 1421,
+    "recruiting_teams": 2337,
+    "roster": 168165,
+    "stats_player_season": 58597,
+    "talent": 2141
+  },
+  "season_range": [2014, 2024],
+  "strict_live_fidelity": false,
+  "team_season_rows": 2837
+}

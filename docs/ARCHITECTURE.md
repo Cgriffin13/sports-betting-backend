@@ -202,6 +202,24 @@ This layer is deliberately absent from the FastAPI dependency graph. It adds no 
 
 All dependencies and artifacts remain research-only. The web service does not import these modules, production requirements are unchanged, and no endpoint or migration was added. A future Phase 6 recommendation boundary must retain two immutable views: the strategy/model book of every qualified opportunity and the actual/executed paper book after human approval. That separation is required for selection-bias and execution attribution.
 
+### Phase 5B-6 preseason/personnel layer (implemented offline)
+
+```text
+bounded CFBD preseason/personnel products
+  -> Phase 5B-1 credential-free immutable source manifests/raw cache
+  -> exact team/player identity mapping and reconstructed availability policies
+  -> content-addressed program-season Parquet facts
+  -> additive join to each Phase 5B-2 horizon matrix
+  -> fold-local Ridge / power-prior / bounded CatBoost experiments
+  -> deterministic OOF predictions, ablations, gates, and aggregate reports
+```
+
+`app.research.ncaaf.preseason` owns normalization, point-in-time eligibility, feature-family provenance, content hashes, and the additive model-ready matrices. `app.research.ncaaf.preseason_modeling` owns the bounded chronological experiment. The associated CLIs plan or explicitly execute the credentialed source audit, build and validate local artifacts, inspect one program-season row, run the tournament, and validate OOF outputs.
+
+The source facts are reconstructed, not historical publication snapshots. Returning production, recruiting, talent, roster, and head-coach state use a versioned season-start boundary and retain the real 2026 ingestion time. Portal records additionally require a provider transfer date before that boundary. Missing source coverage remains null with explicit flags; it is not silently converted to zero. Coordinator history is deferred because the selected structured provider has no verified historical product.
+
+No Phase 5B-6 module is imported by FastAPI. PyArrow, psutil, scikit-learn, and CatBoost remain research-only dependencies; all large/binary artifacts stay ignored. No endpoint, migration, production requirement, pricing probability, recommendation, or Render process changed.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text

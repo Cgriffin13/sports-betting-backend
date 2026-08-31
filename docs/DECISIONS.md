@@ -1017,3 +1017,60 @@ Consequences:
 - Selection bias can be measured instead of silently contaminating model evaluation.
 - This decision does not authorize automated wager execution or implement Phase 6 behavior now.
 
+## ADR-075 — Phase 5B-6 uses bounded CFBD preseason/personnel products with immutable caching
+
+- Date: 2026-08-30
+- Status: Accepted and implemented offline
+
+The initial preseason/personnel corpus uses bounded CFBD returning-production, portal, recruiting-team, talent, roster, player-season passing-stat, and coach products for 2014–2024. Requests reuse the Phase 5B-1 credential-free canonical request/cache contract. Source responses and manifests remain immutable; normalized program-season and model-ready artifacts remain content-addressed Parquet outside Git.
+
+Consequences:
+
+- The audit consumed 68 billable calls and does not require another historical download for repeat modeling.
+- CFBD remains the durable structured source; no display-string-only program merge is permitted.
+- Coordinator history is deferred because no verified structured CFBD product exists in the selected contract.
+- Research dependencies/artifacts stay outside the FastAPI and Render production path.
+
+## ADR-076 — Reconstructed preseason state uses an explicit season-start availability boundary
+
+- Date: 2026-08-30
+- Status: Accepted for offline reconstructed research
+
+Under `preseason-reconstructed-season-start-v1`, retrospectively retrieved returning production, recruiting/talent, roster, and coach state become eligible at the target season's first scheduled FBS kickoff. Portal records additionally require a provider transfer date no later than that boundary. Actual local ingestion remains the 2026 retrieval time, and every row carries `strict_live_fidelity=false`.
+
+Consequences:
+
+- This dataset can test reconstructed predictive usefulness but cannot claim strict Week 0 historical replay.
+- A genuine publication-vintage source requires a new policy and dataset version; it cannot silently replace v1.
+- 2025 remains rejected by ordinary source, build, validation, and modeling commands.
+
+## ADR-077 — Missing personnel-source coverage is not a zero-valued football fact
+
+- Date: 2026-08-30
+- Status: Accepted and implemented
+
+Unavailable source families remain null and carry explicit availability/missing-family indicators. In particular, absent pre-2021 portal coverage is not represented as zero transfers. Reconstructed roster/player IDs support overlap and prior-leading-passer continuity proxies only; they do not establish the Week 1 starter. Coach IDs identify continuity but are excluded as model categories.
+
+Consequences:
+
+- Fold-local model preprocessing may impute numeric values while retaining missing indicators; normalization never silently fabricates zero.
+- Source-era and low-coverage effects remain measurable in ablations and quality segments.
+- QB, transfer, and coaching explanations must use the precise proxy name rather than stronger labels unsupported by the source.
+
+## ADR-078 — Advance the bounded preseason margin prior, not the probability benchmark
+
+- Date: 2026-08-30
+- Status: Accepted as offline research evidence
+
+The regularized preseason adjustment to the chronological margin power rating improved 24-hour OOF MAE by 0.174 points and Weeks 0–3 by more than the frozen practical threshold. Recruiting/talent supplied the clearest standalone and leave-one-out family evidence. Preseason CatBoost total improved point MAE modestly. Full preseason Ridge total and the common-era transfer family were unfavorable.
+
+Limited probability comparisons reused the existing empirical-discrete margin and empirical-residual total methods. Both candidates improved point estimates of NLL/CRPS, but paired season-block intervals crossed zero. The existing probability benchmarks therefore remain.
+
+Consequences:
+
+- The preseason-adjusted power model and recruiting/talent family advance only to later offline and market-relative evaluation.
+- CatBoost preseason total remains an offline point challenger; it does not displace Ridge empirical probability.
+- Returning production, QB, coaching, and roster continuity remain explicit exploratory ablations rather than independently promoted families.
+- Portal features require a separately frozen 2021+ common-coverage experiment before reconsideration.
+- No production fair probability, endpoint, EV, stake, or recommendation changes.
+

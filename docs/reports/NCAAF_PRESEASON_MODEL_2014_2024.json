@@ -1,0 +1,55 @@
+{
+  "base_dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+  "base_feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+  "combined_dataset_hash": "1d6137b1c6100629eaddcbec9e24be7de89acec69ac52ad90186c711ac732a93",
+  "decisions": {
+    "coaching": "exploratory_not_independently_advanced",
+    "preseason_catboost_total": "offline_point_challenger_only",
+    "preseason_power_margin": "advance_offline_point_research",
+    "qb_continuity": "exploratory_proxy_not_independently_advanced",
+    "recruiting_talent": "advance_offline_margin_prior_research",
+    "returning_production": "exploratory_not_independently_advanced",
+    "roster_continuity": "exploratory_not_independently_advanced",
+    "transfers": "reject_common_2014_2024_cohort_research_2021_plus_only"
+  },
+  "holdout_accessed": false,
+  "primary_24h": {
+    "catboost_total_preseason": {
+      "mae": 13.122096390033388,
+      "paired_mae_difference": -0.07979473881327051,
+      "paired_mae_interval": [-0.14329679106839355, -0.011597768105223718],
+      "weeks_0_3_mae": 12.919849032069427
+    },
+    "power_margin_preseason": {
+      "mae": 13.244042795195318,
+      "paired_mae_difference": -0.1737919653233955,
+      "paired_mae_interval": [-0.3816616554708823, 0.004678724418922725],
+      "weeks_0_3_mae": 13.942537197382004
+    }
+  },
+  "primary_prediction_rows": 53328,
+  "primary_run_hash": "209418790050f5afba640ee04d6f72a571bac3c1c16bfc5f993eabef6006d256",
+  "provider_calls_during_modeling": 0,
+  "source_billable_calls": 68,
+  "supplement_run_hash": "a05ffee783bd60cd8e535e6cb079ab6c4a40c9e4a8af51a95ecd67ce82b38db5",
+  "preseason_feature_set_hash": "699a92b434f7421ac9fd61e803bd32b613d3c412bdf19085858b3d3425841a4b",
+  "probability_24h": {
+    "margin_empirical_discrete": {
+      "crps": 9.401923564046674,
+      "nll": 4.104497093418952,
+      "paired_crps_interval": [-0.12139113790796721, 0.07771832564504744],
+      "paired_nll_interval": [-0.019066380418904665, 0.005446408543396148],
+      "probability_benchmark_displaced": false
+    },
+    "total_empirical": {
+      "crps": 9.228312038616778,
+      "nll": 4.21660663048111,
+      "paired_crps_interval": [-0.21957345987657742, 0.03374194748439531],
+      "paired_nll_interval": [-0.024081601053147564, 0.003054831532858341],
+      "probability_benchmark_displaced": false
+    }
+  },
+  "season_range": [2014, 2024],
+  "strict_live_fidelity": false,
+  "version": "ncaaf-preseason-experiment-v1"
+}

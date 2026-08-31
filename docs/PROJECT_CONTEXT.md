@@ -94,6 +94,8 @@ Phase 5A has now produced the research specification for an NCAAF model tourname
 
 Phase 5B-2 now provides the offline, leakage-tested research input layer: normalized immutable Parquet facts, explicit historical availability, three separate prediction horizons, rolling/prior/opponent-adjusted features, quality/missingness fields, chronological folds, and reproducible manifests. It did not train a model, inspect the sealed 2025 outcomes, or change production pricing behavior.
 
+Phase 5B-6 adds a separate reconstructed preseason/personnel research layer from bounded CFBD products. It preserves exact source manifests and real retrieval time, uses conservative versioned availability, keeps missing coverage distinct from zero, and evaluates features only through chronological offline ablations. It does not create a production proprietary probability or change the API.
+
 The Phase 4 pricing path calculates probability, edge, and EV independently, but the legacy bet-entry endpoint still accepts optional caller-supplied fields and does not assert that they came from Phase 4. Pricing outputs remain transient until a later official recommendation boundary. The backend stores optional closing data but does not calculate CLV. It does not learn or recalibrate models from history.
 
 See `ARCHITECTURE.md` and `MODEL_LOGIC.md` for exact implemented-versus-planned boundaries.
@@ -204,4 +206,4 @@ The following are known current-state problems, not solved capabilities:
 
 V2 should first become a trustworthy paper-trading system: reproducible prices, explicit financial semantics, durable data, conservative risk policy, human approval, deterministic tests, and honest measurement. The first vertical target is a complete NCAAF paper-trading baseline, followed closely by an evidence-based NCAAF model track. Predictive sophistication is valuable only when the foundations make experiments auditable.
 
-> Current research status (2026-08-30): Phase 5B-5 completed controlled offline strong-model and key-number experiments. These candidates do not feed the live API; market consensus remains the implemented fair-probability source, and 2025 remains sealed.
+> Current research status (2026-08-30): Phase 5B-6 completed bounded reconstructed preseason/personnel research. Recruiting/talent and a preseason-adjusted margin power candidate advance only offline; the existing probability benchmarks remain. These candidates do not feed the live API; market consensus remains the implemented fair-probability source, and 2025 remains sealed.

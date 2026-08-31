@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-5 completed through controlled strong-model and key-number experiments on 2026-08-30.** CatBoost total advances only as an offline point challenger; the margin power rating and Ridge-plus-empirical total probability benchmark remain. A chronological empirical-discrete margin method advances for offline push/key-number work. No production probability changed.
+Status: **Phase 5A through Phase 5B-6 completed through reconstructed preseason/personnel research on 2026-08-30.** A bounded preseason-adjusted power model and recruiting/talent family advance only for further offline margin research; preseason CatBoost total remains a point challenger. Existing empirical-discrete margin and Ridge-empirical total probability benchmarks remain. No production probability changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -157,6 +157,7 @@ Status: **Phase 5A through Phase 5B-5 completed through controlled strong-model 
 - [x] Build reproducible, time-aware feature pipelines with provenance and leakage/time-travel tests.
 - [x] Phase 5B-3: run naive, chronological power-rating, and fold-local Ridge falsification baselines for margin/total across each horizon; persist deterministic OOF predictions and residual diagnostics. Elastic Net is explicitly deferred after bounded convergence failures.
 - [x] Phase 5B-4: fit predeclared Normal, Student-t, empirical, quality-aware, and total skew-normal distributions chronologically; emit deterministic moneyline/spread/total probabilities with explicit integer push mass; report proper scores, interval/PIT, key-number, segment, and paired-bootstrap diagnostics.
+- [x] Phase 5B-6: audit/cache bounded CFBD preseason/personnel sources; materialize reconstructed point-in-time program-season features; run targeted power/Ridge/CatBoost comparisons, family ablations, uncertainty segments, and limited probability checks without opening 2025.
 - [x] Run naive, power-rating, Ridge, distribution, and equal-budget XGBoost/LightGBM/CatBoost experiments under frozen chronological folds; defer unstable Elastic Net with evidence.
 - [x] Evaluate chronological empirical-discrete margin mass without manually boosting key numbers; retain its wider interval coverage as an explicit limitation.
 - [ ] Acquire and audit fixed-horizon historical market data before claiming market-relative or residual performance.
@@ -181,10 +182,11 @@ Phase 5B implementation order:
 4. naive, Elo, and Ridge falsification baselines (**complete in 5B-3; Elastic Net deferred with evidence**);
 5. distributions, calibration, and integer push probabilities offline (**complete in 5B-4; quality-aware margin and empirical total candidates advanced for later offline comparison**);
 6. bounded tree and key-number challengers (**complete in 5B-5; CatBoost total advances only as a point challenger, empirical-discrete margin advances offline**);
-7. fixed-horizon market residual/comparison experiments;
-8. learned blend and once-only locked evaluation;
-9. registry plus prospective shadow operation; and
-10. separately reviewed production-inference decision only if gates pass.
+7. reconstructed preseason/personnel research (**complete in 5B-6; recruiting/talent and a bounded power-prior adjustment advance offline; transfer-era coverage is not accepted for the common cohort**);
+8. fixed-horizon market residual/comparison experiments;
+9. learned blend and once-only locked evaluation;
+10. registry plus prospective shadow operation; and
+11. separately reviewed production-inference decision only if gates pass.
 
 Phase 5 exit criteria remain **unsatisfied** until implementation evidence exists. Phase 5A documentation is not a model, backtest, or promotion.
 
