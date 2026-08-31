@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from statistics import median
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Protocol, Sequence
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -126,11 +126,22 @@ class CachedResponse:
     cache_hit: bool
 
 
+class HistoricalArchiveRequest(Protocol):
+    @property
+    def requested_at(self) -> datetime: ...
+
+    @property
+    def safe_parameters(self) -> dict[str, Any]: ...
+
+    @property
+    def request_hash(self) -> str: ...
+
+
 class HistoricalAuditStore:
     def __init__(self, root: Path) -> None:
         self.root = (root / "odds-audit-v1").resolve()
 
-    def load(self, request: AuditRequest) -> CachedResponse | None:
+    def load(self, request: HistoricalArchiveRequest) -> CachedResponse | None:
         pointer = self.root / "r" / request.request_hash[:20] / "current.json"
         if not pointer.is_file():
             return None
@@ -155,7 +166,7 @@ class HistoricalAuditStore:
             cache_hit=True,
         )
 
-    def put(self, request: AuditRequest, response: HistoricalOddsResponse) -> CachedResponse:
+    def put(self, request: HistoricalArchiveRequest, response: HistoricalOddsResponse) -> CachedResponse:
         content_hash = hashlib.sha256(response.payload_bytes).hexdigest()
         request_dir = self.root / "r" / request.request_hash[:20]
         existing = self.load(request)
@@ -164,7 +175,7 @@ class HistoricalAuditStore:
         if not artifact.exists():
             _atomic_bytes(artifact, gzip.compress(response.payload_bytes, mtime=0))
         manifest: dict[str, Any] = {
-            "audit_version": AUDIT_VERSION,
+            "audit_version": getattr(request, "collection_version", AUDIT_VERSION),
             "provider": "the_odds_api",
             "endpoint": "historical/sports/americanfootball_ncaaf/odds",
             "request_parameters": request.safe_parameters,
@@ -499,9 +510,9 @@ def reconcile_event(game: AuditGame, events: Sequence[Mapping[str, Any]]) -> tup
         kickoff_distance = abs((kickoff - game.kickoff.astimezone(UTC)).total_seconds()) / 60
         if kickoff_distance > TOLERANCES.reliable_kickoff_distance_minutes:
             continue
-        if not _name_compatible(event.get("home_team"), game.home_team):
+        if not name_is_compatible(event.get("home_team"), game.home_team):
             continue
-        if not _name_compatible(event.get("away_team"), game.away_team):
+        if not name_is_compatible(event.get("away_team"), game.away_team):
             continue
         candidates.append(event)
     if len(candidates) == 1:
@@ -569,8 +580,8 @@ def _market_complete(market: Mapping[str, Any], game: AuditGame, market_key: str
 
 
 def _opposing_teams(outcomes: Sequence[Mapping[str, Any]], game: AuditGame) -> bool:
-    return any(_name_compatible(item.get("name"), game.home_team) for item in outcomes) and any(
-        _name_compatible(item.get("name"), game.away_team) for item in outcomes
+    return any(name_is_compatible(item.get("name"), game.home_team) for item in outcomes) and any(
+        name_is_compatible(item.get("name"), game.away_team) for item in outcomes
     )
 
 
@@ -752,7 +763,7 @@ def slate_to_dict(slate: SlateDefinition) -> dict[str, Any]:
     return value
 
 
-def _name_compatible(provider_name: Any, schedule_name: str) -> bool:
+def name_is_compatible(provider_name: Any, schedule_name: str) -> bool:
     provider = _normalized_name(provider_name)
     schedule = _normalized_name(schedule_name)
     if not provider or not schedule:

@@ -166,7 +166,7 @@ Run R004/P001 and bounded T001–T003. Advance at most one tree family unless ev
 
 ### 5B-7 — historical market comparison
 
-Phase 5B-7A completed the predeclared sample with 76 logical/67 unique requests and 2,010 credits. Its conditional GO permits a separately bounded acquisition for FBS-vs-FBS morning and 60-minute h2h/spreads/totals, plus near-close spreads/totals. Do not include 24h or near-close h2h in the primary experiment. Reuse Phase 3/4 semantics under `the-odds-api-provider-archive-snapshot-v1`; run M001–M004 and W001 only where the same-horizon market exists. Measure incremental value versus consensus and CLV readiness.
+Phase 5B-7A completed the predeclared sample with 76 logical/67 unique requests and 2,010 credits. Phase 5B-7B then built the complete 2020–2024 FBS-vs-FBS morning h2h/spread/total corpus and a separately predeclared, outcome-blind 60-minute/near-close robustness cohort. The morning cohort is the primary basis for M001–M004 and W001. Later-horizon rows are secondary diagnostics only and must not be pooled with morning or portrayed as full-cohort evidence. Do not include 24h or near-close h2h. Reuse `the-odds-api-provider-archive-snapshot-v1` and evaluate only events passing reliable identity, cutoff, paired-market, and two-supported-book gates.
 
 ### 5B-8 — blend and locked evaluation
 

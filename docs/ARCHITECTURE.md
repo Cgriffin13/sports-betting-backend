@@ -226,6 +226,14 @@ No Phase 5B-6 module is imported by FastAPI. PyArrow, psutil, scikit-learn, and 
 
 Raw JSON gzip responses and manifests stay beneath ignored `.ncaaf-data/odds-audit-v1/`; Git contains only code and aggregate reports. Backfilled rows use `the-odds-api-provider-archive-snapshot-v1`: the provider archive timestamp is the historical market-state boundary while local retrieval remains its real 2026 time. This is not equivalent to contemporaneous Phase 3 ingestion. No audit code is imported by FastAPI, and no production endpoint, database schema, dependency, or Render process changed.
 
+### Phase 5B-7B canonical historical-market layer (implemented offline)
+
+`app.research.ncaaf.historical_market_dataset` plans the canonical FBS-vs-FBS acquisition from the Phase 5B-1 schedule, reuses exact or market-superset 7A cache entries, validates closest-prior cutoffs, reconciles provider events, and writes deterministic book-level Parquet observations plus event/horizon/market eligibility groups. `app.cli.historical_market_dataset` keeps planning, explicit acquisition, cache validation, normalization, artifact validation, inspection, and coverage reporting separate.
+
+The primary corpus contains every eligible 2020–2024 game at the versioned first-scheduled-kickoff-minus-three-hours cutoff for h2h, spreads, and totals. The secondary corpus is an outcome-blind, stable-hash sample stratified by season, early/middle/late regular season or postseason, and kickoff window. It covers 60-minute h2h/spreads/totals and near-close spreads/totals, reusing all eligible 7A anchors. Secondary results are diagnostic robustness evidence and cannot be represented as full-cohort estimates.
+
+Every observation retains canonical/provider event identity, programs, kickoff, requested and returned snapshot timestamps, exact book/market/side/point/price, derived decimal odds and implied probability, and immutable source hashes. Eligibility requires a reliable event mapping, an at-or-before cutoff snapshot within the frozen provider cadence, coherent opposing sides/lines, valid prices, and at least two complete DraftKings/FanDuel/BetMGM books. Missing data is classified, never interpolated. Consensus, vig removal, model comparison, EV, CLV, and production inference remain outside this layer.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text

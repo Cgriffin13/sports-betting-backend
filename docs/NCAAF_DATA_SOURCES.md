@@ -47,7 +47,7 @@ This purchase is important because all three questions below require point-in-ti
 2. Did a residual model learn incremental signal beyond the market?
 3. Did a predicted edge move toward the close (CLV)?
 
-CFBD betting lines may support exploratory season-level market benchmarks, but they must not be assumed to have exact publication histories. Phase 5B-7A completed the frozen audit across representative 2020, 2022, and 2024 slates without touching 2025. It consumed 2,010 credits for 67 unique requests and returned a conditional GO. Acquire only the selected horizons in `NCAAF_HISTORICAL_ODDS_AUDIT.md`; do not broaden the pull from this small sample without a new bounded plan.
+CFBD betting lines may support exploratory season-level market benchmarks, but they must not be assumed to have exact publication histories. Phase 5B-7A completed the frozen audit across representative 2020, 2022, and 2024 slates without touching 2025. Phase 5B-7B spent 12,190 additional credits to acquire the complete 2020–2024 morning cohort and a deterministic bounded later-horizon sample, leaving 5,800 credits. The immutable provider archive and normalized book-level Parquet corpus are now the approved source for 5B-7C. Do not broaden later-horizon acquisition or substitute CFBD line vintages without a new bounded decision.
 
 ## Source ingestion contract
 

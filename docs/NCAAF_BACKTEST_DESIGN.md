@@ -53,6 +53,8 @@ Evaluate these distinct snapshots where data permits:
 
 The approved first operational workflow is one **game-day-morning** paper run before the day's first NCAAF kickoff. Phase 5B-7A found the fixed 09:00 America/New_York and first-kickoff-minus-three-hours candidates tied on aggregate coverage and identical on eight of nine audited slates. The operational convention is therefore frozen as **first scheduled kickoff minus three hours**, which remains well-defined for atypical slate start times. The 60-minute cutoff remains a separately approved research estimand. The 24-hour cutoff failed the 2020 per-season coverage gate and is not approved for the first market-aware corpus. Do not mix horizons or fill a missing horizon with morning, closing, or another horizon's data.
 
+Phase 5B-7B materialized the full 2020–2024 morning cohort as the primary same-horizon comparison dataset. Its 60-minute and near-close observations come from a deterministic season/phase/kickoff-window sample plus reused 7A anchors; they are robustness diagnostics, not full-cohort estimands. Missing books, lines, events, or horizons remain missing and are never imputed from another time.
+
 ## Dataset and season plan
 
 Detailed PBP is practically strongest from 2014 onward, while exact The Odds API history begins in 2020. Use two linked tracks:

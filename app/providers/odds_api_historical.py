@@ -53,15 +53,22 @@ class HistoricalOddsClient:
         response = self._get(USAGE_URL, {"all": "true"})
         return safe_usage_headers(response.headers)
 
-    def fetch(self, requested_at: datetime) -> HistoricalOddsResponse:
+    def fetch(
+        self,
+        requested_at: datetime,
+        *,
+        markets: tuple[str, ...] = ("h2h", "spreads", "totals"),
+    ) -> HistoricalOddsResponse:
         if requested_at.tzinfo is None:
             raise ValueError("historical request timestamp must be timezone-aware")
+        if not markets or any(item not in {"h2h", "spreads", "totals"} for item in markets):
+            raise ValueError("historical markets must be a non-empty supported tuple")
         requested_at = requested_at.astimezone(UTC)
         response = self._get(
             HISTORICAL_ODDS_URL,
             {
                 "regions": "us",
-                "markets": "h2h,spreads,totals",
+                "markets": ",".join(markets),
                 "oddsFormat": "american",
                 "dateFormat": "iso",
                 "date": iso_z(requested_at),
