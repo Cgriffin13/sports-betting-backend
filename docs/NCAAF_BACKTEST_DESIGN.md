@@ -238,3 +238,9 @@ Exact numeric thresholds and minimum game counts remain unresolved until Phase 5
 - **Portfolio simulation (Phase 6):** add executable entry assumptions, stake/risk policy, correlated exposure, bankroll path and settlements.
 
 Do not call pricing replay a profitable backtest, and do not infer a staking policy from Phase 5 model metrics.
+
+## Phase 5B-7C common-cohort contract
+
+The market comparison builder admits only selected chronological OOF predictions whose training season ends before the evaluated season. Market and football rows join by exact canonical event ID and a versioned horizon mapping. The primary mapping is `morning_first_kickoff_minus_3h` to `game_day_morning`; 60 minutes maps only to 60 minutes. There is deliberately no near-close-to-60-minute substitution.
+
+Margin common-cohort rows require both a moneyline state and an exact-line spread state. Total rows require an exact-line total state. Residual targets use `actual_margin - (-home_spread)` and `actual_total - market_total`. Settlement keeps home cover/push/away cover and over/push/under as three distinct outcomes. All comparisons in full 5B-7 must report both full coverage and the identical common intersection.

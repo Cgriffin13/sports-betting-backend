@@ -1,0 +1,144 @@
+{
+  "at_least_2_books_pct": 100.0,
+  "at_least_3_books_pct": 51.07520349896732,
+  "book_depth": {
+    "2": 4027,
+    "3": 4204
+  },
+  "common_cohort_by_target_horizon": {
+    "margin|60_minutes_before_kickoff": 72,
+    "margin|morning_first_kickoff_minus_3h": 4866,
+    "total|60_minutes_before_kickoff": 74,
+    "total|morning_first_kickoff_minus_3h": 4834
+  },
+  "common_cohort_unique_games_by_target_horizon": {
+    "margin|60_minutes_before_kickoff": 36,
+    "margin|morning_first_kickoff_minus_3h": 2433,
+    "total|60_minutes_before_kickoff": 37,
+    "total|morning_first_kickoff_minus_3h": 2417
+  },
+  "consensus_by_season_market_horizon": {
+    "2020|h2h|60_minutes_before_kickoff": 9,
+    "2020|h2h|morning_first_kickoff_minus_3h": 431,
+    "2020|spreads|60_minutes_before_kickoff": 2,
+    "2020|spreads|morning_first_kickoff_minus_3h": 238,
+    "2020|spreads|near_close_5_minutes": 3,
+    "2020|totals|60_minutes_before_kickoff": 4,
+    "2020|totals|morning_first_kickoff_minus_3h": 219,
+    "2020|totals|near_close_5_minutes": 3,
+    "2021|h2h|60_minutes_before_kickoff": 6,
+    "2021|h2h|morning_first_kickoff_minus_3h": 581,
+    "2021|spreads|60_minutes_before_kickoff": 6,
+    "2021|spreads|morning_first_kickoff_minus_3h": 383,
+    "2021|spreads|near_close_5_minutes": 3,
+    "2021|totals|60_minutes_before_kickoff": 6,
+    "2021|totals|morning_first_kickoff_minus_3h": 351,
+    "2021|totals|near_close_5_minutes": 2,
+    "2022|h2h|60_minutes_before_kickoff": 13,
+    "2022|h2h|morning_first_kickoff_minus_3h": 697,
+    "2022|spreads|60_minutes_before_kickoff": 10,
+    "2022|spreads|morning_first_kickoff_minus_3h": 567,
+    "2022|spreads|near_close_5_minutes": 10,
+    "2022|totals|60_minutes_before_kickoff": 11,
+    "2022|totals|morning_first_kickoff_minus_3h": 554,
+    "2022|totals|near_close_5_minutes": 9,
+    "2023|h2h|60_minutes_before_kickoff": 7,
+    "2023|h2h|morning_first_kickoff_minus_3h": 703,
+    "2023|spreads|60_minutes_before_kickoff": 7,
+    "2023|spreads|morning_first_kickoff_minus_3h": 651,
+    "2023|spreads|near_close_5_minutes": 5,
+    "2023|totals|60_minutes_before_kickoff": 5,
+    "2023|totals|morning_first_kickoff_minus_3h": 619,
+    "2023|totals|near_close_5_minutes": 6,
+    "2024|h2h|60_minutes_before_kickoff": 12,
+    "2024|h2h|morning_first_kickoff_minus_3h": 720,
+    "2024|spreads|60_minutes_before_kickoff": 11,
+    "2024|spreads|morning_first_kickoff_minus_3h": 660,
+    "2024|spreads|near_close_5_minutes": 11,
+    "2024|totals|60_minutes_before_kickoff": 11,
+    "2024|totals|morning_first_kickoff_minus_3h": 674,
+    "2024|totals|near_close_5_minutes": 11
+  },
+  "consensus_version": "unweighted-median-v1",
+  "dataset_hash": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc",
+  "diagnostic_consensus_rows": 183,
+  "diagnostic_joined_rows": 240,
+  "exclusion_counts": {
+    "fewer_than_two_complete_books_at_exact_line": 2018,
+    "market_state_unavailable": 27704
+  },
+  "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+  "football_run_hash": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb",
+  "holdout_accessed": false,
+  "joined_by_season_market": {
+    "2020|h2h": 880,
+    "2020|spreads": 480,
+    "2020|totals": 446,
+    "2021|h2h": 1174,
+    "2021|spreads": 778,
+    "2021|totals": 714,
+    "2022|h2h": 1420,
+    "2022|spreads": 1154,
+    "2022|totals": 1130,
+    "2023|h2h": 1420,
+    "2023|spreads": 1316,
+    "2023|totals": 1248,
+    "2024|h2h": 1464,
+    "2024|spreads": 1342,
+    "2024|totals": 1370
+  },
+  "joined_unique_games_by_season_market": {
+    "2020|h2h": 431,
+    "2020|spreads": 238,
+    "2020|totals": 220,
+    "2021|h2h": 581,
+    "2021|spreads": 385,
+    "2021|totals": 352,
+    "2022|h2h": 697,
+    "2022|spreads": 568,
+    "2022|totals": 555,
+    "2023|h2h": 703,
+    "2023|spreads": 651,
+    "2023|totals": 620,
+    "2024|h2h": 720,
+    "2024|spreads": 660,
+    "2024|totals": 674
+  },
+  "manifest_id": "afd57f1eabda16a17f3e1cf75072acb931b0f5270fa0c67d3f5ee774bbbfe811",
+  "market_moneyline_diagnostics": {
+    "brier": 0.18213077992788582,
+    "games": 3179,
+    "log_loss": 0.540321873933991,
+    "role": "plumbing_validation_only"
+  },
+  "primary_common_cohort_rows": 9700,
+  "probability_dispersion": {
+    "median": 0.008664009704,
+    "p90": 0.01891548584
+  },
+  "provider_calls": 0,
+  "report_version": "ncaaf-market-comparison-plumbing-v1",
+  "residual_targets_by_market_horizon": {
+    "spreads|60_minutes_before_kickoff": 72,
+    "spreads|morning_first_kickoff_minus_3h": 4998,
+    "totals|60_minutes_before_kickoff": 74,
+    "totals|morning_first_kickoff_minus_3h": 4834
+  },
+  "row_counts": {
+    "football_market_joined": 16336,
+    "market_consensus": 8231,
+    "market_features": 9846,
+    "residual_targets": 9978
+  },
+  "source_market_dataset_hash": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+  "source_row_counts": {
+    "market_consensus_unique_games": 3230,
+    "selected_oof_predictions_relevant_horizons": 29360,
+    "selected_oof_unique_games_relevant_horizons": 3670
+  },
+  "timestamp_distance_seconds": {
+    "median": 261.0,
+    "p90": 300.0
+  },
+  "vig_removal_version": "proportional-v1"
+}

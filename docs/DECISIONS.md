@@ -1145,3 +1145,19 @@ Consequences:
 - Provider-archive availability is not rewritten as contemporaneous ingestion.
 - Consensus, model comparison, residual targets, edge, EV, and CLV remain 5B-7C or later work.
 
+## ADR-084 — Market comparison uses exact-line median consensus and exact OOF horizon joins
+
+- Date: 2026-08-31
+- Status: Accepted and implemented for Phase 5B-7C research plumbing
+
+Each complete supported book pair is de-vigged with `proportional-v1`. Moneyline consensus is the unweighted median of book no-vig probabilities. Spread and total consensus first select the exact point supported by the most complete books, with deterministic median-distance/numeric tie-breaking, then take the unweighted median only at that point. Different lines are never averaged. Minimum depth remains two books; book weights are not learned in this phase.
+
+The comparison layer joins only canonical-event-exact, chronological OOF predictions at an explicit equivalent horizon. Morning maps from `morning_first_kickoff_minus_3h` to `game_day_morning`; 60 minutes maps to itself. Near-close is not substituted with 60-minute football predictions and therefore remains consensus-only. Margin common cohorts require both moneyline and spread; total cohorts require total. Pushes are retained as distinct outcomes.
+
+Consequences:
+
+- Full 5B-7 must evaluate football-only, market baseline, residual, and market-as-feature candidates on the same frozen cohort.
+- Sixty-minute evidence is diagnostic only; near-close cannot enter a football-model comparison until a genuine same-horizon OOF prediction exists.
+- Consensus, joins, residual targets, and model-ready inputs are reproducible transient research artifacts, not production fair-probability changes.
+- No claim of edge, profitability, model promotion, EV, or staking follows from the plumbing diagnostics.
+

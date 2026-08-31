@@ -234,6 +234,12 @@ The primary corpus contains every eligible 2020–2024 game at the versioned fir
 
 Every observation retains canonical/provider event identity, programs, kickoff, requested and returned snapshot timestamps, exact book/market/side/point/price, derived decimal odds and implied probability, and immutable source hashes. Eligibility requires a reliable event mapping, an at-or-before cutoff snapshot within the frozen provider cadence, coherent opposing sides/lines, valid prices, and at least two complete DraftKings/FanDuel/BetMGM books. Missing data is classified, never interpolated. Consensus, vig removal, model comparison, EV, CLV, and production inference remain outside this layer.
 
+### Phase 5B-7C market-comparison plumbing (implemented offline)
+
+`app.research.ncaaf.market_comparison` reads only the immutable 7B Parquet observations and 5B-3 OOF prediction artifact. It pairs supported book sides at an exact line, applies `proportional-v1` no-vig independently per book, and produces `unweighted-median-v1` consensus without weights. For spread and total, the deterministic most-supported exact line is selected; probabilities at different points are never averaged. Individual-book pairs, best prices, source hashes, cutoffs, snapshot times, book depth, and dispersion remain attached to each consensus state.
+
+Four content-addressed offline artifacts sit beneath ignored `.ncaaf-data/market-comparison/`: market consensus, same-horizon football/market joins, residual targets, and model-ready market features. Morning maps explicitly from `morning_first_kickoff_minus_3h` to the OOF `game_day_morning` identifier. Sixty-minute rows are `diagnostic_only`; near-close remains consensus-only because no same-horizon football prediction exists. Exact canonical identity, OOF fold provenance, training cutoff, and at-or-before snapshot checks reject invalid joins. No FastAPI import, database schema, production dependency, or provider call was added.
+
 ### Phase 5B-1 NCAAF source architecture (implemented)
 
 ```text

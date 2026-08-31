@@ -168,6 +168,8 @@ Run R004/P001 and bounded T001–T003. Advance at most one tree family unless ev
 
 Phase 5B-7A completed the predeclared sample with 76 logical/67 unique requests and 2,010 credits. Phase 5B-7B then built the complete 2020–2024 FBS-vs-FBS morning h2h/spread/total corpus and a separately predeclared, outcome-blind 60-minute/near-close robustness cohort. The morning cohort is the primary basis for M001–M004 and W001. Later-horizon rows are secondary diagnostics only and must not be pooled with morning or portrayed as full-cohort evidence. Do not include 24h or near-close h2h. Reuse `the-odds-api-provider-archive-snapshot-v1` and evaluate only events passing reliable identity, cutoff, paired-market, and two-supported-book gates.
 
+Phase 5B-7C freezes the comparison inputs without fitting M001–M004: proportional no-vig per exact complete book pair, unweighted-median consensus at the most-supported exact line, exact canonical-event/same-horizon joins to selected 5B-3 OOF predictions, explicit push labels, and distinct residual/model-ready artifacts. The primary model-selection cohort is morning 2020–2023 development plus 2024 validation. Sixty-minute data is diagnostic only; near-close has no football join until a same-horizon OOF prediction exists. Full 5B-7 must use the frozen common cohorts rather than compare models on different populations.
+
 ### 5B-8 — blend and locked evaluation
 
 Run B001 and only justified B002; freeze the complete selection/promotion rule; evaluate 2025 once. A candidate may advance to shadow but not production recommendation influence.
