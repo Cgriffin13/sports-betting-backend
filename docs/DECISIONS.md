@@ -718,7 +718,7 @@ Consequences:
 
 - Morning, 60-minute, and 24-hour results are never combined, substituted, or imputed across horizons.
 - Top-N output remains a ceiling at the single daily operational run; no additional run manufactures opportunities.
-- The exact morning convention is unresolved until the predeclared coverage audit reports consistently reconstructable snapshots.
+- Implementation note (2026-08-30): ADR-081 resolves the morning convention as first scheduled kickoff minus three hours after the predeclared coverage audit tied on aggregate coverage.
 - Opening and close may be evaluation benchmarks but are not substitutes for an unavailable operational horizon.
 
 ## ADR-053 — The 2025 season is locked and 2026 is prospective shadow evidence
@@ -1073,4 +1073,47 @@ Consequences:
 - Returning production, QB, coaching, and roster continuity remain explicit exploratory ablations rather than independently promoted families.
 - Portal features require a separately frozen 2021+ common-coverage experiment before reconsideration.
 - No production fair probability, endpoint, EV, stake, or recommendation changes.
+
+## ADR-079 — Historical odds use immutable provider-archive snapshots with exact cutoff evidence
+
+- Date: 2026-08-30
+- Status: Accepted and implemented for Phase 5B-7A research
+
+The bounded audit stores lossless historical The Odds API responses outside Git under credential-free canonical request hashes. Every audit row retains the requested cutoff, actual closest-prior provider snapshot timestamp, real retrieval time, and `the-odds-api-provider-archive-snapshot-v1`. It never backdates local ingestion or treats archive reconstruction as contemporaneous Phase 3 capture.
+
+Consequences:
+
+- The credential exists only in the transport request and is absent from filenames, hashes, manifests, reports, and logs.
+- The provider snapshot must be at or before the cutoff and within the frozen cadence tolerance.
+- Repeated logical timestamps reuse one immutable cached response; the 76-logical plan required 67 unique requests and 2,010 credits.
+- Raw payloads remain auditable but are not committed or loaded into production services.
+
+## ADR-080 — Phase 5B-7A conditionally approves only measured FBS-vs-FBS combinations
+
+- Date: 2026-08-30
+- Status: Accepted as an acquisition gate
+
+The predeclared audit gates use the primary FBS-vs-FBS model cohort while retaining FBS/FCS context evidence separately. Require at least two complete supported books, coherent paired sides/lines, closest-prior timestamp fidelity, reliable event mapping, at least 80% overall usable coverage, and at least 70% in every audited season.
+
+The audit conditionally approves morning and 60-minute h2h/spreads/totals plus near-close spreads/totals. It rejects 24 hours and near-close h2h for the first market-aware corpus. This is a data-coverage decision, not evidence of model edge.
+
+Consequences:
+
+- Phase 5B-7 may acquire and compare only approved combinations unless a new predeclared audit changes the evidence.
+- 2020 remains usable where its per-season gate passed; its weaker 24-hour coverage cannot be hidden by stronger 2022/2024 results.
+- Missing or ambiguous event mappings remain excluded rather than fuzzy-merged.
+- Minimum sportsbook depth is two complete books from the supported DraftKings/FanDuel/BetMGM set.
+
+## ADR-081 — Game-day morning means first scheduled kickoff minus three hours
+
+- Date: 2026-08-30
+- Status: Accepted for the initial NCAAF workflow
+
+Fixed 09:00 America/New_York and first-kickoff-minus-three-hours tied on aggregate coverage and were identical on eight of nine audited slates. The relative convention is selected because it guarantees a pre-first-kickoff run and remains coherent for non-noon slate starts.
+
+Consequences:
+
+- Historical and prospective morning results use one explicit versioned relative cutoff.
+- The 60-minute horizon remains separate and must not be pooled with morning.
+- This operational convention may be replaced only by a new version backed by better coverage evidence; it is not retroactively rewritten.
 
