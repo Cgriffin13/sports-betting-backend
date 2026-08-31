@@ -256,4 +256,15 @@ python -m app.cli.historical_market_dataset inspect --event-id EVENT_UUID --hori
 
 The complete 2020–2024 morning cohort is primary evidence. The deterministic 60-minute/near-close sample is robustness evidence only; it is not full-cohort coverage. Raw payloads and normalized Parquet remain ignored under `.ncaaf-data/`. See [`NCAAF_HISTORICAL_MARKET_DATASET_REPORT.md`](docs/NCAAF_HISTORICAL_MARKET_DATASET_REPORT.md).
 
+Phase 5B-7C builds the offline market-consensus and common-cohort artifacts from that immutable dataset and the existing 5B-3 OOF predictions. It never loads `.env` or calls a provider:
+
+```powershell
+python -m app.cli.market_comparison build
+python -m app.cli.market_comparison validate
+python -m app.cli.market_comparison summarize
+python -m app.cli.market_comparison inspect --event-id EVENT_UUID
+```
+
+The `consensus`, `join`, `residuals`, and `features` actions expose the same deterministic pipeline boundaries for automation. Outputs remain ignored beneath `.ncaaf-data/market-comparison/`; only the aggregate [`NCAAF_MARKET_COMPARISON_DATASET_REPORT.md`](docs/NCAAF_MARKET_COMPARISON_DATASET_REPORT.md) and machine-readable summary are committed.
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).

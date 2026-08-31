@@ -211,3 +211,5 @@ V2 should first become a trustworthy paper-trading system: reproducible prices, 
 > Phase 5B-7A then completed the bounded historical-odds acquisition gate with 67 unique requests and 2,010 credits. It is a conditional GO for specified FBS-vs-FBS morning/60-minute/near-close market combinations only. It establishes data feasibility, not model edge, profitability, or production readiness.
 >
 > Phase 5B-7B subsequently built the canonical 2020–2024 historical-market dataset. Complete-cohort morning observations are primary evidence; an outcome-blind stratified 60-minute/near-close sample is secondary robustness evidence only. The dataset remains offline and does not alter production pricing, recommendations, or fair probabilities.
+
+> Phase 5B-7C now provides the deterministic offline comparison layer: exact-line book pairing, versioned no-vig/median consensus, selected same-horizon OOF joins, explicit push labels, residual targets, and common model-ready cohorts. It performs no provider calls and fits no market-aware model. Near-close remains consensus-only because no same-horizon football OOF prediction exists.
