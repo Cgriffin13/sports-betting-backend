@@ -229,7 +229,7 @@ Before affecting paper recommendations, a candidate needs reproducible as-of dat
 
 When paper recommendations eventually begin, evaluate two immutable books: (1) the strategy/model book containing every qualified recommendation at its frozen decision price, including human declines, and (2) the actual/executed book containing approved paper positions and realized execution details. Report model, human-selection, execution-price, and sizing attribution separately.
 
-Exact numeric thresholds and minimum game counts remain unresolved until Phase 5B measures variance. Freeze them before evaluating the final holdout. A negative result—keeping market consensus—is valid.
+Phase 5B-8 now freezes the final-holdout thresholds and minimum game count in `NCAAF_FINALIST_FREEZE.md`. The fixed total blend needs at least 500 identical-cohort games, 0.10 points of MAE improvement, 0.001 improvement in both multiclass Brier and log loss, and all calibration, uncertainty, push, and broad-segment gates. A negative result—keeping market consensus—is valid.
 
 ## Pricing replay versus outcome backtest versus portfolio simulation
 

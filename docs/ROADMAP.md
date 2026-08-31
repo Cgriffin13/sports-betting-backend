@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through full Phase 5B-7 completed offline on 2026-08-31.** The market-aware tournament found no margin/ML proprietary replacement for morning consensus and only a very small total-blend improvement worthy of locked-test scrutiny. Later horizons remained diagnostic, and no production probability changed.
+Status: **Phase 5A through Phase 5B-8 completed offline on 2026-08-31.** Phase 5B-8 froze market consensus plus one fixed, narrow total blend and all 2025 promotion/fallback gates without opening the holdout. No production probability changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -164,7 +164,8 @@ Status: **Phase 5A through full Phase 5B-7 completed offline on 2026-08-31.** Th
 - [x] Phase 5B-7B: acquire, reconcile, normalize, and validate the full 2020–2024 morning corpus plus the deterministic bounded 60-minute/near-close robustness cohort under immutable source manifests and strict cutoff rules.
 - [x] Phase 5B-7C: construct versioned exact-line no-vig consensus, join selected same-horizon OOF football predictions, preserve push-aware labels, and emit deterministic common-cohort/residual/model-feature artifacts without fitting a market-aware model.
 - [x] Full Phase 5B-7: fit and evaluate market-only, frozen football finalists, residual, market-as-feature, and bounded OOF blend candidates on identical 7C common cohorts; keep later horizons diagnostic and 2025 sealed. See `NCAAF_MARKET_AWARE_MODEL_REPORT.md`.
-- [ ] Phase 5B-8: freeze practical-effect and promotion gates, then perform the one-time 2025 locked evaluation of market-only plus the single narrow total-blend challenger. Retain market consensus if the challenger fails.
+- [x] Phase 5B-8: freeze the exact finalist allowlist, artifact hashes, fixed total-blend weight, practical-effect/calibration/segment gates, deterministic fallbacks, and one-time 2025 protocol. See `NCAAF_FINALIST_FREEZE.md`.
+- [ ] Phase 5B-9: explicitly unlock and evaluate 2025 exactly once against the Phase 5B-8 manifest without refitting; retain market consensus if the total challenger fails any frozen gate.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
 - Create a model registry/versioning and promotion process.

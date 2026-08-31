@@ -27,7 +27,7 @@ The approved first practical workflow is **one game-day-morning run at first sch
 
 Phase 5B-7B provides complete-cohort 2020–2024 morning acquisition for the next market-aware experiment. The 60-minute and near-close data are a bounded, outcome-blind robustness sample only. Model selection must use morning as the primary cohort and label later-horizon findings as secondary; sample results cannot be generalized as full-cohort performance.
 
-Full Phase 5B-7 subsequently found that the independent football models did not improve the morning margin/ML market baseline, and direct/residual candidates were worse. A constrained total blend produced only a tiny improvement. Phase 5B-8 should therefore test a narrow market-only versus market/Ridge-total slate rather than expanding model complexity. The negative margin result is a valid research outcome, not a reason to mine subgroups or invent a blend.
+Full Phase 5B-7 found that independent football models did not improve the morning margin/ML market baseline and direct/residual candidates were worse. Phase 5B-8 subsequently froze market consensus plus one fixed market/Ridge total challenger, exact artifacts, and all practical-effect/calibration/fallback rules before 2025. The negative margin result is a valid research outcome, not a reason to mine subgroups or invent a blend.
 
 ## 1. Modeling problem
 
@@ -392,7 +392,7 @@ A model may produce shadow predictions before it may influence paper recommendat
 9. No severe failure exists under missing data, new QB/coach, large roster turnover, or high market-dispersion cases.
 10. Shadow operations produce reproducible predictions and explanations without changing Phase 4 outputs.
 
-Numeric practical-effect and calibration tolerances remain unresolved until Phase 5B measures baseline variability. They must be frozen before opening the final holdout. ROI, hit rate, or a recent winning streak cannot substitute for these gates.
+Numeric final-holdout practical-effect and calibration tolerances are frozen in `NCAAF_FINALIST_FREEZE.md`. They may not be changed after 2025 is opened. ROI, hit rate, or a recent winning streak cannot substitute for these gates.
 
 ## 13. Major risks and falsification questions
 

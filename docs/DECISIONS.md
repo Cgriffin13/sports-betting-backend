@@ -1177,3 +1177,19 @@ Consequences:
 - The 60-minute and near-close samples remain diagnostic and cannot affect selection.
 - This research decision does not change Phase 4 fair probability, production APIs, EV, staking, recommendations, or model lifecycle status.
 
+## ADR-086 — Freeze market-first finalists and an all-or-fallback total-blend gate
+
+- Date: 2026-08-31
+- Status: Accepted and implemented offline for Phase 5B-8
+
+Phase 5B-8 freezes market consensus as the only margin/spread/moneyline holdout finalist and retains football power as diagnostic only. The sole proprietary challenger is the fixed total formula `market + 0.17854145992095644 * (Ridge-no-opponent-adjustment - market)`, using the existing 2024-evaluation artifact trained through 2023. Rejected residual, direct, broader blend, and CatBoost candidates cannot enter the holdout.
+
+The total blend advances only if it clears every frozen integrity, minimum-sample, 0.10-point MAE practical effect, RMSE, Brier/log-loss, paired-interval, calibration, push, complexity, and broad-segment gate. Any failure falls back to market consensus. A data/code integrity defect stops evaluation; weak performance does not authorize refitting or tuning.
+
+Consequences:
+
+- 2025 remains sealed until a separate explicit one-time Phase 5B-9 unlock verifies the freeze manifest and artifacts.
+- Passing Phase 5B-9 permits only prospective shadow-candidate status, not production pricing or recommendation influence.
+- Market-first margin/ML/spread does not prohibit later bets; Phase 6 must still compare fair probability with executable price under EV, uncertainty, and portfolio-risk rules.
+- Push mass remains explicit, later horizons remain diagnostic, provider calls remain zero, and Phase 4 behavior is unchanged.
+
