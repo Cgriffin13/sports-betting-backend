@@ -1,0 +1,344 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "ncaaf-phase5b8-finalist-freeze",
+      "artifact_type": "governance_manifest",
+      "code_build_version": "phase-5b-10",
+      "content_hash": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+      "locations": [
+        {
+          "kind": "repository",
+          "uri": "docs/reports/NCAAF_FINALIST_FREEZE_V1.json"
+        }
+      ],
+      "metadata": {
+        "holdout_accessed": false
+      },
+      "registry_entry_hash": "c881643bedf20f85d533aabdb97500c5633cf550bad2564d93263b2f80aedfa9",
+      "source_hashes": {
+        "market_aware_dataset": "6305a430fd43d74feaf2dad8d326c809d0c2758521db60e5aaa8cc5502e72fad"
+      },
+      "status": "evidence",
+      "version": "ncaaf-finalist-freeze-v1"
+    },
+    {
+      "artifact_id": "ncaaf-phase5b9-locked-holdout",
+      "artifact_type": "holdout_report",
+      "code_build_version": "phase-5b-10",
+      "content_hash": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256",
+      "locations": [
+        {
+          "kind": "repository",
+          "uri": "docs/reports/NCAAF_2025_HOLDOUT_V1.json"
+        }
+      ],
+      "metadata": {
+        "fallback": "market_consensus",
+        "status": "FAIL"
+      },
+      "registry_entry_hash": "b4285fc524c3400921e9c3fff83b1100b9c0b5f527a6c56331b7b590b3bcb983",
+      "source_hashes": {
+        "feature_dataset": "ce04f50bea76923ece336e18d384e5f0a8a607bc91c827ebc8501a5956bde4bb",
+        "market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48"
+      },
+      "status": "evidence",
+      "version": "ncaaf-2025-locked-holdout-v1"
+    },
+    {
+      "artifact_id": "ncaaf-total-ridge-2024-fold",
+      "artifact_type": "model_artifact",
+      "code_build_version": "phase-5b-10",
+      "content_hash": "d41797ed69ea699038f4ba530962611c24799db9ba930daf22c95decff32c167",
+      "locations": [
+        {
+          "kind": "local_ignored",
+          "uri": ".ncaaf-data/models/baseline-v1/fold_models.json"
+        }
+      ],
+      "metadata": {
+        "alpha": 100.0,
+        "family": "ridge",
+        "target": "total"
+      },
+      "registry_entry_hash": "8f58e7321966c5dee19e28c50ea0287736e9f9f82dc7d322705f1144413a6be7",
+      "source_hashes": {
+        "feature_dataset": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+        "feature_set": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad"
+      },
+      "status": "diagnostic",
+      "version": "d41797ed-v1"
+    },
+    {
+      "artifact_id": "ncaaf-market-aware-probabilities-v1",
+      "artifact_type": "probability_artifact",
+      "code_build_version": "phase-5b-10",
+      "content_hash": "707d836dffd7c689a341efc4720268a4ddcc202f8daccabfa704d76160e9d9f9",
+      "locations": [
+        {
+          "kind": "local_ignored",
+          "uri": ".ncaaf-data/market-aware-v1/"
+        }
+      ],
+      "metadata": {
+        "promotion": "rejected",
+        "push_version": "integer-lattice-settlement-v1"
+      },
+      "registry_entry_hash": "45b66ff94f90879d691970807c8f7da0067b61b84164141fc108bab706732c78",
+      "source_hashes": {
+        "market_aware_dataset": "6305a430fd43d74feaf2dad8d326c809d0c2758521db60e5aaa8cc5502e72fad"
+      },
+      "status": "rejected",
+      "version": "chronological-empirical-market-aware-v1"
+    }
+  ],
+  "league": "NCAAF",
+  "models": [
+    {
+      "artifact_locations": [
+        {
+          "kind": "freeze_manifest",
+          "uri": "docs/reports/NCAAF_FINALIST_FREEZE_V1.json"
+        },
+        {
+          "kind": "holdout_report",
+          "uri": "docs/reports/NCAAF_2025_HOLDOUT_V1.json"
+        }
+      ],
+      "calibration_version": "chronological-empirical-market-aware-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": "unweighted-median-v1",
+      "feature_set_hash": null,
+      "holdout_result": "retained_after_2025",
+      "league": "NCAAF",
+      "market_type": "margin",
+      "model_family": "market_consensus",
+      "model_id": "ncaaf-market-consensus-margin-v1",
+      "promotion_decision": "retained_benchmark",
+      "registry_entry_hash": "5dbb55eb51ce9820855860878db2d13fa28a85dc2a0f06d7d181e06eab0a7e07",
+      "research_run_hashes": {
+        "freeze": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+        "holdout": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256"
+      },
+      "source_dataset_hashes": {
+        "historical_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+        "holdout_market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48",
+        "market_comparison_dataset": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc"
+      },
+      "status": "retained_benchmark",
+      "version": "1.0.0",
+      "vig_removal_version": "proportional-v1"
+    },
+    {
+      "artifact_locations": [
+        {
+          "kind": "freeze_manifest",
+          "uri": "docs/reports/NCAAF_FINALIST_FREEZE_V1.json"
+        },
+        {
+          "kind": "holdout_report",
+          "uri": "docs/reports/NCAAF_2025_HOLDOUT_V1.json"
+        }
+      ],
+      "calibration_version": "chronological-empirical-market-aware-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": "unweighted-median-v1",
+      "feature_set_hash": null,
+      "holdout_result": "retained_after_2025",
+      "league": "NCAAF",
+      "market_type": "moneyline",
+      "model_family": "market_consensus",
+      "model_id": "ncaaf-market-consensus-moneyline-v1",
+      "promotion_decision": "retained_benchmark",
+      "registry_entry_hash": "940a68cad1ad1706c42d96166dd66b9310ad59b36f3e135bcd6ad389a031f4ca",
+      "research_run_hashes": {
+        "freeze": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+        "holdout": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256"
+      },
+      "source_dataset_hashes": {
+        "historical_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+        "holdout_market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48",
+        "market_comparison_dataset": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc"
+      },
+      "status": "retained_benchmark",
+      "version": "1.0.0",
+      "vig_removal_version": "proportional-v1"
+    },
+    {
+      "artifact_locations": [
+        {
+          "kind": "freeze_manifest",
+          "uri": "docs/reports/NCAAF_FINALIST_FREEZE_V1.json"
+        },
+        {
+          "kind": "holdout_report",
+          "uri": "docs/reports/NCAAF_2025_HOLDOUT_V1.json"
+        }
+      ],
+      "calibration_version": "chronological-empirical-market-aware-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": "unweighted-median-v1",
+      "feature_set_hash": null,
+      "holdout_result": "retained_after_2025",
+      "league": "NCAAF",
+      "market_type": "spread",
+      "model_family": "market_consensus",
+      "model_id": "ncaaf-market-consensus-spread-v1",
+      "promotion_decision": "retained_benchmark",
+      "registry_entry_hash": "66a62ac1ec8891e88304eebc1a86f12cfab31ba18a76e3870736cc3757119f3b",
+      "research_run_hashes": {
+        "freeze": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+        "holdout": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256"
+      },
+      "source_dataset_hashes": {
+        "historical_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+        "holdout_market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48",
+        "market_comparison_dataset": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc"
+      },
+      "status": "retained_benchmark",
+      "version": "1.0.0",
+      "vig_removal_version": "proportional-v1"
+    },
+    {
+      "artifact_locations": [
+        {
+          "kind": "freeze_manifest",
+          "uri": "docs/reports/NCAAF_FINALIST_FREEZE_V1.json"
+        },
+        {
+          "kind": "holdout_report",
+          "uri": "docs/reports/NCAAF_2025_HOLDOUT_V1.json"
+        }
+      ],
+      "calibration_version": "chronological-empirical-market-aware-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": "unweighted-median-v1",
+      "feature_set_hash": null,
+      "holdout_result": "retained_after_2025",
+      "league": "NCAAF",
+      "market_type": "total",
+      "model_family": "market_consensus",
+      "model_id": "ncaaf-market-consensus-total-v1",
+      "promotion_decision": "retained_benchmark",
+      "registry_entry_hash": "791911ab1556096e474d71aa78dc295c2f4f2457a0bc11af61ad411b35f2e7fe",
+      "research_run_hashes": {
+        "freeze": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+        "holdout": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256"
+      },
+      "source_dataset_hashes": {
+        "historical_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+        "holdout_market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48",
+        "market_comparison_dataset": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc"
+      },
+      "status": "retained_benchmark",
+      "version": "1.0.0",
+      "vig_removal_version": "proportional-v1"
+    },
+    {
+      "artifact_locations": [
+        {
+          "kind": "prediction_hash",
+          "uri": "sha256:acf300df3e7578039ef26a3da3e9939257095f8100e38cff3776c5a8a10e7e55"
+        }
+      ],
+      "calibration_version": "quality-aware-normal-margin-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": null,
+      "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+      "holdout_result": "diagnostic_only",
+      "league": "NCAAF",
+      "market_type": "margin",
+      "model_family": "chronological_power_rating",
+      "model_id": "ncaaf-football-power-margin-v1",
+      "promotion_decision": "diagnostic_not_fair_value",
+      "registry_entry_hash": "c046ba7ce6d2c63f2312f4f804341a82bb956809aebf9c591d2cf9657db5bef8",
+      "research_run_hashes": {
+        "baseline_run": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb",
+        "predictions": "acf300df3e7578039ef26a3da3e9939257095f8100e38cff3776c5a8a10e7e55"
+      },
+      "source_dataset_hashes": {
+        "feature_dataset": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe"
+      },
+      "status": "diagnostic",
+      "version": "1.0.0",
+      "vig_removal_version": null
+    },
+    {
+      "artifact_locations": [
+        {
+          "kind": "model_artifact",
+          "uri": "sha256:d41797ed69ea699038f4ba530962611c24799db9ba930daf22c95decff32c167"
+        }
+      ],
+      "calibration_version": "chronological-empirical-market-aware-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": null,
+      "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+      "holdout_result": "component_of_rejected_blend",
+      "league": "NCAAF",
+      "market_type": "total",
+      "model_family": "ridge",
+      "model_id": "ncaaf-ridge-total-no-opponent-adjustment-v1",
+      "promotion_decision": "diagnostic_not_fair_value",
+      "registry_entry_hash": "3e68d604cf96fbd92615c6e486f9b6fcb21e09bfcefa745b3757378cbb0d81d6",
+      "research_run_hashes": {
+        "baseline_run": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb"
+      },
+      "source_dataset_hashes": {
+        "feature_dataset": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe"
+      },
+      "status": "diagnostic",
+      "version": "1.0.0",
+      "vig_removal_version": null
+    },
+    {
+      "artifact_locations": [
+        {
+          "kind": "point_predictions",
+          "uri": "sha256:71c33513361d1065eb9e45fe62fd97759f4350ce0e0a630bf9d0c9b7e22aff03"
+        },
+        {
+          "kind": "probabilities",
+          "uri": "sha256:707d836dffd7c689a341efc4720268a4ddcc202f8daccabfa704d76160e9d9f9"
+        }
+      ],
+      "calibration_version": "chronological-empirical-market-aware-v1",
+      "code_build_version": "phase-5b-10",
+      "consensus_version": "unweighted-median-v1",
+      "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+      "holdout_result": "FAIL",
+      "league": "NCAAF",
+      "market_type": "total",
+      "model_family": "constrained_market_ridge_blend",
+      "model_id": "ncaaf-market-ridge-total-blend-v1",
+      "promotion_decision": "rejected_after_locked_2025_holdout",
+      "registry_entry_hash": "e08c3b8bd466c8c6eadc8ae8769a1087e069acf07992a64a54c8c8f44ec9a71f",
+      "research_run_hashes": {
+        "freeze": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+        "holdout": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256",
+        "market_aware_dataset": "6305a430fd43d74feaf2dad8d326c809d0c2758521db60e5aaa8cc5502e72fad"
+      },
+      "source_dataset_hashes": {
+        "feature_dataset": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+        "historical_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+        "holdout_market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48",
+        "market_comparison_dataset": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc"
+      },
+      "status": "rejected",
+      "version": "1.0.0",
+      "vig_removal_version": "proportional-v1"
+    }
+  ],
+  "phase": "5B-10",
+  "phase_5_status": "complete",
+  "provider_calls": 0,
+  "registry_hash": "42bba06ef7165127615ae3724db4c333655581f41c076b63ab2748b1cbc64418",
+  "registry_version": "ncaaf-model-registry-v1",
+  "retained_fair_value_source": "market_consensus",
+  "versions": {
+    "calibration": "chronological-empirical-market-aware-v1",
+    "consensus": "unweighted-median-v1",
+    "horizon": "morning_first_kickoff_minus_3h",
+    "shadow_schema": "ncaaf-shadow-prediction-v1",
+    "vig_removal": "proportional-v1"
+  }
+}

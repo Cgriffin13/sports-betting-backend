@@ -298,3 +298,15 @@ python -m app.cli.ncaaf_holdout validate-evaluation
 The frozen total blend failed its predeclared MAE, Brier, and log-loss improvement gates, so market consensus remains the total fallback and the already-frozen margin/spread/moneyline benchmark. See [`NCAAF_2025_HOLDOUT_REPORT.md`](docs/NCAAF_2025_HOLDOUT_REPORT.md).
 
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).
+
+Phase 5B-10 registers the retained NCAAF market-consensus benchmark and provides prospective shadow records without creating recommendations:
+
+```powershell
+python -m app.cli.ncaaf_model_registry validate
+python -m app.cli.ncaaf_model_registry sync
+python -m app.cli.ncaaf_model_registry list
+python -m app.cli.ncaaf_shadow plan-slate --date YYYY-MM-DD
+python -m app.cli.ncaaf_shadow summarize
+```
+
+See [`NCAAF_MODEL_REGISTRY_AND_SHADOW.md`](docs/NCAAF_MODEL_REGISTRY_AND_SHADOW.md). Registry inspection requires no provider call; live market ingestion remains a separate explicit operation.

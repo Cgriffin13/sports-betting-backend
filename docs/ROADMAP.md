@@ -142,7 +142,7 @@ This milestone must proceed even if the first proprietary NCAAF model is not pro
 
 Goal: begin sport-specific modeling immediately after the market baseline exists and evaluate it against consensus.
 
-Status: **Phase 5A through Phase 5B-8 completed offline on 2026-08-31.** Phase 5B-8 froze market consensus plus one fixed, narrow total blend and all 2025 promotion/fallback gates without opening the holdout. No production probability changed.
+Status: **Completed through Phase 5B-10 on 2026-08-31.** The locked 2025 holdout rejected the total blend, market consensus was registered as the retained NCAAF v1 benchmark for every initial market, and immutable prospective-shadow records are ready for 2026. No recommendation, EV, staking, or production-betting behavior changed.
 
 - [x] Research structured NCAAF schedules, results, play-by-play, team/personnel, injury/availability, weather, research, and historical-odds sources, costs, terms, and coverage risks.
 - [x] Specify bitemporal source/feature contracts and strict chronological train/validation/test methodology.
@@ -165,7 +165,8 @@ Status: **Phase 5A through Phase 5B-8 completed offline on 2026-08-31.** Phase 5
 - [x] Phase 5B-7C: construct versioned exact-line no-vig consensus, join selected same-horizon OOF football predictions, preserve push-aware labels, and emit deterministic common-cohort/residual/model-feature artifacts without fitting a market-aware model.
 - [x] Full Phase 5B-7: fit and evaluate market-only, frozen football finalists, residual, market-as-feature, and bounded OOF blend candidates on identical 7C common cohorts; keep later horizons diagnostic and 2025 sealed. See `NCAAF_MARKET_AWARE_MODEL_REPORT.md`.
 - [x] Phase 5B-8: freeze the exact finalist allowlist, artifact hashes, fixed total-blend weight, practical-effect/calibration/segment gates, deterministic fallbacks, and one-time 2025 protocol. See `NCAAF_FINALIST_FREEZE.md`.
-- [ ] Phase 5B-9: explicitly unlock and evaluate 2025 exactly once against the Phase 5B-8 manifest without refitting; retain market consensus if the total challenger fails any frozen gate.
+- [x] Phase 5B-9: explicitly unlock and evaluate 2025 exactly once against the Phase 5B-8 manifest without refitting; the total challenger failed and market consensus was retained.
+- [x] Phase 5B-10: register the retained/rejected/diagnostic results, expose a market-consensus-only fair-value contract, and add immutable prospective 2026 shadow prediction/outcome records.
 - Record consensus probability, proprietary model probability, and candidate final fair probability separately.
 - Evaluate calibration, Brier score, log loss, performance versus closing markets, and incremental value over consensus.
 - Create a model registry/versioning and promotion process.
@@ -195,7 +196,7 @@ Phase 5B implementation order:
 12. registry plus prospective shadow operation; and
 13. separately reviewed production-inference decision only if gates pass.
 
-Phase 5 exit criteria remain **unsatisfied** until implementation evidence exists. Phase 5A documentation is not a model, backtest, or promotion.
+Phase 5 exit criteria are **satisfied**. The research produced reproducible predictions, direct same-horizon market comparison, a locked holdout, an honest no-promotion result, immutable registry evidence, and a prospective shadow boundary. The result is a retained market benchmark, not proprietary edge or production betting approval.
 
 ## Phase 6 — Portfolio risk, staking, and approval
 
@@ -316,4 +317,4 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 
 The one-time 2025 holdout was opened only after Phase 5B-8 froze finalists, artifacts, the total blend weight, and every promotion gate. The market/Ridge total blend failed the required MAE, multiclass Brier, and multiclass log-loss improvement thresholds on the 758-game identical cohort. Market consensus remains the NCAAF estimator for margin, moneyline, spread, and total; football power remains diagnostic only.
 
-Phase 5B-10 may register these retained market benchmarks for prospective shadow operation and immutable monitoring. It must not tune a replacement on 2025, promote the rejected blend, or treat holdout results as authorization for production recommendations, EV qualification, or staking.
+Phase 5B-10 registered these retained market benchmarks for prospective shadow operation and immutable monitoring. It did not tune a replacement on 2025, promote the rejected blend, or treat holdout results as authorization for production recommendations, EV qualification, or staking.

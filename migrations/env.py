@@ -8,7 +8,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.db.base import Base
 from app.db.session import normalize_database_url
-from app.db import market_models, models, ncaaf_models  # noqa: F401
+from app.db import market_models, model_registry_models, models, ncaaf_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

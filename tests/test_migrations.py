@@ -28,6 +28,10 @@ def test_alembic_phase5b1_upgrade_downgrade_and_schema_drift(
         "canonical_programs",
         "canonical_venues",
         "football_game_facts",
+        "model_registry_entries",
+        "artifact_registry_entries",
+        "shadow_predictions",
+        "shadow_prediction_outcomes",
     } <= set(inspect(engine).get_table_names())
     engine.dispose()
 
@@ -36,8 +40,9 @@ def test_alembic_phase5b1_upgrade_downgrade_and_schema_drift(
     tables_after_downgrade = set(inspect(engine).get_table_names())
     assert "portfolios" in tables_after_downgrade
     assert "market_snapshots" in tables_after_downgrade
-    assert "source_manifests" not in tables_after_downgrade
-    assert "home_program_id" not in {column["name"] for column in inspect(engine).get_columns("canonical_events")}
+    assert "source_manifests" in tables_after_downgrade
+    assert "model_registry_entries" not in tables_after_downgrade
+    assert "home_program_id" in {column["name"] for column in inspect(engine).get_columns("canonical_events")}
     engine.dispose()
 
     command.upgrade(config, "head")
