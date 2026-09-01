@@ -150,6 +150,28 @@ def test_changed_response_creates_superseding_source_version(session_factory: An
         assert session.scalar(select(func.count()).select_from(ProgramAlias)) == 2
 
 
+def test_unchanged_refresh_restores_missing_immutable_artifact(
+    session_factory: Any, tmp_path: Path
+) -> None:
+    payload = [{"id": 1, "school": "Alpha", "classification": "fbs"}]
+    client = FakeCfbdClient([payload, payload])
+    with session_factory() as session:
+        service = _service(session, tmp_path, client)
+        first = service.ingest("teams", {"year": 2024})
+        session.commit()
+        artifact = tmp_path / first.artifact_uri
+        artifact.unlink()
+
+        restored = service.ingest("teams", {"year": 2024}, refresh=True)
+        session.commit()
+
+        assert restored.manifest_id == first.manifest_id
+        assert restored.cache_hit is True
+        assert restored.provider_calls == 1
+        assert artifact.is_file()
+        assert session.scalar(select(func.count()).select_from(SourceManifest)) == 1
+
+
 def test_program_membership_is_effective_dated(session_factory: Any, tmp_path: Path) -> None:
     client = FakeCfbdClient([[{"id": 1, "school": "Alpha", "classification": "fbs", "conference": "Old"}]])
     with session_factory() as session:

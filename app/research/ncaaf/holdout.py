@@ -6,12 +6,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from app.research.ncaaf.artifacts import ResearchArtifactStore, dataset_hash
 from app.research.ncaaf.contracts import stable_hash
 from app.research.ncaaf.finalist_freeze import validate_freeze_manifest, validate_local_artifacts
 
 HOLDOUT_SEASON = 2025
 UNLOCK_VERSION = "ncaaf-2025-one-time-holdout-unlock-v1"
 EXPECTED_FREEZE_HASH = "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420"
+HOLDOUT_MARKET_PLAN_HASH = "6e5dfe394c2da1e1b11deacbaa850336d54ee1f1c552c04aa329bf740ff07c6a"
+HOLDOUT_MARKET_CALLS = 79
+HOLDOUT_MARKET_CREDIT_LIMIT = 2_370
 
 
 def unlock_body(
@@ -98,6 +102,58 @@ def load_unlock_record(root: Path) -> dict[str, Any]:
     if record.get("holdout_season") != HOLDOUT_SEASON or record.get("freeze_hash") != EXPECTED_FREEZE_HASH:
         raise ValueError("holdout unlock record contract mismatch")
     return record
+
+
+def assemble_normalized_holdout_manifest(
+    root: Path,
+    *,
+    development_manifest_id: str,
+    holdout_manifest_id: str,
+) -> dict[str, Any]:
+    """Join immutable development and 2025 partitions without rebuilding history."""
+    store = ResearchArtifactStore(root)
+    development = store.load_manifest("normalized", development_manifest_id)
+    holdout = store.load_manifest("normalized", holdout_manifest_id)
+    if (development.get("start_season"), development.get("end_season")) != (2014, 2024):
+        raise ValueError("development normalized manifest must cover exactly 2014-2024")
+    if (holdout.get("start_season"), holdout.get("end_season")) != (2025, 2025):
+        raise ValueError("holdout normalized manifest must cover exactly 2025")
+    version_keys = (
+        "league",
+        "schema_version",
+        "transformation_version",
+        "availability_policy_version",
+    )
+    if any(development.get(key) != holdout.get(key) for key in version_keys):
+        raise ValueError("normalized manifest contracts do not match")
+    artifacts = [*development["artifacts"], *holdout["artifacts"]]
+    seasons = [int(item["season"]) for item in artifacts if item.get("season") is not None]
+    if not seasons or min(seasons) != 2014 or max(seasons) != 2025:
+        raise ValueError("combined normalized artifacts do not span 2014-2025")
+    configuration = {
+        "league": development["league"],
+        "start_season": 2014,
+        "end_season": 2025,
+        "schema_version": development["schema_version"],
+        "transformation_version": development["transformation_version"],
+        "availability_policy_version": development["availability_policy_version"],
+        "source_manifest_fingerprint": stable_hash(
+            [development["source_manifest_fingerprint"], holdout["source_manifest_fingerprint"]]
+        ),
+    }
+    manifest: dict[str, Any] = {
+        **configuration,
+        "artifacts": artifacts,
+        "dataset_hash": dataset_hash(artifacts, configuration),
+        "source_manifest_count": int(development["source_manifest_count"])
+        + int(holdout["source_manifest_count"]),
+        "network_calls": 0,
+        "assembled_for_holdout": True,
+        "input_manifest_ids": [development_manifest_id, holdout_manifest_id],
+    }
+    manifest_id, _ = store.write_manifest("normalized", manifest)
+    manifest["manifest_id"] = manifest_id
+    return manifest
 
 
 def _atomic_write(path: Path, payload: str) -> None:
