@@ -188,6 +188,15 @@ def _probability_rows(
         ]
         for candidate in source_candidates
     }
+    bases = {
+        candidate: fit_empirical_grid(
+            residuals,
+            pool_id=stable_hash(
+                {"target": "total", "candidate": source_candidates[candidate], "cutoff": 2024}
+            ),
+        )
+        for candidate, residuals in by_candidate.items()
+    }
     output: list[dict[str, Any]] = []
     for row in rows:
         for candidate, field in (
@@ -195,10 +204,8 @@ def _probability_rows(
             ("blend_ridge_no_opp", "blend_prediction"),
         ):
             residuals = by_candidate[candidate]
-            pool_id = stable_hash(
-                {"target": "total", "candidate": source_candidates[candidate], "cutoff": 2024}
-            )
-            base = fit_empirical_grid(residuals, pool_id=pool_id)
+            base = bases[candidate]
+            pool_id = base.pool_id
             distribution = type(base)(
                 float(row[field]),
                 base.scale,
