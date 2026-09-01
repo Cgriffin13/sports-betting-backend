@@ -64,7 +64,11 @@ def list_recommendations(
     slate_date: date | None = None,
 ) -> dict[str, Any]:
     try:
-        return {"recommendations": _service(request).list(principal, portfolio_id, slate_date=slate_date)}
+        service = _service(request)
+        return {
+            "recommendations": service.list(principal, portfolio_id, slate_date=slate_date),
+            "latest_decision": service.latest_decision(principal, portfolio_id, slate_date=slate_date),
+        }
     except PortfolioAccessDeniedError:
         raise HTTPException(status_code=403, detail="Portfolio belongs to another owner") from None
 

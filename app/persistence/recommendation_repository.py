@@ -177,6 +177,46 @@ class SqlAlchemyRecommendationRepository:
             rows = list(session.scalars(statement.order_by(Recommendation.created_at.desc(), Recommendation.external_id)))
             return [self._serialize_recommendation(session, row) for row in rows]
 
+    def latest_decision_summary(
+        self,
+        principal: Principal,
+        portfolio_external_id: str,
+        *,
+        slate_date: date | None = None,
+    ) -> dict[str, Any] | None:
+        with self.session_factory() as session:
+            owner = session.scalar(select(Owner).where(Owner.external_id == principal.external_id))
+            if owner is None:
+                return None
+            portfolio = session.scalar(select(Portfolio).where(Portfolio.external_id == portfolio_external_id))
+            if portfolio is None:
+                return None
+            if portfolio.owner_id != owner.id:
+                raise PortfolioAccessDeniedError
+            statement = select(RecommendationDecisionRun).where(
+                RecommendationDecisionRun.portfolio_id == portfolio.id
+            )
+            if slate_date is not None:
+                statement = statement.where(RecommendationDecisionRun.slate_date == slate_date)
+            run = session.scalar(
+                statement.order_by(RecommendationDecisionRun.as_of.desc(), RecommendationDecisionRun.id).limit(1)
+            )
+            if run is None:
+                return None
+            return {
+                "decision_run_id": run.external_id,
+                "as_of": _iso(run.as_of),
+                "portfolio_state": run.portfolio_state,
+                "pass_reasons": list(run.pass_reasons),
+                "rejection_summary": dict(run.rejection_summary),
+                "policy_versions": {
+                    "qualification": run.qualification_policy_version,
+                    "risk": run.risk_policy_version,
+                    "parlay": run.parlay_policy_version,
+                },
+                "decision_hash": run.output_hash,
+            }
+
     def reject(self, principal: Principal, recommendation_id: str) -> dict[str, Any]:
         with self.session_factory.begin() as session:
             recommendation = self._owned_recommendation(session, principal, recommendation_id, lock=True)
@@ -304,6 +344,16 @@ class SqlAlchemyRecommendationRepository:
 
     def risk_summary(self, principal: Principal, portfolio_external_id: str, slate_date: date) -> dict[str, Any]:
         snapshot = self.portfolio_snapshot(principal, portfolio_external_id, slate_date)
+        state = portfolio_state(snapshot, self.risk_policy)
+        floor = snapshot.starting_bankroll * self.risk_policy.bankroll_floor_fraction_of_start
+        if snapshot.equity <= floor:
+            state_reason = "bankroll_floor"
+        elif snapshot.drawdown_fraction >= self.risk_policy.paused_drawdown:
+            state_reason = "paused_drawdown_threshold"
+        elif snapshot.drawdown_fraction >= self.risk_policy.reduced_risk_drawdown:
+            state_reason = "reduced_risk_drawdown_threshold"
+        else:
+            state_reason = "within_policy"
         by_game: defaultdict[str, Decimal] = defaultdict(Decimal)
         by_team: defaultdict[str, Decimal] = defaultdict(Decimal)
         by_market: defaultdict[str, Decimal] = defaultdict(Decimal)
@@ -317,6 +367,8 @@ class SqlAlchemyRecommendationRepository:
         return {
             "portfolio_id": snapshot.portfolio_id,
             "slate_date": slate_date.isoformat(),
+            "portfolio_state": state.value,
+            "state_reason": state_reason,
             "cash": money_json(snapshot.cash),
             "reserved_exposure": money_json(snapshot.reserved_exposure),
             "equity": money_json(snapshot.equity),

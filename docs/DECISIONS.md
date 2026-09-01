@@ -1267,3 +1267,20 @@ Consequences:
 - Human-selection and execution effects can be separated from qualification/model performance.
 - Straight and parlay accounting use the existing ledger; no competing bankroll exists.
 - Phase 6.5 can render proposals, PASS, exposure, official bets, and attribution without embedding business logic in the frontend.
+
+## ADR-092 — Keep dashboard decisions server-authoritative behind a same-origin secret proxy
+
+- Date: 2026-09-01
+- Status: Accepted and implemented for Phase 6.5
+
+The NCAAF dashboard is a separate React/TypeScript/Vite client prepared for Cloudflare Pages. It renders Phase 6 responses but does not recompute fair value, EV, Kelly sizing, qualification, risk, or parlay joint probability. FastAPI remains authoritative for all decisions and revalidates risk when a human approves a paper bet.
+
+Because a static `VITE_*` variable is public, the browser may not contain `APP_API_KEY`. A same-origin Cloudflare Pages Function injects the credential from an encrypted server-side `BACKEND_API_KEY` secret when proxying `/api/*` to Render. The Pages site must be protected by Cloudflare Access before private operational use.
+
+Consequences:
+
+- Browser refreshes read PostgreSQL-backed API state and never call The Odds API or consume provider credits.
+- Dashboard policy/model/freshness and market-movement reads use bounded projections; raw market snapshot JSON and credentials are excluded.
+- Settings are read-only until the backend owns a versioned mutation contract.
+- Development preview data is visibly labeled and disabled in production.
+- Cloudflare Pages deployment remains an explicit operator action, not an automatic repository side effect.

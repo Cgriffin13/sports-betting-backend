@@ -1,0 +1,24 @@
+import { ChevronDown, ChevronUp, CircleCheck, CircleX, ExternalLink, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { useRecommendationAction } from "../hooks/useDashboard";
+import type { Recommendation } from "../types";
+import { american, currency, line, percent, signedPercent, titleCase } from "../utils/format";
+import { StatusBadge } from "./Primitives";
+
+export function PicksTable({ recommendations, label }: { recommendations: Recommendation[]; label: "CORE" | "OPPORTUNISTIC" }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const action = useRecommendationAction();
+  if (!recommendations.length) return <div className="compact-empty">No {label.toLowerCase()} opportunities cleared every gate.</div>;
+  return <div className="table-shell"><table className="picks-table"><thead><tr><th>Pick</th><th>Market</th><th>Sportsbook</th><th>Line</th><th>Odds</th><th>Fair</th><th>Implied</th><th>Edge</th><th>EV</th><th>Stake</th><th>Bankroll</th><th>Units</th><th>Status</th><th><span className="sr-only">Details</span></th></tr></thead><tbody>{recommendations.map((item) => <RecommendationRows key={item.recommendation_id} item={item} expanded={expanded === item.recommendation_id} toggle={() => setExpanded(expanded === item.recommendation_id ? null : item.recommendation_id)} onAction={(kind) => action.mutate({ id: item.recommendation_id, action: kind })} busy={action.isPending} />)}</tbody></table></div>;
+}
+
+function RecommendationRows({ item, expanded, toggle, onAction, busy }: { item: Recommendation; expanded: boolean; toggle: () => void; onAction: (kind: "approve" | "reject") => void; busy: boolean }) {
+  const provenance = item.provenance;
+  return <>
+    <tr className="pick-row" onClick={toggle} aria-expanded={expanded}>
+      <td data-label="Pick"><div className="pick-name"><strong>{item.selection}</strong><small>{item.away_team} @ {item.home_team}</small></div></td>
+      <td data-label="Market">{titleCase(item.market)}</td><td data-label="Sportsbook">{titleCase(item.sportsbook)}</td><td data-label="Line">{line(item.point)}</td><td data-label="Odds">{american(item.odds)}</td><td data-label="Fair">{percent(item.fair_probability)}</td><td data-label="Implied">{percent(item.implied_probability)}</td><td data-label="Edge"><span className="positive-value">{signedPercent(item.edge)}</span></td><td data-label="EV"><span className="positive-value">{signedPercent(item.ev_per_unit)}</span></td><td data-label="Stake"><strong>{currency(item.stake)}</strong></td><td data-label="Bankroll">{percent(item.bankroll_fraction)}</td><td data-label="Units">{item.units?.toFixed(2) ?? "—"}u</td><td data-label="Status"><StatusBadge tone={item.status === "approved" ? "positive" : item.status === "rejected" ? "negative" : "info"}>{titleCase(item.status)}</StatusBadge></td><td><button className="row-expand" aria-label={`${expanded ? "Collapse" : "Expand"} ${item.selection}`} onClick={(event) => { event.stopPropagation(); toggle(); }}>{expanded ? <ChevronUp size={17} /> : <ChevronDown size={17} />}</button></td>
+    </tr>
+    {expanded && <tr className="detail-row"><td colSpan={14}><div className="pick-detail"><div className="detail-summary"><span className="eyebrow">Qualification basis</span><p>{item.explanation || "The backend qualification and risk policies approved this candidate."}</p><div className="tag-row">{item.risk_adjustments.map((risk) => <span className="data-tag" key={risk}><ShieldCheck size={13} />{titleCase(risk)}</span>)}</div></div><dl><div><dt>Consensus line</dt><dd>{line(item.point)}</dd></div><div><dt>Books</dt><dd>{Array.isArray(provenance.books) ? provenance.books.length : (item.confidence_quality.books as number | undefined) ?? "—"}</dd></div><div><dt>Dispersion</dt><dd>{percent(Number(provenance.dispersion ?? 0))}</dd></div><div><dt>Benchmark</dt><dd>{item.model_version}</dd></div><div><dt>Pricing policy</dt><dd>{String(provenance.consensus_version ?? "unweighted-median-v1")}</dd></div><div><dt>Lifecycle</dt><dd>Recommended → Approved → Open → Settled</dd></div></dl><div className="detail-actions"><button className="button approve" disabled={busy || item.status !== "proposed"} onClick={() => onAction("approve")}><CircleCheck size={16} />Approve paper bet</button><button className="button reject" disabled={busy || item.status !== "proposed"} onClick={() => onAction("reject")}><CircleX size={16} />Reject</button><button className="button secondary"><ExternalLink size={15} />Provenance</button></div></div></td></tr>}
+  </>;
+}

@@ -228,7 +228,7 @@ Exit criteria status: **Satisfied for the NCAAF v1 paper baseline.** Trusted par
 
 Goal: present the implemented portfolio workflow without moving decision logic into the client.
 
-Status: **Backend-ready; presentation work not started.** Authenticated APIs now expose the day's decision run, qualified straights, parlay/PASS result, approval/rejection actions, portfolio and open-bet history, risk exposure, statistics, and full model/policy provenance.
+Status: **Implemented on 2026-09-01.** A responsive React/TypeScript dashboard now renders the backend-authoritative paper workflow across Today, Portfolio, Bets, Parlay, Market Movement, Models, Research, History, and read-only Settings. A same-origin Cloudflare Pages Function keeps `APP_API_KEY` out of the static browser bundle; browser refreshes read stored state and never call the odds provider.
 
 - Render fair value and executable price as separate fields.
 - Show proposed recommendations separately from approved official paper bets.
@@ -238,9 +238,11 @@ Status: **Backend-ready; presentation work not started.** Authenticated APIs now
 
 Exit criteria:
 
-- The dashboard can complete analysis, review, approval/rejection, settlement, and history workflows through authenticated backend contracts.
+- The dashboard can review and approve/reject recommendations and inspect open/settled history through authenticated backend contracts. Analysis and settlement remain available through existing backend APIs but do not yet have dashboard mutation forms.
 - Displayed dollars, equity percentages, units, and exposure reconcile with backend responses.
 - No client action can bypass approval-time risk revalidation.
+
+Exit criteria status: **Satisfied for the requested Phase 6.5 presentation scope.** Direct dashboard settlement/analysis controls, scheduled-refresh publication, full ledger time-series/CLV, and Cloudflare Access/deployment are launch follow-ups rather than client-side calculations.
 
 ## Phase 7 — NFL and NBA model expansion
 

@@ -318,6 +318,26 @@ Normalized artifacts preserve source-manifest IDs/hashes, transformation/schema 
 
 ### Broader Phase 5 production architecture (planned, not implemented)
 
+## Phase 6.5 dashboard architecture (implemented)
+
+```text
+Cloudflare Pages React client
+        |
+        | same-origin /api (no credential in browser bundle)
+        v
+Cloudflare Pages Function secret bridge
+        |
+        | X-API-Key, server-side only
+        v
+Render FastAPI -> services/repositories -> PostgreSQL
+```
+
+`frontend/` owns presentation, routing, server-state caching, responsive layout, and chart rendering. It does not own probability, EV, sizing, qualification, correlation, or accounting. The Pages Function proxies only `GET`, `POST`, and `OPTIONS` and strips browser authorization/cookie headers before adding the server-side API key.
+
+Two bounded read projections support the UI: `/dashboard/system` exposes safe policy/model/freshness metadata, and `/dashboard/market-movement` returns only scalar observation columns within one slate date/cutoff. Neither query materializes `MarketSnapshot.raw_payload`. Existing recommendation reads now include nullable latest-decision/PASS metadata without changing the recommendation list contract.
+
+The frontend uses a same-origin API path in every environment. Vite's local development proxy reads non-`VITE_` backend secrets server-side; Cloudflare Pages Functions do the same in deployment. Cloudflare Access is the required external identity gate for a private dashboard because the backend still uses the replaceable single-owner API-key boundary.
+
 ### Phase 5B-3 baseline-model architecture (implemented offline)
 
 `app/research/ncaaf/modeling.py` consumes the immutable horizon-specific feature Parquet files and freezes a model-input manifest before training. Reusable expanding folds evaluate 2019–2023 as development seasons and 2024 as validation; 2025 is rejected. Every Ridge fold owns its median imputation, missing indicators, constant-column removal, scaling, and fit. Sequential power ratings predict before updating. Naive, power, and Ridge OOF rows plus JSON-safe fold parameters are written beneath ignored `.ncaaf-data/models/` with dataset, feature, preprocessing, fold, package, and artifact hashes.

@@ -4,6 +4,8 @@ Experimental FastAPI backend for a quantitative sports-wagering portfolio manage
 
 NCAAF/College Football is the immediate league priority, followed by NFL and NBA. Python **3.12.x** is the supported development and CI runtime.
 
+The Phase 6.5 dashboard lives in `frontend/` and uses Node.js **22+**, pnpm **11.x**, React, TypeScript, and Vite. See [`docs/DASHBOARD.md`](docs/DASHBOARD.md) for local setup and Cloudflare Pages configuration.
+
 ## Local setup
 
 ```bash
@@ -128,6 +130,8 @@ python -m pytest
 | `POST /recommendations/{recommendation_id}/approve` | Explicit human approval; atomically creates the official paper bet and ledger reservation. |
 | `POST /recommendations/{recommendation_id}/reject` | Record a declined proposal without creating a bet. |
 | `GET /portfolio/{portfolio_id}/risk` | Cash/equity/drawdown and current exposure by game, team, market, and straight/parlay kind. |
+| `GET /dashboard/system` | Safe read-only policy/model/freshness status for the dashboard; never returns credentials. |
+| `GET /dashboard/market-movement` | Bounded stored observation history for one UTC slate date and optional cutoff; never calls the provider. |
 
 `payout` remains a compatibility field meaning **net profit/loss**, not gross returned cash. Settlement adds `stake + payout` to cash. Open stake reduces available cash but remains part of equity as reserved exposure.
 
@@ -152,6 +156,7 @@ Keep the existing web service and start command `uvicorn main:app`. Attach any P
 - `migrations/`: Alembic environment and revisions.
 - `app/migration/` and `app/cli/`: explicit legacy JSON import, market ingestion, and offline pricing replay.
 - `tests/`: deterministic API, provider, pricing, replay, domain, ledger, migration-boundary, and service coverage.
+- `frontend/`: responsive React/TypeScript paper-trading dashboard and Cloudflare Pages Function API bridge.
 
 Read [`AGENTS.md`](AGENTS.md) and the durable product/architecture documents in [`docs/`](docs/) before making changes.
 

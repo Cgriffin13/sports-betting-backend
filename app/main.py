@@ -3,7 +3,7 @@ from datetime import datetime
 
 from fastapi import FastAPI
 
-from app.api import bets, health, odds, opportunities, portfolios, recommendations
+from app.api import bets, dashboard, health, odds, opportunities, portfolios, recommendations
 from app.config import Settings
 from app.db import ncaaf_models, portfolio_models  # noqa: F401
 from app.db.session import create_database_engine, create_session_factory
@@ -11,6 +11,7 @@ from app.domain.identity import Principal
 from app.logging import configure_logging
 from app.middleware import RequestIdMiddleware
 from app.persistence.base import PortfolioRepository
+from app.persistence.dashboard_repository import SqlAlchemyDashboardRepository
 from app.persistence.market_base import MarketDataRepository
 from app.persistence.market_repository import SqlAlchemyMarketDataRepository
 from app.persistence.pricing_base import EmptyPricingObservationRepository, PricingObservationRepository
@@ -21,6 +22,7 @@ from app.persistence.sqlalchemy_repository import SqlAlchemyPortfolioRepository
 from app.providers.base import MarketDataProvider
 from app.providers.odds_api import TheOddsApiProvider
 from app.services.odds_service import OddsService
+from app.services.dashboard_service import DashboardService
 from app.services.pricing_service import PricingService, build_pricing_policy
 from app.services.portfolio_service import PortfolioService
 from app.services.recommendation_service import RecommendationService, build_recommendation_policies
@@ -74,12 +76,14 @@ def create_app(
             parlay_policy=parlay_policy,
             clock=clock,
         )
+        dashboard_service = DashboardService(SqlAlchemyDashboardRepository(session_factory), resolved_settings)
     else:
         resolved_repository = repository
         resolved_market_repository = market_repository
         resolved_pricing_repository = pricing_repository or EmptyPricingObservationRepository()
         registry_repository = None
         recommendation_repository = None
+        dashboard_service = None
     resolved_authenticator = authenticator or ApiKeyAuthenticator(
         {
             resolved_settings.app_api_key: Principal(
@@ -112,6 +116,7 @@ def create_app(
         ),
     )
     application.state.pricing_service = pricing_service
+    application.state.dashboard_service = dashboard_service
     application.state.portfolio_service = PortfolioService(resolved_repository)
     if registry_repository is not None and recommendation_repository is not None:
         application.state.recommendation_service = RecommendationService(
@@ -131,6 +136,7 @@ def create_app(
     application.include_router(bets.router)
     application.include_router(portfolios.router)
     application.include_router(recommendations.router)
+    application.include_router(dashboard.router)
     return application
 
 

@@ -149,6 +149,9 @@ class RecommendationService:
     def list(self, principal: Principal, portfolio_id: str, *, slate_date: date | None) -> list[dict[str, Any]]:
         return self.repository.list_recommendations(principal, portfolio_id, slate_date=slate_date)
 
+    def latest_decision(self, principal: Principal, portfolio_id: str, *, slate_date: date | None) -> dict[str, Any] | None:
+        return self.repository.latest_decision_summary(principal, portfolio_id, slate_date=slate_date)
+
     def approve(self, principal: Principal, recommendation_id: str, *, idempotency_key: str | None) -> dict[str, Any]:
         return self.repository.approve(principal, recommendation_id, idempotency_key=idempotency_key)
 

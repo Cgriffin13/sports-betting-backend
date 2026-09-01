@@ -37,3 +37,34 @@ jobs:
           python -m alembic upgrade head
           python -m alembic downgrade -1
           python -m alembic upgrade head
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint frontend
+        run: pnpm lint
+      - name: Type check frontend
+        run: pnpm typecheck
+      - name: Test frontend
+        run: pnpm test
+      - name: Build frontend
+        env:
+          VITE_DEMO_MODE: "false"
+        run: pnpm build

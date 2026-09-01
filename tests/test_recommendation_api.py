@@ -80,6 +80,14 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     assert body["parlay_of_the_day"]["status"] == "PASS"
     recommendation_id = body["straight_recommendations"][0]["recommendation_id"]
 
+    listing = client.get(
+        "/portfolio/main/recommendations",
+        params={"slate_date": date(2026, 9, 5).isoformat()},
+    ).json()
+    assert listing["recommendations"][0]["recommendation_id"] == recommendation_id
+    assert listing["latest_decision"]["decision_run_id"] == body["decision_run_id"]
+    assert listing["latest_decision"]["policy_versions"] == body["policy_versions"]
+
     assert client.get("/portfolio/main").json()["bets"] == []
     approval = client.post(
         f"/recommendations/{recommendation_id}/approve",
@@ -91,3 +99,5 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     risk = client.get("/portfolio/main/risk", params={"slate_date": date(2026, 9, 5).isoformat()})
     assert risk.status_code == 200
     assert risk.json()["reserved_exposure"] == 4.0
+    assert risk.json()["portfolio_state"] == "NORMAL"
+    assert risk.json()["state_reason"] == "within_policy"

@@ -1,0 +1,21 @@
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { MovementEvent } from "../types";
+import { currency, formatDateTime } from "../utils/format";
+
+export function EquityChart({ data, recommendationAt }: { data: Array<{ timestamp: string; value: number }>; recommendationAt?: string | null }) {
+  return <div className="chart-wrap" aria-label="Portfolio equity curve"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{ top: 12, right: 8, left: -16, bottom: 2 }}><defs><linearGradient id="equityFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#48d597" stopOpacity={0.3} /><stop offset="100%" stopColor="#48d597" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#202834" strokeDasharray="3 6" /><XAxis dataKey="timestamp" tickFormatter={(value: string) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })} tick={{ fill: "#778294", fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis tickFormatter={(value: number) => `$${value}`} tick={{ fill: "#778294", fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ background: "#121923", border: "1px solid #2b3543", borderRadius: 8 }} labelFormatter={(value) => formatDateTime(String(value))} formatter={(value) => [currency(Number(value)), "Equity"]} /><Area type="monotone" dataKey="value" stroke="#48d597" strokeWidth={2} fill="url(#equityFill)" isAnimationActive={false} />{recommendationAt && <ReferenceLine x={recommendationAt} stroke="#d8a94b" strokeDasharray="3 4" label={{ value: "Rec", fill: "#d8a94b", fontSize: 10 }} />}</AreaChart></ResponsiveContainer></div>;
+}
+
+export function ExposureBars({ rows }: { rows: Array<{ label: string; value: number; limit: number }> }) {
+  return <div className="exposure-list">{rows.map((row) => { const pct = row.limit ? Math.min(100, row.value / row.limit * 100) : 0; return <div className="exposure-row" key={row.label}><div><span>{row.label}</span><strong>{(row.value * 100).toFixed(1)}% <small>/ {(row.limit * 100).toFixed(1)}%</small></strong></div><div className="bar-track"><span className={pct > 85 ? "warning" : ""} style={{ width: `${pct}%` }} /></div></div>; })}</div>;
+}
+
+export function MovementChart({ event }: { event: MovementEvent }) {
+  const data = event.points.filter((point) => point.market === "spread" && point.side === "home").map((point) => ({ time: point.observed_at, point: point.point, odds: point.american_odds, book: point.sportsbook }));
+  if (!data.length) return <div className="compact-empty">No stored spread movement for this event.</div>;
+  return <div className="movement-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 10, right: 12, bottom: 2, left: -15 }}><CartesianGrid stroke="#202834" strokeDasharray="3 6" /><XAxis dataKey="time" tickFormatter={(value: string) => new Date(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} tick={{ fill: "#778294", fontSize: 10 }} axisLine={false} /><YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fill: "#778294", fontSize: 10 }} axisLine={false} /><Tooltip contentStyle={{ background: "#121923", border: "1px solid #2b3543", borderRadius: 8 }} labelFormatter={(value) => formatDateTime(String(value))} /><Line type="stepAfter" dataKey="point" stroke="#61a9ff" strokeWidth={2} dot={{ r: 3, fill: "#61a9ff" }} isAnimationActive={false} /></LineChart></ResponsiveContainer></div>;
+}
+
+export function PerformanceBars({ data }: { data: Array<{ name: string; pnl: number }> }) {
+  return <div className="bar-chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={data}><CartesianGrid vertical={false} stroke="#202834" /><XAxis dataKey="name" tick={{ fill: "#8b96a7", fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis tick={{ fill: "#8b96a7", fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ background: "#121923", border: "1px solid #2b3543", borderRadius: 8 }} formatter={(value) => currency(Number(value))} /><Bar dataKey="pnl" radius={[4, 4, 0, 0]}>{data.map((row) => <Cell key={row.name} fill={row.pnl >= 0 ? "#48d597" : "#ec6a6a"} />)}</Bar></BarChart></ResponsiveContainer></div>;
+}

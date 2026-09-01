@@ -36,6 +36,7 @@ class RecommendationDecisionResponse(BaseModel):
 
 class RecommendationListResponse(BaseModel):
     recommendations: list[dict[str, Any]]
+    latest_decision: dict[str, Any] | None = None
 
 
 class RecommendationDispositionResponse(BaseModel):
@@ -45,6 +46,8 @@ class RecommendationDispositionResponse(BaseModel):
 class RiskExposureResponse(BaseModel):
     portfolio_id: str
     slate_date: str
+    portfolio_state: str
+    state_reason: str
     cash: float
     reserved_exposure: float
     equity: float

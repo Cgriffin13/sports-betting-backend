@@ -526,3 +526,9 @@ The Phase 6 handoff is `ncaaf-fair-value-v1`: a retained benchmark emits canonic
 For retained consensus, half-point spread/total lines may carry zero push probability. An integer line cannot silently use zero; it requires an explicit validated push estimate. No rejected or diagnostic football probability may substitute into the fair-value contract.
 
 Prospective shadow predictions beginning in 2026 are immutable pregame records at `morning_first_kickoff_minus_3h`. A changed market creates a new prediction version. Final score/outcome and evaluation metrics are appended separately and cannot alter the decision-time fair-value payload. Shadow evaluation is distinct from bankroll/bet settlement and does not authorize recommendations or stakes.
+
+## Dashboard calculation boundary
+
+Phase 6.5 is a rendering and human-approval surface, not another pricing engine. Every displayed fair probability, implied probability, edge, push-aware EV, stake, bankroll fraction, unit value, classification, exposure decision, and parlay status comes from the backend decision snapshot. Formatting percentages, currency, chart points, and stored line history in the browser does not create a competing calculation policy.
+
+The UI always labels retained market consensus separately from the best executable sportsbook offer. Diagnostic football models remain visible as evidence but cannot supply the fair-value fields. A dashboard approval is not assumed successful until the server transaction completes and the client re-fetches portfolio/recommendation state.

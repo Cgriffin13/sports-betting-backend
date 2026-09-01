@@ -1,0 +1,17 @@
+import { LockKeyhole, Settings } from "lucide-react";
+import { ErrorPage, LoadingPage, PageHeader, Panel, StatusBadge } from "../components/Primitives";
+import { useDashboard } from "../hooks/useDashboard";
+import { currency, percent, titleCase } from "../utils/format";
+
+const labels: Record<string, { group: string; format: "percent" | "currency" | "count" | "boolean" }> = {
+  minimum_ev: { group: "Qualification", format: "percent" }, minimum_edge: { group: "Qualification", format: "percent" }, maximum_dispersion: { group: "Qualification", format: "percent" }, minimum_books: { group: "Qualification", format: "count" }, freshness_seconds: { group: "Qualification", format: "count" },
+  kelly_fraction: { group: "Staking", format: "percent" }, minimum_stake: { group: "Staking", format: "currency" }, maximum_stake: { group: "Staking", format: "currency" }, unit_fraction: { group: "Staking", format: "percent" },
+  maximum_core_bet_fraction: { group: "Exposure", format: "percent" }, maximum_opportunistic_bet_fraction: { group: "Exposure", format: "percent" }, maximum_daily_fraction: { group: "Exposure", format: "percent" }, maximum_game_fraction: { group: "Exposure", format: "percent" }, maximum_team_fraction: { group: "Exposure", format: "percent" }, maximum_market_fraction: { group: "Exposure", format: "percent" },
+  reduced_risk_drawdown: { group: "Drawdown", format: "percent" }, paused_drawdown: { group: "Drawdown", format: "percent" }, bankroll_floor_fraction: { group: "Drawdown", format: "percent" },
+  parlay_enabled: { group: "Parlay sleeve", format: "boolean" }, parlay_minimum_ev: { group: "Parlay sleeve", format: "percent" }, parlay_maximum_fraction: { group: "Parlay sleeve", format: "percent" }, parlay_daily_fraction: { group: "Parlay sleeve", format: "percent" },
+};
+export function SettingsPage() { const query = useDashboard(); if (query.isLoading) return <LoadingPage />; if (query.isError || !query.data) return <ErrorPage message={query.error?.message || "Settings unavailable"} retry={() => void query.refetch()} />; const entries = Object.entries(query.data.system.policies).filter(([key]) => key in labels); const groups = [...new Set(entries.map(([key]) => labels[key].group))]; return <div className="page-stack"><PageHeader eyebrow="Backend policy" title="Settings" description="Read-only v1 view of the active qualification, sizing, exposure, drawdown, and parlay policies." actions={<StatusBadge tone="neutral"><LockKeyhole size={13} />Read only</StatusBadge>} />
+  <div className="settings-note"><Settings /><div><strong>Backend settings are authoritative</strong><span>Values are loaded from server configuration. This dashboard cannot silently change risk or qualification rules.</span></div></div>
+  <div className="settings-grid">{groups.map((group) => <Panel key={group} title={group}><div className="setting-list">{entries.filter(([key]) => labels[key].group === group).map(([key, value]) => <div key={key}><div><strong>{titleCase(key)}</strong><small>{key}</small></div><output>{formatSetting(value, labels[key].format, key)}</output></div>)}</div></Panel>)}</div></div>; }
+
+function formatSetting(value: number | boolean, type: "percent" | "currency" | "count" | "boolean", key: string) { if (type === "boolean") return value ? "Enabled" : "Disabled"; if (type === "currency") return currency(Number(value)); if (type === "percent") return percent(Number(value), key === "parlay_maximum_fraction" ? 2 : 1); if (key === "freshness_seconds") return `${value}s`; return String(value); }
