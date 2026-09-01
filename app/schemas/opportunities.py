@@ -40,6 +40,9 @@ class BookNoVigPriceResponse(BaseModel):
     selection_observation_id: UUID
     opposing_observation_id: UUID
     snapshot_ids: tuple[UUID, ...]
+    selection_american_odds: int | None = None
+    selection_point: Decimal | None = None
+    selection_observed_at: datetime | None = None
 
 
 class PricingOpportunityResponse(BaseModel):

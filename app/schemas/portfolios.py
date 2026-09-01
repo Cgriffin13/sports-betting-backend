@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PortfolioResponse(BaseModel):
@@ -29,3 +29,5 @@ class PortfolioStatsResponse(BaseModel):
     net_pnl: float
     overall: dict[str, Any]
     by_bucket: list[dict[str, Any]]
+    attribution: dict[str, dict[str, dict[str, Any]]] = Field(default_factory=dict)
+    risk_metrics: dict[str, Any] = Field(default_factory=dict)

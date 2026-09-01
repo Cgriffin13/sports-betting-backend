@@ -1226,3 +1226,44 @@ Consequences:
 - Diagnostic/rejected models cannot provide retained fair value. Integer lines cannot silently assume zero push probability.
 - Shadow outcome evaluation is separate from bet placement, bankroll ledger, EV, staking, and recommendations.
 - Phase 5 is complete with an honest retained market benchmark. This is neither proprietary edge nor production-betting approval.
+
+## ADR-089 — Use a versioned quarter-Kelly risk budget with approval-time revalidation
+
+- Date: 2026-09-01
+- Status: Accepted and implemented for NCAAF Phase 6 paper trading
+
+`fractional-kelly-risk-budget-v1` uses the positive push-aware Kelly solution multiplied by 0.25, then applies uncertainty, CORE/OPPORTUNISTIC, drawdown-state, and portfolio-cap adjustments. Full Kelly is prohibited. Initial caps are 2% equity per CORE straight, 1% per OPPORTUNISTIC straight, 8% per slate, 4% per game/correlated group, 5% per team/market, with reduced risk at 10% drawdown and pause at 20% or the 50%-of-start floor. One displayed unit is 4% of decision-time equity and does not drive stake math.
+
+Consequences:
+
+- These are versioned paper defaults requiring prospective validation, not permanent optimal parameters.
+- A subminimum calculated stake is rejected rather than increased to satisfy the minimum.
+- Approval rechecks cash, drawdown, opposing exposure, and caps transactionally; a stale proposal cannot reserve risk merely because it qualified earlier.
+- Strategy-book recommendations remain distinct from explicitly approved official paper bets.
+
+## ADR-090 — Restrict the initial parlay sleeve to verified cross-event disjoint-team quotes
+
+- Date: 2026-09-01
+- Status: Accepted and implemented for NCAAF Phase 6 paper research
+
+The optimizer may select at most one two- or three-leg parlay whose legs independently qualify. It requires an executable combined sportsbook quote linked to exact leg observations. Marginal probabilities may be multiplied only for different events with disjoint teams under `cross-event-disjoint-team-independence-v1`; same-game, shared-team, and unknown-correlation combinations are rejected. The sleeve uses 10%-Kelly, a default 0.5% per-parlay cap, and a 1% day cap while consuming shared event/team/day exposure.
+
+Consequences:
+
+- The public API does not accept caller-supplied combined payouts. The current provider lacks parlay quotes, so PASS is the normal live result until a trusted adapter exists.
+- The optimizer is opportunistic and deterministic; it need not select ranks one through three and never forces a combination.
+- Parlay bets share the official ledger but retain separate leg snapshots and performance attribution.
+- Same-game correlation, voided-leg repricing, CLV, and sleeve disablement evidence remain unresolved.
+
+## ADR-091 — Persist a strategy book separately from the executed paper book
+
+- Date: 2026-09-01
+- Status: Accepted and implemented for NCAAF Phase 6
+
+Every decision run freezes equity, risk state, policies, PASS/rejection reasons, and deterministic hashes. Proposed straight/parlay recommendations preserve fair value separately from executable price, alternatives, provenance, stake, and risk adjustments. Only explicit approval creates a `bets` row, `bet_approvals` record, state transition, and immutable ledger reservation in one transaction. Rejection creates no bet.
+
+Consequences:
+
+- Human-selection and execution effects can be separated from qualification/model performance.
+- Straight and parlay accounting use the existing ledger; no competing bankroll exists.
+- Phase 6.5 can render proposals, PASS, exposure, official bets, and attribution without embedding business logic in the frontend.

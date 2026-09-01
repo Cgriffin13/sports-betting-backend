@@ -40,6 +40,31 @@ class Settings:
     pricing_outlier_threshold: Decimal = Decimal("0.03")
     pricing_maximum_dispersion: Decimal = Decimal("0.08")
     pricing_supported_books: tuple[str, ...] = ("draftkings", "fanduel", "betmgm")
+    portfolio_minimum_ev: Decimal = Decimal("0.015")
+    portfolio_minimum_edge: Decimal = Decimal("0.0075")
+    portfolio_maximum_dispersion: Decimal = Decimal("0.06")
+    portfolio_minimum_books: int = 2
+    portfolio_kelly_fraction: Decimal = Decimal("0.25")
+    portfolio_minimum_stake: Decimal = Decimal("1.00")
+    portfolio_maximum_stake: Decimal = Decimal("50.00")
+    portfolio_maximum_core_bet_fraction: Decimal = Decimal("0.02")
+    portfolio_maximum_opportunistic_bet_fraction: Decimal = Decimal("0.01")
+    portfolio_maximum_daily_fraction: Decimal = Decimal("0.08")
+    portfolio_maximum_game_fraction: Decimal = Decimal("0.04")
+    portfolio_maximum_team_fraction: Decimal = Decimal("0.05")
+    portfolio_maximum_market_fraction: Decimal = Decimal("0.05")
+    portfolio_maximum_correlated_fraction: Decimal = Decimal("0.04")
+    portfolio_unit_fraction: Decimal = Decimal("0.04")
+    portfolio_reduced_risk_drawdown: Decimal = Decimal("0.10")
+    portfolio_paused_drawdown: Decimal = Decimal("0.20")
+    portfolio_bankroll_floor_fraction: Decimal = Decimal("0.50")
+    portfolio_core_minimum_ev: Decimal = Decimal("0.03")
+    portfolio_core_minimum_edge: Decimal = Decimal("0.015")
+    parlay_enabled: bool = True
+    parlay_minimum_ev: Decimal = Decimal("0.05")
+    parlay_kelly_fraction: Decimal = Decimal("0.10")
+    parlay_maximum_fraction: Decimal = Decimal("0.005")
+    parlay_daily_fraction: Decimal = Decimal("0.01")
 
     def __post_init__(self) -> None:
         try:
@@ -94,6 +119,69 @@ class Settings:
             raise ValueError("Pricing maximum dispersion cannot be below the outlier threshold")
         if not self.pricing_supported_books or any(not book.strip() for book in self.pricing_supported_books):
             raise ValueError("PRICING_SUPPORTED_BOOKS must contain at least one non-empty book key")
+        portfolio_decimals = (
+            self.portfolio_minimum_ev,
+            self.portfolio_minimum_edge,
+            self.portfolio_maximum_dispersion,
+            self.portfolio_kelly_fraction,
+            self.portfolio_minimum_stake,
+            self.portfolio_maximum_stake,
+            self.portfolio_maximum_core_bet_fraction,
+            self.portfolio_maximum_opportunistic_bet_fraction,
+            self.portfolio_maximum_daily_fraction,
+            self.portfolio_maximum_game_fraction,
+            self.portfolio_maximum_team_fraction,
+            self.portfolio_maximum_market_fraction,
+            self.portfolio_maximum_correlated_fraction,
+            self.portfolio_unit_fraction,
+            self.portfolio_reduced_risk_drawdown,
+            self.portfolio_paused_drawdown,
+            self.portfolio_bankroll_floor_fraction,
+            self.portfolio_core_minimum_ev,
+            self.portfolio_core_minimum_edge,
+            self.parlay_minimum_ev,
+            self.parlay_kelly_fraction,
+            self.parlay_maximum_fraction,
+            self.parlay_daily_fraction,
+        )
+        if any(not value.is_finite() or value < 0 for value in portfolio_decimals):
+            raise ValueError("Portfolio and parlay policy values must be finite and nonnegative")
+        if self.portfolio_kelly_fraction >= 1 or self.parlay_kelly_fraction >= 1:
+            raise ValueError("Full Kelly is prohibited")
+        if self.parlay_maximum_fraction > Decimal("0.0075"):
+            raise ValueError("Parlay maximum fraction cannot exceed 0.75%")
+        if self.portfolio_minimum_books < 2:
+            raise ValueError("Portfolio minimum books must be at least two")
+        if self.portfolio_minimum_stake <= 0 or self.portfolio_maximum_stake < self.portfolio_minimum_stake:
+            raise ValueError("Portfolio stake boundaries must be positive and ordered")
+        if self.portfolio_core_minimum_ev < self.portfolio_minimum_ev:
+            raise ValueError("CORE EV threshold cannot be below the qualification threshold")
+        if self.portfolio_core_minimum_edge < self.portfolio_minimum_edge:
+            raise ValueError("CORE edge threshold cannot be below the qualification threshold")
+        if self.portfolio_reduced_risk_drawdown >= self.portfolio_paused_drawdown:
+            raise ValueError("Reduced-risk drawdown must be below paused drawdown")
+        if self.parlay_daily_fraction < self.parlay_maximum_fraction:
+            raise ValueError("Daily parlay sleeve cannot be below the per-parlay cap")
+        bounded_fractions = (
+            self.portfolio_minimum_edge,
+            self.portfolio_maximum_dispersion,
+            self.portfolio_maximum_core_bet_fraction,
+            self.portfolio_maximum_opportunistic_bet_fraction,
+            self.portfolio_maximum_daily_fraction,
+            self.portfolio_maximum_game_fraction,
+            self.portfolio_maximum_team_fraction,
+            self.portfolio_maximum_market_fraction,
+            self.portfolio_maximum_correlated_fraction,
+            self.portfolio_unit_fraction,
+            self.portfolio_reduced_risk_drawdown,
+            self.portfolio_paused_drawdown,
+            self.portfolio_bankroll_floor_fraction,
+            self.portfolio_core_minimum_edge,
+            self.parlay_maximum_fraction,
+            self.parlay_daily_fraction,
+        )
+        if any(value > 1 for value in bounded_fractions):
+            raise ValueError("Portfolio probability and exposure fractions cannot exceed one")
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -139,4 +227,29 @@ class Settings:
                 for book in os.getenv("PRICING_SUPPORTED_BOOKS", "draftkings,fanduel,betmgm").split(",")
                 if book.strip()
             ),
+            portfolio_minimum_ev=_decimal_environment("PORTFOLIO_MINIMUM_EV", "0.015"),
+            portfolio_minimum_edge=_decimal_environment("PORTFOLIO_MINIMUM_EDGE", "0.0075"),
+            portfolio_maximum_dispersion=_decimal_environment("PORTFOLIO_MAXIMUM_DISPERSION", "0.06"),
+            portfolio_minimum_books=int(os.getenv("PORTFOLIO_MINIMUM_BOOKS", "2")),
+            portfolio_kelly_fraction=_decimal_environment("PORTFOLIO_KELLY_FRACTION", "0.25"),
+            portfolio_minimum_stake=_decimal_environment("PORTFOLIO_MINIMUM_STAKE", "1.00"),
+            portfolio_maximum_stake=_decimal_environment("PORTFOLIO_MAXIMUM_STAKE", "50.00"),
+            portfolio_maximum_core_bet_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_CORE_BET_FRACTION", "0.02"),
+            portfolio_maximum_opportunistic_bet_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_OPPORTUNISTIC_BET_FRACTION", "0.01"),
+            portfolio_maximum_daily_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_DAILY_FRACTION", "0.08"),
+            portfolio_maximum_game_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_GAME_FRACTION", "0.04"),
+            portfolio_maximum_team_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_TEAM_FRACTION", "0.05"),
+            portfolio_maximum_market_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_MARKET_FRACTION", "0.05"),
+            portfolio_maximum_correlated_fraction=_decimal_environment("PORTFOLIO_MAXIMUM_CORRELATED_FRACTION", "0.04"),
+            portfolio_unit_fraction=_decimal_environment("PORTFOLIO_UNIT_FRACTION", "0.04"),
+            portfolio_reduced_risk_drawdown=_decimal_environment("PORTFOLIO_REDUCED_RISK_DRAWDOWN", "0.10"),
+            portfolio_paused_drawdown=_decimal_environment("PORTFOLIO_PAUSED_DRAWDOWN", "0.20"),
+            portfolio_bankroll_floor_fraction=_decimal_environment("PORTFOLIO_BANKROLL_FLOOR_FRACTION", "0.50"),
+            portfolio_core_minimum_ev=_decimal_environment("PORTFOLIO_CORE_MINIMUM_EV", "0.03"),
+            portfolio_core_minimum_edge=_decimal_environment("PORTFOLIO_CORE_MINIMUM_EDGE", "0.015"),
+            parlay_enabled=os.getenv("PARLAY_ENABLED", "true").strip().lower() in {"1", "true", "yes"},
+            parlay_minimum_ev=_decimal_environment("PARLAY_MINIMUM_EV", "0.05"),
+            parlay_kelly_fraction=_decimal_environment("PARLAY_KELLY_FRACTION", "0.10"),
+            parlay_maximum_fraction=_decimal_environment("PARLAY_MAXIMUM_FRACTION", "0.005"),
+            parlay_daily_fraction=_decimal_environment("PARLAY_DAILY_FRACTION", "0.01"),
         )

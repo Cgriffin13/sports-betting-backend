@@ -202,16 +202,18 @@ Phase 5 exit criteria are **satisfied**. The research produced reproducible pred
 
 Goal: turn positive-EV observations into conservative, reviewable portfolio recommendations.
 
-- Define a fractional-Kelly candidate policy; never use full Kelly.
-- Scale stake recommendations from current portfolio equity rather than fixed dollars.
-- Define a versioned unit display policy tied to current equity.
-- Add per-bet, daily, aggregate, sport/market, event, and correlation exposure limits.
-- Add confidence/data-quality adjustments and drawdown-aware reductions.
-- Define ranking rules that consider EV, uncertainty, liquidity/freshness, and portfolio impact—not edge alone.
-- Make “no bet” a first-class decision.
-- Implement immutable recommendation snapshots and explicit human approve/reject actions.
-- Preserve both a frozen strategy/model book (every qualified recommendation, including declines) and the actual/executed paper book. Attribution must separate model/selection quality from approval and execution effects.
-- Keep official bets as paper bets; do not add autonomous sportsbook execution.
+Status: **Implemented for NCAAF v1 paper trading on 2026-09-01.** The retained Phase 5 market-consensus benchmark is compared separately with exact executable prices; versioned qualification, push-aware EV, fractional Kelly, CORE/OPPORTUNISTIC allocation, exposure/drawdown states, immutable recommendations, approval-time risk revalidation, ledger integration, attribution, and an offline simulator are implemented. The cross-event parlay optimizer is implemented but correctly returns PASS until a trusted executable combined-price adapter supplies a verified quote; same-game parlays remain excluded.
+
+- [x] Define a fractional-Kelly candidate policy; never use full Kelly.
+- [x] Scale stake recommendations from current portfolio equity rather than fixed dollars.
+- [x] Define a versioned unit display policy tied to current equity.
+- [x] Add per-bet, daily, aggregate, sport/market, event, and correlation exposure limits.
+- [x] Add confidence/data-quality adjustments and drawdown-aware reductions.
+- [x] Define ranking rules that consider EV, uncertainty, liquidity/freshness, and portfolio impact—not edge alone.
+- [x] Make “no bet” a first-class decision.
+- [x] Implement immutable recommendation snapshots and explicit human approve/reject actions.
+- [x] Preserve both a frozen strategy/model book (every qualified recommendation, including declines) and the actual/executed paper book. Attribution separates model/selection quality from approval and execution effects.
+- [x] Keep official bets as paper bets; no autonomous sportsbook execution.
 
 Exit criteria:
 
@@ -219,6 +221,26 @@ Exit criteria:
 - An analysis cannot become an official bet without recorded human approval.
 - Stake recommendations are explainable and reproducible.
 - Dollar stake, equity percentage, displayed units, and policy version reconcile.
+
+Exit criteria status: **Satisfied for the NCAAF v1 paper baseline.** Trusted parlay quote acquisition and same-game correlation are explicit later hardening, not silently simulated capabilities.
+
+## Phase 6.5 — Paper-trading dashboard
+
+Goal: present the implemented portfolio workflow without moving decision logic into the client.
+
+Status: **Backend-ready; presentation work not started.** Authenticated APIs now expose the day's decision run, qualified straights, parlay/PASS result, approval/rejection actions, portfolio and open-bet history, risk exposure, statistics, and full model/policy provenance.
+
+- Render fair value and executable price as separate fields.
+- Show proposed recommendations separately from approved official paper bets.
+- Make PASS, risk adjustments, portfolio state, and approval status visible.
+- Show cash, reserved exposure, equity, open bets, history, and segmented performance.
+- Keep all qualification, sizing, and risk enforcement in the backend.
+
+Exit criteria:
+
+- The dashboard can complete analysis, review, approval/rejection, settlement, and history workflows through authenticated backend contracts.
+- Displayed dollars, equity percentages, units, and exposure reconcile with backend responses.
+- No client action can bypass approval-time risk revalidation.
 
 ## Phase 7 — NFL and NBA model expansion
 
@@ -274,6 +296,8 @@ Exit criteria:
 
 Goal: evaluate whether a narrowly constrained featured parlay can add value without weakening or displacing the straight-bet portfolio.
 
+Status: **Initial Phase 6 optimizer and risk sleeve implemented.** It searches only verified cross-event disjoint-team quotes and returns PASS without one. The current provider has no executable parlay product, so prospective sleeve evidence and same-game correlation remain future work.
+
 This capability begins only after the core straight-bet market normalization, pricing/EV, sport-model, portfolio-risk, closing-price, settlement, and evaluation pipeline is proven. It is not part of Phase 3 and must not delay the NCAAF straight-bet baseline.
 
 - Return at most one featured parlay per day/league scope; zero is valid and no candidate may be manufactured to fill the feature.
@@ -308,8 +332,8 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 ## Immediate recommended sequence
 
 1. Apply current migrations in each deployed PostgreSQL environment and collect continuous timestamped NCAAF snapshots.
-2. Begin the Phase 5 NCAAF predictive-model track and benchmark it directly against `market-baseline-v1`.
-3. Add the Phase 6 conservative equity-scaled risk/approval engine and connect qualified baseline opportunities to immutable recommendation snapshots.
+2. Exercise the Phase 6 recommendation/approval path in paper operation and verify decision, exposure, and ledger reconciliation.
+3. Build the Phase 6.5 dashboard against the documented read/approval contract without duplicating portfolio logic in the client.
 4. Run the opening-weekend NCAAF paper-trading milestone with entry, closing, outcome, and reconciliation capture.
 
 
