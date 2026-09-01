@@ -8,35 +8,38 @@ The runtime is a synchronous FastAPI service composed in `app/main.py`. Root `ma
 
 ```text
 private client -- X-API-Key / request ID --> FastAPI routers
-                          |                         |                 |
-                          v                         v                 v
-                     OddsService              PricingService   PortfolioService
-                          |                         |                 |
-                          v                         v                 v
-               MarketIngestionService     Consensus/EV domain   Ledger Repo
+                          |                         |                        |
+                          v                         v                        v
+                     OddsService              PricingService       RecommendationService
+                          |                         |                  /            \
+                          v                         v                 v              v
+               MarketIngestionService     Consensus/EV domain   FairValue       Risk/Parlay
                   |                |                |
                   v                v                v
-          MarketDataProvider  MarketDataRepo  Pricing read repo
+     MarketDataProvider  MarketDataRepo  Pricing read repo
                   |                |                |
                   v                +--------+-------+
           TheOddsApiProvider                v
-                  |                     PostgreSQL
+                  |             Recommendation/Ledger repos
                   v
-            The Odds API
+            The Odds API                  |
+                                          v
+                                      PostgreSQL
 ```
 
-`GET /health` is public. `/odds`, `/opportunities`, portfolio reads, bet placement, settlement, and statistics require `X-API-Key`. Authentication resolves a replaceable `Principal`; every portfolio has an owner, and cross-owner access returns 403. This is a private single-user boundary, not a full identity platform.
+`GET /health` is public. `/odds`, `/opportunities`, portfolio/recommendation/risk reads, recommendation analysis/disposition, bet placement, settlement, and statistics require `X-API-Key`. Authentication resolves a replaceable `Principal`; every portfolio has an owner, and cross-owner access returns 403. This is a private single-user boundary, not a full identity platform.
 
 ### Module responsibilities
 
 - `app/api/`: Pydantic-backed HTTP contracts, authentication dependency, service calls, and known-error mapping. Routes contain no raw SQL or provider HTTP.
-- `app/services/`: provider-neutral market ingestion, stored-observation pricing/replay, flattened odds behavior, portfolio orchestration, and canonical idempotency hashing. Ingestion and pricing are callable without FastAPI.
-- `app/domain/`: league, canonical book, market/period/side/point identity, pure Decimal pricing/vig/consensus/EV rules, money rules, principals, and errors.
+- `app/services/`: provider-neutral market ingestion, stored-observation pricing/replay, retained-registry fair value, portfolio recommendation orchestration, flattened odds behavior, portfolio orchestration, and canonical idempotency hashing. Core pricing, risk, and simulation logic is callable without FastAPI.
+- `app/domain/`: league, canonical book, market/period/side/point identity, pure Decimal pricing/vig/consensus/EV, push-aware Kelly, qualification, portfolio allocation, parlay, simulation, money, principal, and error rules.
 - `app/providers/`: provider-neutral fetch records and The Odds API adapter. The adapter owns URL/auth construction, bounded retry/backoff, cache, quota metadata, timeout, sanitized errors, raw response capture, and provider parsing.
-- `app/db/`: SQLAlchemy 2.x ledger and market-data models, database URL normalization, engine, and session factory.
+- `app/db/`: SQLAlchemy 2.x ledger, recommendation/risk, model-registry, and market-data models plus database URL normalization, engine, and session factory.
 - `app/persistence/market_repository.py`: atomic raw snapshot, event matching, book mapping, and observation persistence.
 - `app/persistence/pricing_repository.py`: read-only, time-bounded projection of normalized observations into provider-neutral pricing inputs.
 - `app/persistence/sqlalchemy_repository.py`: primary runtime persistence, transactions, row locking, ledger-derived balances, settlements, ownership, and idempotency records.
+- `app/persistence/recommendation_repository.py`: immutable decision/recommendation persistence, current exposure snapshots, transactional approval-time risk revalidation, and official bet/ledger creation.
 - `app/persistence/json_repository.py`: legacy compatibility only; not composed into the runtime.
 - `app/persistence/memory_repository.py`: SQLAlchemy/SQLite test factory.
 - `app/migration/` and `app/cli/`: explicit, rerunnable JSON import and reconciliation.
@@ -49,9 +52,11 @@ private client -- X-API-Key / request ID --> FastAPI routers
 | --- | --- |
 | `owners` | Stable UUID, external principal ID, display name, status, creation time. External ID is unique. |
 | `portfolios` | UUID, compatibility external ID, owner, starting capital, currency, status, creation time. Starting capital is not fixed at $200. |
-| `recommendations` | Future-compatible decision snapshot for later engines. The current application does not create recommendations. |
-| `bets` | Reconstructable entry snapshot: event/team/time fields, league/sport, market/period/selection/point, book/price/stake, optional probability and version metadata, approval/placement, closing, result, and realized P&L. |
-| `bet_approvals` | One approval audit record per official bet, associated with the authenticated owner and optional future recommendation. |
+| `recommendation_decision_runs` | Immutable NCAAF slate decision context: equity/state, Top N, policy versions, PASS/rejection reasons, and deterministic input/output hashes. |
+| `recommendations` | Proposed/approved/rejected strategy-book snapshot with exact fair value and executable offer kept separate, alternatives, probability/EV, stake/units/Kelly, classification, risk adjustments, and provenance. |
+| `recommendation_legs` | Immutable two/three-leg parlay component snapshots with exact event/market/side/point, marginal probability, price, EV, model version, and provenance. |
+| `bets` | Reconstructable official entry snapshot: recommendation kind/class/hash, canonical event/team/time, league/sport, market/period/side/point, book/price/stake, probability/version/decision metadata, approval/placement, closing, result, and realized P&L. |
+| `bet_approvals` | One approval audit record per official bet, associated with the authenticated owner and linked recommendation for Phase 6 approvals; legacy direct bets may omit that link. |
 | `bet_state_transitions` | Append-only placement and settlement state transitions with source and time. |
 | `settlements` | One auditable settlement per bet with outcome, net payout, source, closing metadata, and timestamp. Unique `bet_id` prevents a second settlement. |
 | `ledger_entries` | Immutable bankroll events with signed `NUMERIC(18,2)` amount, type, bet link, unique portfolio reference, optional idempotency key/metadata, and timestamp. |
@@ -92,7 +97,7 @@ The ledger is append-only under normal ORM operations; corrections require expli
 
 ### Transaction and concurrency boundaries
 
-Portfolio creation, initial funding, bet placement, settlement, their ledger entries, and an optional idempotency record commit atomically in repository-managed `Session.begin()` blocks. Any exception rolls the whole mutation back.
+Portfolio creation, initial funding, recommendation persistence, explicit recommendation approval, bet placement, settlement, their ledger entries, and an optional idempotency record commit atomically in repository-managed `Session.begin()` blocks. Approval locks the owner and recommendation, rechecks current cash/drawdown/exposure, marks the proposal approved, creates the official bet/approval/transition, and reserves stake in one transaction. Any exception rolls the whole mutation back.
 
 PostgreSQL locks the owner row before portfolio mutation, serializing changes across all that owner's portfolios, and additionally locks the target portfolio/bet where relevant. This conservative scope prevents concurrent overspending and double settlement. SQLite test transactions exercise atomicity and constraints but ignore `SELECT ... FOR UPDATE`; they do not prove PostgreSQL lock scheduling. Production concurrency validation should therefore include PostgreSQL integration tests before horizontal scaling.
 
@@ -124,7 +129,7 @@ Every observation retains its snapshot FK and raw payload indexes, making source
 
 ### Baseline pricing, qualification, and replay
 
-Phase 4 adds no tables. Pricing is a transient deterministic projection from immutable Phase 3 observations; an official future recommendation remains the persistence boundary. Every output includes source observation/snapshot IDs, best executable observation, calculation cutoff, and vig, consensus, pricing, and qualification versions.
+Phase 4 itself added no tables. Pricing remains a transient deterministic projection from immutable Phase 3 observations; Phase 6 now persists its output only when creating a decision/recommendation snapshot. Every pricing output includes source observation/snapshot IDs, best executable observation, calculation cutoff, and vig, consensus, pricing, and qualification versions.
 
 ```text
 time-bounded stored observations
@@ -181,7 +186,7 @@ Portfolio ledger -> risk budget / correlation controls -> stake/rank -> Top N
                                   bet ledger -> close -> settlement -> analytics/calibration
 ```
 
-Next phases add an early NCAAF proprietary-model track, recommendation/risk policy, and closing-label policy. Market consensus is the implemented baseline and benchmark, not a proprietary probability. The existing nullable bet metadata provides a durable destination without claiming those future engines exist.
+Phase 5 completed the NCAAF model research and retained market consensus after the locked holdout. Phase 6 adds the recommendation/risk/approval boundary shown above while keeping market consensus correctly labeled as a benchmark, not a proprietary probability. Future phases extend prospective monitoring, closing-label automation, and additional leagues without rewriting this boundary.
 
 ### Phase 5B-4 probability layer (implemented offline)
 
@@ -325,7 +330,7 @@ Every time-sensitive model input must carry `effective_at`, `observed_at`, `inge
 
 The proposed research/news pipeline stores cited structured facts through source discovery, entity matching, extraction, reliability tier, corroboration, and versioning. An LLM may assist those steps and explanation rendering; it cannot directly adjust probability. See `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_SOURCE_AUDIT.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
 
-Not implemented in production: proprietary-model inference, model blending, push-aware EV integration, Kelly sizing, bankroll-aware ranking/stakes, structured sports/news ingestion, portfolio simulation, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work. Offline proprietary point models and push-aware probability research now exist but do not feed FastAPI.
+Not implemented in production: proprietary-model inference, model blending, trusted parlay-price acquisition, same-game joint modeling, structured sports/news ingestion, autonomous settlement, autonomous sportsbook execution, or frontend work. Phase 6 now implements push-aware EV, conservative Kelly sizing, bankroll-aware ranking/stakes, recommendation persistence/approval, risk-policy simulation, and basic closing-probability CLV attribution for NCAAF paper operation. Offline proprietary models remain diagnostic/rejected and do not feed fair value.
 
 ### Phase 5B-9 locked-holdout layer (implemented offline)
 

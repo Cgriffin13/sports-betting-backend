@@ -1,6 +1,6 @@
 # Sports Betting Portfolio Backend
 
-Experimental FastAPI backend for a quantitative sports-wagering portfolio manager. It stores raw sportsbook snapshots and provider-neutral market observations, calculates a transparent market-consensus pricing/EV baseline, replays historical pricing offline, records explicitly approved paper bets, maintains an auditable bankroll ledger, settles results, and reports basic performance statistics. It does not place real-money wagers, produce proprietary model probabilities, or size stakes.
+Experimental FastAPI backend for a quantitative sports-wagering portfolio manager. It stores raw sportsbook snapshots and provider-neutral market observations, calculates a transparent market-consensus pricing/EV baseline, produces conservative approval-ready NCAAF paper recommendations and stakes, enforces portfolio risk, replays pricing/risk logic offline, maintains an auditable bankroll ledger, settles results, and reports segmented performance. It does not place real-money wagers or claim proprietary NCAAF predictive edge.
 
 NCAAF/College Football is the immediate league priority, followed by NFL and NBA. Python **3.12.x** is the supported development and CI runtime.
 
@@ -44,6 +44,13 @@ Activate `.venv`, copy `.env.example` to `.env`, and replace all placeholders. P
 | `PRICING_OUTLIER_THRESHOLD` | No | Absolute no-vig probability deviation from consensus that raises an outlier warning; defaults to `0.03`. |
 | `PRICING_MAXIMUM_DISPERSION` | No | Maximum eligible across-book no-vig probability range; defaults to `0.08`. |
 | `PRICING_SUPPORTED_BOOKS` | No | Comma-separated canonical book keys; defaults to `draftkings,fanduel,betmgm`. |
+| `PORTFOLIO_MINIMUM_EV` / `PORTFOLIO_MINIMUM_EDGE` | No | Phase 6 straight qualification defaults `0.015` / `0.0075`. |
+| `PORTFOLIO_KELLY_FRACTION` | No | Conservative Kelly multiplier; defaults to `0.25` and must remain below one. |
+| `PORTFOLIO_MAXIMUM_CORE_BET_FRACTION` / `PORTFOLIO_MAXIMUM_OPPORTUNISTIC_BET_FRACTION` | No | Per-position equity caps; defaults `0.02` / `0.01`. |
+| `PORTFOLIO_MAXIMUM_DAILY_FRACTION` | No | Combined slate exposure cap; defaults to `0.08`. |
+| `PORTFOLIO_UNIT_FRACTION` | No | Display-unit share of decision-time equity; defaults to `0.04`. |
+| `PORTFOLIO_REDUCED_RISK_DRAWDOWN` / `PORTFOLIO_PAUSED_DRAWDOWN` | No | State thresholds; defaults `0.10` / `0.20`. |
+| `PARLAY_ENABLED` / `PARLAY_MAXIMUM_FRACTION` | No | Optional verified-quote sleeve; defaults enabled and `0.005` (0.5% equity). |
 | `DATA_DIR` | No | Legacy JSON import location only; defaults to `data`. |
 
 Never commit `.env`, API keys, or database credentials.
@@ -116,12 +123,17 @@ python -m pytest
 | `POST /bets` | Record an approved paper bet and reserve stake transactionally. |
 | `POST /bet-result` | Settle a bet transactionally as win, loss, or push. |
 | `GET /portfolio/{portfolio_id}/stats` | Settled-bet and sport/market statistics plus ledger-derived balances. |
+| `POST /portfolio/{portfolio_id}/recommendations/analyze` | Persist NCAAF straight recommendations, stake/risk detail, PASS reasons, and optional verified-quote parlay result. |
+| `GET /portfolio/{portfolio_id}/recommendations` | Read proposed/approved/rejected strategy-book history. |
+| `POST /recommendations/{recommendation_id}/approve` | Explicit human approval; atomically creates the official paper bet and ledger reservation. |
+| `POST /recommendations/{recommendation_id}/reject` | Record a declined proposal without creating a bet. |
+| `GET /portfolio/{portfolio_id}/risk` | Cash/equity/drawdown and current exposure by game, team, market, and straight/parlay kind. |
 
 `payout` remains a compatibility field meaning **net profit/loss**, not gross returned cash. Settlement adds `stake + payout` to cash. Open stake reduces available cash but remains part of equity as reserved exposure.
 
 The flattened `/odds` game/offer shape remains compatible and now adds `snapshot_ids` plus `snapshot_id` for a single successful league fetch. Raw provider payloads never include locally supplied credentials, and persisted request parameters omit `apiKey`.
 
-`/opportunities` returns up to `top_n` qualified results per requested league; 10 is the default and zero is valid. It exposes each book's paired no-vig calculation, consensus dispersion/outliers, best executable price, implied probability, market-consensus fair probability, edge, EV, source observation/snapshot IDs, and policy versions. `proprietary_model_probability` is explicitly null and `final_fair_probability_source` is `market_consensus`. No stake is returned.
+`/opportunities` remains the pricing-only baseline and returns no stake. The Phase 6 recommendation route independently consumes the retained registry fair value and exact executable observation, then applies stricter qualification, quarter-Kelly risk budgeting, CORE/OPPORTUNISTIC classification, Top-N/PASS behavior, and human approval. See [`PORTFOLIO_RISK_AND_RECOMMENDATIONS.md`](docs/PORTFOLIO_RISK_AND_RECOMMENDATIONS.md).
 
 Opportunity reads preserve all raw snapshot history for audit while using a bounded scalar SQL projection of only the latest time-eligible market state. Raw snapshot JSON is never selected or deserialized by the pricing path. Historical cutoffs continue to require both observation time and ingestion time at or before `as_of`.
 
@@ -310,3 +322,12 @@ python -m app.cli.ncaaf_shadow summarize
 ```
 
 See [`NCAAF_MODEL_REGISTRY_AND_SHADOW.md`](docs/NCAAF_MODEL_REGISTRY_AND_SHADOW.md). Registry inspection requires no provider call; live market ingestion remains a separate explicit operation.
+
+Before using the Phase 6 recommendation endpoint in a new database, apply migrations and idempotently load the retained registry:
+
+```powershell
+python -m alembic upgrade head
+python -m app.cli.ncaaf_model_registry sync
+```
+
+The Parlay of the Day requires a trusted provider-neutral executable combined quote. The current public route does not accept caller-supplied parlay payouts, so a parlay PASS is expected until such an adapter exists.

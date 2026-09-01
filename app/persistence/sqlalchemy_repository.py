@@ -30,6 +30,7 @@ from app.domain.errors import (
 )
 from app.domain.identity import Principal
 from app.domain.money import money, money_json
+from app.domain.pricing import american_odds_to_implied_probability
 from app.time import utc_now
 
 
@@ -292,6 +293,71 @@ class SqlAlchemyPortfolioRepository:
                     }
                 )
 
+            attribution: dict[str, dict[str, dict[str, Any]]] = {}
+            dimensions = {
+                "sport": lambda bet: bet.sport,
+                "market": lambda bet: bet.market_type,
+                "sportsbook": lambda bet: bet.sportsbook,
+                "classification": lambda bet: bet.classification or "unclassified",
+                "bet_kind": lambda bet: bet.bet_kind,
+                "model_version": lambda bet: bet.model_version or "unversioned",
+                "edge_bucket": lambda bet: self._edge_bucket(bet.probability_edge),
+                "odds_bucket": lambda bet: self._odds_bucket(bet.entry_american_odds),
+                "confidence_bucket": lambda bet: str((bet.decision_metadata or {}).get("confidence", "unknown")),
+            }
+            for dimension, key_function in dimensions.items():
+                grouped: dict[str, dict[str, Any]] = {}
+                for bet in bets:
+                    key = key_function(bet)
+                    item = grouped.setdefault(
+                        key,
+                        {
+                            "bets": 0,
+                            "stake": Decimal("0"),
+                            "pnl": Decimal("0"),
+                            "wins": 0,
+                            "losses": 0,
+                            "pushes": 0,
+                        },
+                    )
+                    item["bets"] += 1
+                    item["stake"] += money(bet.stake)
+                    item["pnl"] += money(bet.realized_pnl or 0)
+                    item["wins"] += int(bet.result == "win")
+                    item["losses"] += int(bet.result == "loss")
+                    item["pushes"] += int(bet.result == "push")
+                attribution[dimension] = {
+                    key: {
+                        "bets": value["bets"],
+                        "wins": value["wins"],
+                        "losses": value["losses"],
+                        "pushes": value["pushes"],
+                        "stake": money_json(value["stake"]),
+                        "pnl": money_json(value["pnl"]),
+                        "roi": float(value["pnl"] / value["stake"]) if value["stake"] else 0.0,
+                        "hit_rate": (
+                            value["wins"] / (value["wins"] + value["losses"])
+                            if value["wins"] + value["losses"]
+                            else 0.0
+                        ),
+                    }
+                    for key, value in sorted(grouped.items())
+                }
+
+            running_equity = money(portfolio.starting_capital)
+            peak_equity = running_equity
+            maximum_drawdown = Decimal(0)
+            for bet in sorted(bets, key=lambda item: (item.settled_at or item.created_at, item.external_id)):
+                running_equity += money(bet.realized_pnl or 0)
+                peak_equity = max(peak_equity, running_equity)
+                if peak_equity:
+                    maximum_drawdown = max(maximum_drawdown, (peak_equity - running_equity) / peak_equity)
+            clv_values = [
+                bet.closing_probability - american_odds_to_implied_probability(bet.entry_american_odds)
+                for bet in bets
+                if bet.closing_probability is not None
+            ]
+
             return {
                 "portfolio_id": portfolio.external_id,
                 "starting_bankroll": money_json(portfolio.starting_capital),
@@ -313,6 +379,16 @@ class SqlAlchemyPortfolioRepository:
                     "roi": float(realized / total_staked) if total_staked else 0.0,
                 },
                 "by_bucket": serialized_buckets,
+                "attribution": attribution,
+                "risk_metrics": {
+                    "turnover": money_json(total_staked),
+                    "peak_equity": money_json(peak_equity),
+                    "maximum_drawdown": float(maximum_drawdown),
+                    "clv_observations": len(clv_values),
+                    "mean_clv_probability_points": (
+                        float(sum(clv_values, Decimal(0)) / len(clv_values)) if clv_values else None
+                    ),
+                },
             }
 
     def ensure_owner(self, principal: Principal) -> UUID:
@@ -548,3 +624,25 @@ class SqlAlchemyPortfolioRepository:
         if value.tzinfo is None:
             value = value.replace(tzinfo=UTC)
         return value.astimezone(UTC).isoformat()
+
+    @staticmethod
+    def _edge_bucket(value: Decimal | None) -> str:
+        if value is None:
+            return "unknown"
+        if value < Decimal("0.01"):
+            return "lt_1pct"
+        if value < Decimal("0.025"):
+            return "1_to_2_5pct"
+        if value < Decimal("0.05"):
+            return "2_5_to_5pct"
+        return "gte_5pct"
+
+    @staticmethod
+    def _odds_bucket(value: int) -> str:
+        if value <= -150:
+            return "heavy_favorite"
+        if value < 100:
+            return "favorite"
+        if value < 200:
+            return "plus_100_to_199"
+        return "plus_200_or_more"

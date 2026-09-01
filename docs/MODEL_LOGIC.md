@@ -14,15 +14,15 @@ This document defines shared terminology and intended mathematical semantics. It
 | Multi-book consensus | `unweighted-median-v1` implemented with dispersion/outlier reporting | Remain the baseline; evaluate evidence-backed weighting later |
 | Proprietary predictive model | Offline NCAAF candidates were evaluated and not promoted; none supplies current fair value | Continue prospective diagnostics and later independently validated league tracks |
 | Structured sports/news signals | Not implemented | Traceable league-specific inputs |
-| Edge calculation | Calculated by the Phase 4 pricing path; legacy bet fields remain caller-supplied | Persist an immutable value when an official recommendation exists |
-| EV calculation | Calculated for binary moneylines and half-point spreads/totals; legacy bet fields remain caller-supplied | Add explicit push-aware EV before qualifying integer lines |
-| Stake recommendation | Not implemented | Fractional-Kelly-informed, conservatively capped |
-| Portfolio exposure control | Not implemented | Required before recommendations become official |
-| Parlay recommendation | Not implemented | Optional later research sleeve after the straight-bet pipeline is proven |
+| Edge calculation | Calculated by Phase 4 and persisted by the Phase 6 recommendation path; legacy direct bet fields remain caller-supplied | Extend to additional leagues and market conventions |
+| EV calculation | Phase 4 binary EV and Phase 6 push-aware recommendation EV are implemented; legacy direct bet fields remain caller-supplied | Extend to additional leagues and market conventions |
+| Stake recommendation | Implemented for NCAAF v1 paper recommendations | Push-aware quarter-Kelly input with uncertainty/state adjustments and conservative caps |
+| Portfolio exposure control | Implemented for NCAAF paper recommendations and revalidated at approval | Validate and evolve versioned limits from prospective evidence |
+| Parlay recommendation | A conservative cross-event optimizer is implemented; without a trusted combined-price quote the result is PASS | Add trusted quote acquisition and independently validated correlation methods |
 | Closing line value | Data fields exist; calculation absent | Capture and calculate consistently |
 | Calibration/learning | Offline Phase 5 evidence, immutable registry, and 2026 shadow records implemented; no online mutation | Continue prospective, evidence-based, versioned evaluation |
 
-The current bet-entry `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields remain passive metadata supplied by the caller. Their names do not prove that the Phase 4 engine produced them. Phase 4 calculations are separate transient, reproducible outputs from Phase 3 observations; they are not silently copied into an official bet or recommendation record.
+The legacy direct bet-entry `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields remain passive metadata supplied by the caller. Their names do not prove that the Phase 4 engine produced them. The Phase 6 recommendation path is separate: it reconstructs pricing from stored observations, obtains retained fair value through the registry, freezes both inputs in a proposed recommendation, and copies that snapshot into an official bet only after explicit approval.
 
 The prototype supports both NCAAF and NCAAB as distinct canonical leagues. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
 
@@ -164,7 +164,7 @@ V2 should represent uncertainty through defensible evidence such as:
 - sample size and out-of-sample stability; and
 - known data-quality flags.
 
-The uncertainty representation and any adjustment to ranking or staking must be versioned and tested.
+The uncertainty representation and any adjustment to ranking or staking must be versioned and tested. Phase 6 implements `ncaaf-qualification-v1`, `fractional-kelly-risk-budget-v1`, and `cross-event-parlay-v1`; the exact current rules are documented in `PORTFOLIO_RISK_AND_RECOMMENDATIONS.md`.
 
 ## Initial V2 pricing philosophy
 
@@ -286,7 +286,7 @@ Parlays must use a separate, conservative portfolio risk budget and generally lo
 
 Track parlays separately from straight bets, including at minimum component legs and their decision-time probabilities, executable combined price, joint fair probability and method/version, expected value at entry, stake, realized P&L, ROI/yield, hit rate, and sample size. Capture closing observations so CLV and calibration can be defined and evaluated later where mathematically meaningful.
 
-Unresolved policies include permitted leg counts, minimum EV, independence tests, correlation thresholds/models, same-game eligibility, parlay Kelly multiplier, stake and sleeve exposure caps, league/day scope, executable-price freshness, CLV convention, and promotion/disablement evidence gates. Full Kelly remains prohibited.
+Phase 6 freezes initial paper defaults of two or three legs, 5% joint EV, 10%-Kelly, a 0.5% per-parlay cap, and a 1% daily sleeve. Only cross-event disjoint-team independence is supported. Same-game/shared-team/unknown-correlation combinations fail closed, and the public API cannot accept caller-manufactured combined prices. These are versioned experimental defaults, not permanent product decisions. CLV convention and sufficiently powered sleeve promotion/disablement gates remain unresolved. Full Kelly remains prohibited.
 
 ## Staking philosophy
 

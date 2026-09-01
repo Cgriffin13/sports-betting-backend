@@ -301,6 +301,9 @@ def _book_price(item: _PairedBookMarket, side: str) -> BookNoVigPrice:
         selection_observation_id=selected_observation.observation_id,
         opposing_observation_id=opposing_observation.observation_id,
         snapshot_ids=tuple(sorted({selected_observation.snapshot_id, opposing_observation.snapshot_id}, key=str)),
+        selection_american_odds=selected_observation.american_odds,
+        selection_point=selected_observation.point,
+        selection_observed_at=selected_observation.observed_at,
     )
 
 

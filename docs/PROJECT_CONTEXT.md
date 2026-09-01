@@ -90,6 +90,7 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 - an immutable NCAAF model/artifact registry reflecting the locked 2025 no-promotion result;
 - a retained market-consensus-only fair-value handoff for Phase 6; and
 - append-only prospective 2026 shadow predictions with separately attached outcomes.
+- a Phase 6 NCAAF paper recommendation layer with qualification/PASS decisions, conservative equity-scaled stakes, exposure and drawdown controls, explicit approval, immutable decision provenance, ledger-integrated straight/parlay accounting, and offline portfolio simulation.
 
 Phases 0–4 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, a transactional ledger, raw and normalized market history, a reproducible consensus/EV baseline and offline replay, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
@@ -197,12 +198,12 @@ The following are known current-state problems, not solved capabilities:
 - SQLite unit tests do not reproduce PostgreSQL row-lock scheduling; production concurrency still needs PostgreSQL integration/load validation;
 - operational PostgreSQL backup/restore drills remain future hardening work;
 - integer spreads/totals are preserved but conservatively excluded from Phase 4 EV qualification because push probability is not yet modeled;
-- no persisted official recommendation snapshot connecting a Phase 4 opportunity to later approval/placement;
-- no outcome backtest or portfolio simulation beyond deterministic pricing replay;
+- no trusted executable parlay-quote adapter or validated same-game joint-probability model; the implemented parlay sleeve therefore commonly returns PASS;
+- no full outcome/closing-price backtest beyond deterministic pricing replay and the Phase 6 risk-policy simulator;
 - no CLV calculation;
 - no structured sports/statistical or injury/news signal pipeline;
 - no proprietary sport-specific model promoted into the fair-value path; offline NCAAF candidates remain diagnostic/rejected;
-- no staking or portfolio-risk engine; and
+- Phase 6 risk defaults are initial paper policies and still require prospective empirical validation; and
 - no genuine model-learning or calibration loop.
 
 ## Success for V2

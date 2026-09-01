@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     event,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -25,6 +26,7 @@ from app.time import utc_now
 MONEY_TYPE = Numeric(18, 2)
 PROBABILITY_TYPE = Numeric(12, 10)
 POINT_TYPE = Numeric(10, 3)
+JSON_DOCUMENT = JSON().with_variant(JSONB(), "postgresql")
 
 
 class Owner(Base):
@@ -57,35 +59,63 @@ class Portfolio(Base):
 
 
 class Recommendation(Base):
-    """Future-compatible decision snapshot; no recommendation engine exists yet."""
+    """Immutable decision snapshot awaiting an explicit human disposition."""
 
     __tablename__ = "recommendations"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     external_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     portfolio_id: Mapped[UUID] = mapped_column(ForeignKey("portfolios.id", ondelete="RESTRICT"), index=True)
+    decision_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("recommendation_decision_runs.id", ondelete="RESTRICT"), index=True
+    )
+    canonical_event_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("canonical_events.id", ondelete="RESTRICT"), index=True
+    )
+    recommendation_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="straight")
     provider_event_id: Mapped[str | None] = mapped_column(String(200))
     league: Mapped[str] = mapped_column(String(64), nullable=False)
     market_type: Mapped[str] = mapped_column(String(64), nullable=False)
     period: Mapped[str] = mapped_column(String(32), nullable=False, default="full_game")
     selection: Mapped[str] = mapped_column(String(300), nullable=False)
+    selection_side: Mapped[str | None] = mapped_column(String(32))
+    home_team: Mapped[str | None] = mapped_column(String(200))
+    away_team: Mapped[str | None] = mapped_column(String(200))
+    scheduled_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     point: Mapped[Decimal | None] = mapped_column(POINT_TYPE)
     sportsbook: Mapped[str] = mapped_column(String(100), nullable=False)
     offered_american_odds: Mapped[int] = mapped_column(Integer, nullable=False)
+    best_executable_observation_id: Mapped[UUID | None] = mapped_column()
+    implied_probability: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
+    push_probability: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
     model_probability: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
     consensus_probability: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
     fair_probability: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
     probability_edge: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
     ev_per_unit: Mapped[Decimal | None] = mapped_column(PROBABILITY_TYPE)
     uncertainty_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    executable_alternatives: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON_DOCUMENT)
+    risk_adjustments: Mapped[list[str] | None] = mapped_column(JSON_DOCUMENT)
+    provenance: Mapped[dict[str, Any] | None] = mapped_column(JSON_DOCUMENT)
+    classification: Mapped[str | None] = mapped_column(String(32))
+    recommended_stake: Mapped[Decimal | None] = mapped_column(MONEY_TYPE)
+    bankroll_fraction: Mapped[Decimal | None] = mapped_column(Numeric(16, 12))
+    units: Mapped[Decimal | None] = mapped_column(Numeric(16, 8))
+    raw_kelly_fraction: Mapped[Decimal | None] = mapped_column(Numeric(16, 12))
+    adjusted_kelly_fraction: Mapped[Decimal | None] = mapped_column(Numeric(16, 12))
+    recommendation_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
     recommendation_version: Mapped[str | None] = mapped_column(String(100))
     model_version: Mapped[str | None] = mapped_column(String(100))
     policy_version: Mapped[str | None] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="proposed")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     __table_args__ = (
         CheckConstraint("status IN ('proposed', 'approved', 'rejected', 'expired')", name="recommendation_status"),
+        CheckConstraint("recommendation_kind IN ('straight', 'parlay')", name="recommendation_kind"),
+        CheckConstraint("classification IS NULL OR classification IN ('CORE', 'OPPORTUNISTIC')", name="recommendation_classification"),
     )
 
 
@@ -95,6 +125,14 @@ class Bet(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     external_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     portfolio_id: Mapped[UUID] = mapped_column(ForeignKey("portfolios.id", ondelete="RESTRICT"), index=True)
+    bet_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="straight")
+    classification: Mapped[str | None] = mapped_column(String(32))
+    recommendation_hash: Mapped[str | None] = mapped_column(String(64))
+    decision_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON_DOCUMENT)
+    canonical_event_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("canonical_events.id", ondelete="RESTRICT"), index=True
+    )
+    selection_side: Mapped[str | None] = mapped_column(String(32))
     provider_event_id: Mapped[str | None] = mapped_column(String(200))
     bet_date: Mapped[date] = mapped_column(Date, nullable=False)
     sport: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -132,6 +170,8 @@ class Bet(Base):
 
     __table_args__ = (
         CheckConstraint("stake > 0", name="bet_stake_positive"),
+        CheckConstraint("bet_kind IN ('straight', 'parlay')", name="bet_kind"),
+        CheckConstraint("classification IS NULL OR classification IN ('CORE', 'OPPORTUNISTIC')", name="bet_classification"),
         CheckConstraint("status IN ('open', 'settled', 'void')", name="bet_status"),
         CheckConstraint("result IS NULL OR result IN ('win', 'loss', 'push', 'void')", name="bet_result"),
     )

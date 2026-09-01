@@ -28,3 +28,11 @@ class BetNotFoundError(DomainError):
 
 class IdempotencyConflictError(DomainError):
     pass
+
+
+class RecommendationNotFoundError(DomainError):
+    pass
+
+
+class RecommendationStateError(DomainError):
+    pass
