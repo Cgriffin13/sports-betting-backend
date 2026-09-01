@@ -322,3 +322,9 @@ Every time-sensitive model input must carry `effective_at`, `observed_at`, `inge
 The proposed research/news pipeline stores cited structured facts through source discovery, entity matching, extraction, reliability tier, corroboration, and versioning. An LLM may assist those steps and explanation rendering; it cannot directly adjust probability. See `NCAAF_MODEL_RESEARCH.md`, `NCAAF_DATA_SOURCES.md`, `NCAAF_SOURCE_AUDIT.md`, `NCAAF_FEATURE_CATALOG.md`, `NCAAF_BACKTEST_DESIGN.md`, and `NCAAF_EXPERIMENT_PLAN.md`.
 
 Not implemented in production: proprietary-model inference, model blending, push-aware EV integration, Kelly sizing, bankroll-aware ranking/stakes, structured sports/news ingestion, portfolio simulation, CLV calculation, autonomous settlement, autonomous sportsbook execution, or frontend work. Offline proprietary point models and push-aware probability research now exist but do not feed FastAPI.
+
+### Phase 5B-9 locked-holdout layer (implemented offline)
+
+`app.research.ncaaf.holdout` owns the one-time access record, immutable normalized-manifest assembly, and frozen acquisition identifiers. `app.research.ncaaf.holdout_evaluation` verifies every Phase 5B-8 hash before reading holdout inputs, reconstructs the serialized Ridge preprocessing without invoking a fit API, validates it against saved 2024 predictions, applies the fixed blend, reconstructs the frozen chronological empirical probability state from pre-2025 OOF artifacts, and evaluates only the predeclared gates.
+
+2025 CFBD and historical-market artifacts remain ignored beneath `.ncaaf-data/holdout-2025/` and `.ncaaf-data/holdout-2025-market/`. Git contains only deterministic code and aggregate reports. The FastAPI package does not import the holdout path; production endpoints, database schema, Render dependencies, and Phase 4 pricing behavior remain unchanged.

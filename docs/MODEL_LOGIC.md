@@ -512,3 +512,7 @@ All pricing and portfolio functions should be pure and deterministically tested 
 
 Golden fixtures should preserve raw provider input, normalized records, and expected calculations without requiring live API access.
 
+
+## Locked 2025 result
+
+Phase 5B-9 opened the locked 2025 holdout once and applied the frozen Phase 5B-8 specification without refitting. On 758 identical total-market games, the blend failed the frozen MAE, multiclass Brier, and multiclass log-loss improvement gates. Market consensus therefore remains the total estimator as well as the margin/spread/moneyline benchmark. The holdout result cannot be used to tune the rejected blend or search for a replacement. See `NCAAF_2025_HOLDOUT_REPORT.md`.

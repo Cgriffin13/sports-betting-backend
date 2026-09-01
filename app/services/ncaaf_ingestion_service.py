@@ -50,7 +50,17 @@ class NcaafIngestionService:
             return _result(latest, cache_hit=True, provider_calls=0)
         response = self.client.get(endpoint, parameters)
         same = self.repository.same_manifest(request_hash, response.content_hash)
-        if same is not None and self.store.exists(same.artifact_uri):
+        if same is not None:
+            if not self.store.exists(same.artifact_uri):
+                restored = self.store.put(
+                    response.payload_bytes,
+                    endpoint=endpoint,
+                    season=_integer_or_none(parameters.get("year")),
+                    week=_integer_or_none(parameters.get("week")),
+                    digest=response.content_hash,
+                )
+                if restored.uri != same.artifact_uri:
+                    raise RuntimeError("immutable artifact path does not match the existing manifest")
             same_records = response.records if isinstance(response.records, list) else [response.records]
             self._normalize(same, same_records, parameters)
             return _result(same, cache_hit=True, provider_calls=1)

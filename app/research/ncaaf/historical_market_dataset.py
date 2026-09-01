@@ -194,11 +194,27 @@ class HistoricalMarketCache:
         return cached
 
 
-def load_market_games(root: Path, start_season: int = 2020, end_season: int = 2024) -> tuple[MarketGame, ...]:
-    if start_season < 2020 or end_season > 2024 or start_season > end_season:
-        raise ValueError("historical market development seasons must remain within 2020-2024")
-    pointer = json.loads((root / "normalized" / "current.json").read_text(encoding="utf-8"))
-    manifest = json.loads((root / pointer["uri"]).read_text(encoding="utf-8"))
+def load_market_games(
+    root: Path,
+    start_season: int = 2020,
+    end_season: int = 2024,
+    *,
+    allow_holdout_access: bool = False,
+    normalized_manifest_id: str | None = None,
+) -> tuple[MarketGame, ...]:
+    maximum = 2025 if allow_holdout_access else 2024
+    if start_season < 2020 or end_season > maximum or start_season > end_season:
+        raise ValueError(f"historical market seasons must remain within 2020-{maximum}")
+    if end_season >= 2025:
+        from app.research.ncaaf.holdout import load_unlock_record
+
+        load_unlock_record(root)
+    if normalized_manifest_id is None:
+        pointer = json.loads((root / "normalized" / "current.json").read_text(encoding="utf-8"))
+        manifest_path = root / pointer["uri"]
+    else:
+        manifest_path = root / "normalized" / "manifests" / f"{normalized_manifest_id}.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     columns = [field.name for field in MarketGame.__dataclass_fields__.values()]
     games: list[MarketGame] = []
     for season in range(start_season, end_season + 1):
@@ -207,7 +223,7 @@ def load_market_games(root: Path, start_season: int = 2020, end_season: int = 20
         )
         rows = pq.ParquetFile(root / artifact["uri"]).read(columns=columns).to_pylist()
         games.extend(MarketGame(**row) for row in rows if row["model_eligible"])
-    if any(game.season >= 2025 for game in games):
+    if not allow_holdout_access and any(game.season >= 2025 for game in games):
         raise ValueError("locked 2025 holdout entered historical market plan")
     return tuple(sorted(games, key=lambda item: (item.kickoff, item.provider_game_id)))
 
@@ -411,6 +427,7 @@ def build_historical_market_dataset(
     responses: Mapping[str, CachedResponse],
     *,
     acquisition_plan_hashes: Sequence[str],
+    holdout: bool = False,
 ) -> dict[str, Any]:
     by_id = {game.provider_game_id: game for game in games}
     observations_by_season: dict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -461,12 +478,14 @@ def build_historical_market_dataset(
     store = ResearchArtifactStore(root)
     artifacts: list[dict[str, Any]] = []
     safe_sources = list(source_manifests.values())
-    for season in SEASONS:
+    seasons = (2025,) if holdout else SEASONS
+    namespace = "holdout-2025-market" if holdout else "historical-market"
+    for season in seasons:
         observation_table = pa.Table.from_pylist(observations_by_season[season], schema=OBSERVATION_SCHEMA)
         group_table = pa.Table.from_pylist(groups_by_season[season], schema=GROUP_SCHEMA)
         observations = store.write_parquet(
             observation_table,
-            namespace="historical-market",
+            namespace=namespace,
             dataset="observations",
             season=season,
             schema_version=SCHEMA_VERSION,
@@ -476,7 +495,7 @@ def build_historical_market_dataset(
         )
         groups = store.write_parquet(
             group_table,
-            namespace="historical-market",
+            namespace=namespace,
             dataset="groups",
             season=season,
             schema_version=SCHEMA_VERSION,
@@ -486,18 +505,24 @@ def build_historical_market_dataset(
         )
         artifacts.extend((artifact_dict(observations), artifact_dict(groups)))
     configuration = {
-        "dataset_version": DATASET_VERSION,
+        "dataset_version": f"{DATASET_VERSION}-holdout-2025" if holdout else DATASET_VERSION,
         "schema_version": SCHEMA_VERSION,
         "transformation_version": TRANSFORMATION_VERSION,
         "availability_policy_version": AVAILABILITY_POLICY_VERSION,
-        "season_range": [2020, 2024],
-        "approved_horizons": ["morning_first_kickoff_minus_3h", "60_minutes_before_kickoff", "near_close_5_minutes"],
-        "approved_markets_by_horizon": {
+        "season_range": [2025, 2025] if holdout else [2020, 2024],
+        "approved_horizons": ["morning_first_kickoff_minus_3h"]
+        if holdout
+        else ["morning_first_kickoff_minus_3h", "60_minutes_before_kickoff", "near_close_5_minutes"],
+        "approved_markets_by_horizon": {"morning_first_kickoff_minus_3h": list(FULL_MARKETS)}
+        if holdout
+        else {
             "morning_first_kickoff_minus_3h": list(FULL_MARKETS),
             "60_minutes_before_kickoff": list(FULL_MARKETS),
             "near_close_5_minutes": list(CLOSE_MARKETS),
         },
-        "evidence_role_by_horizon": {
+        "evidence_role_by_horizon": {"morning_first_kickoff_minus_3h": "locked_holdout"}
+        if holdout
+        else {
             "morning_first_kickoff_minus_3h": "primary_complete_cohort",
             "60_minutes_before_kickoff": "secondary_robustness_sample",
             "near_close_5_minutes": "secondary_robustness_sample",
@@ -516,8 +541,8 @@ def build_historical_market_dataset(
         "schema_hash": hashlib.sha256(OBSERVATION_SCHEMA.serialize().to_pybytes()).hexdigest(),
     }
     result["dataset_hash"] = dataset_hash(artifacts, configuration)
-    manifest_id, _ = store.write_manifest("historical-market", result)
-    return store.load_manifest("historical-market", manifest_id)
+    manifest_id, _ = store.write_manifest(namespace, result)
+    return store.load_manifest(namespace, manifest_id)
 
 
 def validate_historical_market_dataset(root: Path, manifest: Mapping[str, Any]) -> list[str]:

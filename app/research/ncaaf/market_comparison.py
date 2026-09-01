@@ -116,10 +116,12 @@ def _select_exact_line(pairs: Sequence[dict[str, Any]]) -> tuple[float | None, l
     return selected, [pair for pair in pairs if math.isclose(float(pair["line"]), selected, abs_tol=1e-9)]
 
 
-def build_consensus_rows(observations: Iterable[Mapping[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def build_consensus_rows(
+    observations: Iterable[Mapping[str, Any]], *, allow_holdout_access: bool = False
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     groups: dict[tuple[str, str, str], list[Mapping[str, Any]]] = defaultdict(list)
     for row in observations:
-        if int(row["season"]) >= 2025:
+        if int(row["season"]) >= 2025 and not allow_holdout_access:
             raise ValueError("locked 2025 holdout entered market consensus")
         if row.get("supported_sportsbook"):
             groups[(str(row["canonical_event_id"]), str(row["horizon"]), str(row["market_type"]))].append(row)

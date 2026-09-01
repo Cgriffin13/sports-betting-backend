@@ -286,4 +286,15 @@ python -m app.cli.freeze_ncaaf_finalists validate --require-local-artifacts
 
 The committed manifest is reproducible without local binary artifacts; `--require-local-artifacts` additionally checks ignored Phase 5B-7 source hashes. See [`NCAAF_FINALIST_FREEZE.md`](docs/NCAAF_FINALIST_FREEZE.md).
 
+Phase 5B-9 executed the single locked 2025 holdout. The one-time `unlock` command is intentionally non-repeatable; ordinary development paths still reject 2025. The remaining commands validate or deterministically reproduce the already-authorized holdout from ignored immutable inputs:
+
+```powershell
+python -m app.cli.ncaaf_holdout verify-unlock
+python -m app.cli.ncaaf_holdout build-market --normalized-manifest MANIFEST_ID
+python -m app.cli.ncaaf_holdout evaluate --feature-manifest MANIFEST_ID --market-manifest MANIFEST_ID
+python -m app.cli.ncaaf_holdout validate-evaluation
+```
+
+The frozen total blend failed its predeclared MAE, Brier, and log-loss improvement gates, so market consensus remains the total fallback and the already-frozen margin/spread/moneyline benchmark. See [`NCAAF_2025_HOLDOUT_REPORT.md`](docs/NCAAF_2025_HOLDOUT_REPORT.md).
+
 Generated research artifacts remain under ignored `.ncaaf-data/`; only aggregate, non-secret reports are committed. See [`NCAAF_FEATURE_DATASET_REPORT.md`](docs/NCAAF_FEATURE_DATASET_REPORT.md) and [`NCAAF_PBP_RECONCILIATION.md`](docs/NCAAF_PBP_RECONCILIATION.md).
