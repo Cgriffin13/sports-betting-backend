@@ -12,7 +12,7 @@ This document defines shared terminology and intended mathematical semantics. It
 | Implied-probability calculation | Implemented with Decimal for Phase 4 baseline pricing | Retain and extend to additional market conventions |
 | Vig removal | `proportional-v1` implemented for complete two-outcome book markets | Evaluate alternatives without rewriting historical outputs |
 | Multi-book consensus | `unweighted-median-v1` implemented with dispersion/outlier reporting | Remain the baseline; evaluate evidence-backed weighting later |
-| Proprietary predictive model | Not implemented | NCAAF track after baseline engine, then NFL/NBA |
+| Proprietary predictive model | Offline NCAAF candidates were evaluated and not promoted; none supplies current fair value | Continue prospective diagnostics and later independently validated league tracks |
 | Structured sports/news signals | Not implemented | Traceable league-specific inputs |
 | Edge calculation | Calculated by the Phase 4 pricing path; legacy bet fields remain caller-supplied | Persist an immutable value when an official recommendation exists |
 | EV calculation | Calculated for binary moneylines and half-point spreads/totals; legacy bet fields remain caller-supplied | Add explicit push-aware EV before qualifying integer lines |
@@ -20,7 +20,7 @@ This document defines shared terminology and intended mathematical semantics. It
 | Portfolio exposure control | Not implemented | Required before recommendations become official |
 | Parlay recommendation | Not implemented | Optional later research sleeve after the straight-bet pipeline is proven |
 | Closing line value | Data fields exist; calculation absent | Capture and calculate consistently |
-| Calibration/learning | Not implemented | Offline, evidence-based, and versioned |
+| Calibration/learning | Offline Phase 5 evidence, immutable registry, and 2026 shadow records implemented; no online mutation | Continue prospective, evidence-based, versioned evaluation |
 
 The current bet-entry `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields remain passive metadata supplied by the caller. Their names do not prove that the Phase 4 engine produced them. Phase 4 calculations are separate transient, reproducible outputs from Phase 3 observations; they are not silently copied into an official bet or recommendation record.
 
@@ -516,3 +516,13 @@ Golden fixtures should preserve raw provider input, normalized records, and expe
 ## Locked 2025 result
 
 Phase 5B-9 opened the locked 2025 holdout once and applied the frozen Phase 5B-8 specification without refitting. On 758 identical total-market games, the blend failed the frozen MAE, multiclass Brier, and multiclass log-loss improvement gates. Market consensus therefore remains the total estimator as well as the margin/spread/moneyline benchmark. The holdout result cannot be used to tune the rejected blend or search for a replacement. See `NCAAF_2025_HOLDOUT_REPORT.md`.
+
+## Registered NCAAF v1 fair value and shadow semantics
+
+Phase 5B-10 registers market consensus as `retained_benchmark` for NCAAF margin, moneyline, spread, and total. Football power and Ridge remain `diagnostic`; the constrained market/Ridge total blend is `rejected`. Registry identities and versions are immutable, so a later lifecycle decision creates a new version rather than rewriting historical status.
+
+The Phase 6 handoff is `ncaaf-fair-value-v1`: a retained benchmark emits canonical event/market/side, fair probability and line, explicit push probability where applicable, source as-of, contributing books, dispersion, quality, policy versions, and provenance. It emits no executable sportsbook price. Phase 6 must obtain the best executable offer separately before calculating edge or EV.
+
+For retained consensus, half-point spread/total lines may carry zero push probability. An integer line cannot silently use zero; it requires an explicit validated push estimate. No rejected or diagnostic football probability may substitute into the fair-value contract.
+
+Prospective shadow predictions beginning in 2026 are immutable pregame records at `morning_first_kickoff_minus_3h`. A changed market creates a new prediction version. Final score/outcome and evaluation metrics are appended separately and cannot alter the decision-time fair-value payload. Shadow evaluation is distinct from bankroll/bet settlement and does not authorize recommendations or stakes.

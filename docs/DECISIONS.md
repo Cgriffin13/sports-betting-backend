@@ -1208,3 +1208,21 @@ Consequences:
 - The one-time result is immutable and must not trigger 2025-based retuning, feature changes, calibration changes, or a replacement candidate search.
 - Phase 5B-10 may register the retained market benchmarks for prospective shadow operations, but this result does not authorize production betting, EV qualification, staking, or recommendations.
 - Ordinary development commands continue to reject 2025; reproduction requires the audited unlock record and exact immutable inputs.
+
+## ADR-088 — Register market consensus as NCAAF v1 and keep shadow history append-only
+
+- Date: 2026-08-31
+- Status: Accepted and implemented for Phase 5B-10
+
+The Phase 5B-9 holdout result is final for NCAAF v1. Market consensus is registered as `retained_benchmark` for margin, moneyline, spread, and total. Football power and Ridge artifacts remain diagnostic; the constrained market/Ridge total blend remains rejected. No proprietary model may enter the fair-value interface by substitution or relabeling.
+
+Model and artifact registry identities are immutable by `ID + version`; changed content or lifecycle requires a new version. Prospective shadow predictions preserve the exact producing registry version and decision-time fair-value payload. Market movement appends another prediction rather than overwriting the first. Final outcomes are separate immutable records and do not mutate pregame history.
+
+Consequences:
+
+- Phase 6 receives retained fair probability/line, model status/version, uncertainty/quality, and provenance through `ncaaf-fair-value-v1`; it obtains executable sportsbook price separately.
+- Registry metadata and shadow history live in PostgreSQL; large research/model artifacts remain content-addressed files referenced by hash and URI.
+- The first prospective workflow uses `morning_first_kickoff_minus_3h`, requires at least two complete supported books, and records source as-of/book/dispersion evidence.
+- Diagnostic/rejected models cannot provide retained fair value. Integer lines cannot silently assume zero push probability.
+- Shadow outcome evaluation is separate from bet placement, bankroll ledger, EV, staking, and recommendations.
+- Phase 5 is complete with an honest retained market benchmark. This is neither proprietary edge nor production-betting approval.

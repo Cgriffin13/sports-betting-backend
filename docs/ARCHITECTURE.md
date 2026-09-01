@@ -62,6 +62,10 @@ private client -- X-API-Key / request ID --> FastAPI routers
 | `sportsbooks` | Canonical book key, display name, active flag, and timestamps. |
 | `provider_sportsbooks` | Provider-specific book identifier/display mapped separately to a canonical sportsbook. |
 | `market_observations` | Snapshot-linked exact price: event, book, canonical market, period, side, exact point identity, American odds, source path, observation/ingestion times, freshness, and match review state. |
+| `model_registry_entries` | Immutable model/benchmark identity, lifecycle status, source/run hashes, versions, holdout/promotion decision, artifact references, and deterministic entry hash. |
+| `artifact_registry_entries` | Immutable governance, model, probability, and holdout artifact metadata with exact content/source hashes and locations. |
+| `shadow_predictions` | Append-only prospective event/market/side fair-value payload with producing registry version, frozen morning horizon, source books/timestamps, quality, provenance, and prediction hash. |
+| `shadow_prediction_outcomes` | Separate one-per-prediction final score, settlement/evaluation record and outcome hash; it never mutates the pregame prediction. |
 
 Foreign keys use restrictive deletion because financial history must not cascade away. Check constraints bound statuses, results, entry types, and positive stakes. UUIDs are internal identities; existing external IDs preserve API compatibility.
 
@@ -328,3 +332,19 @@ Not implemented in production: proprietary-model inference, model blending, push
 `app.research.ncaaf.holdout` owns the one-time access record, immutable normalized-manifest assembly, and frozen acquisition identifiers. `app.research.ncaaf.holdout_evaluation` verifies every Phase 5B-8 hash before reading holdout inputs, reconstructs the serialized Ridge preprocessing without invoking a fit API, validates it against saved 2024 predictions, applies the fixed blend, reconstructs the frozen chronological empirical probability state from pre-2025 OOF artifacts, and evaluates only the predeclared gates.
 
 2025 CFBD and historical-market artifacts remain ignored beneath `.ncaaf-data/holdout-2025/` and `.ncaaf-data/holdout-2025-market/`. Git contains only deterministic code and aggregate reports. The FastAPI package does not import the holdout path; production endpoints, database schema, Render dependencies, and Phase 4 pricing behavior remain unchanged.
+
+### Phase 5B-10 registry and prospective-shadow layer (implemented)
+
+`app.domain.model_registry` defines immutable registration, fair-value, prediction, and outcome contracts. `app.research.ncaaf.model_registry` deterministically registers the exact Phase 5B-8/9 hashes and dispositions. `SqlAlchemyModelRegistryRepository` persists registry/artifact metadata and append-only shadow history; `FairValueService` fails closed unless the requested row is the retained market-consensus benchmark.
+
+The boundary is deliberately split:
+
+```text
+registered retained benchmark + exact consensus state -> fair-value quote
+Phase 4 market observation/pricing path              -> executable offer
+Phase 6                                               -> edge / EV / risk / approval
+```
+
+`ShadowPredictionService` plans the UTC slate cutoff at first kickoff minus three hours, appends immutable pregame states, and attaches outcomes in a separate table. It does not schedule itself, call providers implicitly, update the bankroll, or create recommendations. New market state creates a new hash/row; registry updates do not alter the version stored on an older prediction.
+
+The migration is additive and PostgreSQL-compatible. FastAPI routes and `uvicorn main:app` remain unchanged. Registry/shadow CLIs explicitly use `DATABASE_URL`; provider access is a separate explicit operation.

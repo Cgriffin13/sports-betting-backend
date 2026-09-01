@@ -86,7 +86,10 @@ The current implementation is a modular FastAPI prototype under `app/`, with a s
 - Decimal/NUMERIC money, transactional bet placement/settlement, persistent idempotency, and API-key authentication;
 - manual bet recording and settlement;
 - bankroll accounting; and
-- basic ROI and hit-rate summaries overall and by sport/market bucket.
+- basic ROI and hit-rate summaries overall and by sport/market bucket;
+- an immutable NCAAF model/artifact registry reflecting the locked 2025 no-promotion result;
+- a retained market-consensus-only fair-value handoff for Phase 6; and
+- append-only prospective 2026 shadow predictions with separately attached outcomes.
 
 Phases 0–4 establish a Python 3.12 development baseline, modular boundaries, PostgreSQL/SQLAlchemy/Alembic persistence, a transactional ledger, raw and normalized market history, a reproducible consensus/EV baseline and offline replay, deterministic tests with mocked provider calls, lint/type/test CI, sanitized provider errors, finite/range validation, ownership, and an explicit legacy JSON import path. The `/odds` date is a UTC filter over current/upcoming provider results; it is not a historical-odds query.
 
@@ -198,7 +201,7 @@ The following are known current-state problems, not solved capabilities:
 - no outcome backtest or portfolio simulation beyond deterministic pricing replay;
 - no CLV calculation;
 - no structured sports/statistical or injury/news signal pipeline;
-- no proprietary sport-specific predictive models;
+- no proprietary sport-specific model promoted into the fair-value path; offline NCAAF candidates remain diagnostic/rejected;
 - no staking or portfolio-risk engine; and
 - no genuine model-learning or calibration loop.
 
@@ -215,3 +218,5 @@ V2 should first become a trustworthy paper-trading system: reproducible prices, 
 > Phase 5B-7C now provides the deterministic offline comparison layer: exact-line book pairing, versioned no-vig/median consensus, selected same-horizon OOF joins, explicit push labels, residual targets, and common model-ready cohorts. It performs no provider calls and fits no market-aware model. Near-close remains consensus-only because no same-horizon football OOF prediction exists.
 
 > Full Phase 5B-7 completed the morning market-aware tournament. Market consensus remained the clear margin and moneyline benchmark; standalone football, residual, and direct market-feature candidates did not add stable market-relative value. A constrained market/Ridge total blend produced a statistically detectable but practically tiny improvement and advances only as a narrow Phase 5B-8 challenger. Nothing is promoted or connected to production, and 2025 remains sealed.
+
+> Phase 5B-9 opened 2025 once under the frozen protocol. The total blend failed its practical/proper-score gates, so market consensus remains the NCAAF estimator for every initial market. Phase 5B-10 records that negative result in an immutable registry and provides prospective 2026 shadow history. This completes Phase 5 without claiming proprietary edge or production-betting readiness.
