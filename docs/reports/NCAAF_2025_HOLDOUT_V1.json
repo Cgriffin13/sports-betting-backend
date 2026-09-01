@@ -1,0 +1,338 @@
+{
+  "artifact_hashes": {
+    "total_predictions_content": "11166d8ed4ac3066ce1a6a6393f476dac440f42bdb0c4f0f5417327f840a8633",
+    "total_predictions_file": "196cfd99d4e570cdc69222957e5365ea108f2da0a8ac55e27bc3b8ef27a02fe8",
+    "total_probabilities_content": "91fb8b2797a315fd0b4ed62fbbe6f276f79fa19d529063c9852b567ff8d7dfd0",
+    "total_probabilities_file": "8d4983563138af228b821364c6f26b009fd741802301632880af1affa29d4c48"
+  },
+  "blend_weight": 0.17854145992095644,
+  "candidate_allowlist": [
+    "margin_football_power_diagnostic",
+    "margin_market_consensus",
+    "total_market_consensus",
+    "total_market_ridge_blend"
+  ],
+  "code_commit": "dc8b47752dd7a151c0dac9b172a6210877b1d982",
+  "coverage": {
+    "consensus_exclusions": 42,
+    "eligible_fbs_vs_fbs": 808,
+    "football_features": 808,
+    "market_consensus_games_by_market": {
+      "h2h": 724,
+      "spreads": 719,
+      "totals": 758
+    },
+    "total_common_cohort": 758
+  },
+  "decision": "fallback_to_market_consensus",
+  "fallback": "market_consensus",
+  "first_access": {
+    "code_commit": "559e66bbd854e0a03a6cce28410056742d318151",
+    "command_id": "phase-5b-9-first-and-only-2025",
+    "first_access": true,
+    "freeze_hash": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+    "freeze_verified_before_unlock": true,
+    "frozen_artifact_hashes": {
+      "baseline_run": "036989b3c5b65226f93f72164e73ec4070b14ca7105d9b55c9e86af9c9778cfb",
+      "feature_dataset": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+      "feature_set": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+      "football_power_predictions": "acf300df3e7578039ef26a3da3e9939257095f8100e38cff3776c5a8a10e7e55",
+      "historical_market_dataset": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+      "market_aware_dataset": "6305a430fd43d74feaf2dad8d326c809d0c2758521db60e5aaa8cc5502e72fad",
+      "market_aware_manifest_id": "838540d121117e0e9564f19256b9f23e30d618e6374b0235ff115b535c8443ae",
+      "market_aware_points": "71c33513361d1065eb9e45fe62fd97759f4350ce0e0a630bf9d0c9b7e22aff03",
+      "market_aware_probabilities": "707d836dffd7c689a341efc4720268a4ddcc202f8daccabfa704d76160e9d9f9",
+      "market_aware_summary": "8cf4d84e08795eaf5367ce8b36fc9f27ed29f9bce2f9773fcb4daea9d81edf6a",
+      "market_comparison_dataset": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc",
+      "total_ridge_2024_fold_artifact": "d41797ed69ea699038f4ba530962611c24799db9ba930daf22c95decff32c167"
+    },
+    "holdout_season": 2025,
+    "purpose": "Phase 5B-9 locked evaluation only",
+    "unlock_id": "a02f96a85f54e90ca5917a705ddc87410d17aa0bbab3528988a93b907bdb7c28",
+    "unlock_version": "ncaaf-2025-one-time-holdout-unlock-v1",
+    "unlocked_at": "2026-08-31T23:56:44.749145+00:00"
+  },
+  "freeze_hash": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+  "freeze_verification": {
+    "errors": [],
+    "ridge_2024_replay_max_abs_difference": 0.0,
+    "valid": true
+  },
+  "gates": {
+    "brier_improvement": {
+      "status": "FAIL",
+      "threshold": ">= 0.001",
+      "value": 2.8622850092308028e-06
+    },
+    "log_loss_improvement": {
+      "status": "FAIL",
+      "threshold": ">= 0.001",
+      "value": -1.5487415330195375e-06
+    },
+    "mae_improvement": {
+      "status": "FAIL",
+      "threshold": ">= 0.10",
+      "value": -0.005562110397532294
+    },
+    "maximum_segment_degradation": {
+      "status": "PASS",
+      "threshold": "MAE <= 0.50 and Brier <= 0.01",
+      "value": {
+        "brier": 0.004828759025224616,
+        "mae": 0.08773719480703868
+      }
+    },
+    "minimum_500_games": {
+      "status": "PASS",
+      "threshold": ">= 500",
+      "value": 758
+    },
+    "push_probabilities": {
+      "status": "PASS",
+      "threshold": "preserved and normalized",
+      "value": true
+    },
+    "rmse_degradation": {
+      "status": "PASS",
+      "threshold": "<= 0.10",
+      "value": 0.032376775913594
+    },
+    "segment_count_over_0_25": {
+      "status": "PASS",
+      "threshold": "<= 1",
+      "value": 0
+    },
+    "week_block_upper": {
+      "status": "PASS",
+      "threshold": "<= +0.05",
+      "value": 0.048133809302871144
+    },
+    "weighted_calibration": {
+      "status": "PASS",
+      "threshold": "<= 0.05",
+      "value": 0.012443271131076211
+    }
+  },
+  "holdout_run_hash": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256",
+  "holdout_version": "ncaaf-2025-locked-holdout-v1",
+  "margin_benchmark": {
+    "football_power": "diagnostic_only",
+    "football_power_diagnostic_metrics": {
+      "bias": 1.9664130885876805,
+      "mae": 13.035473510671096,
+      "rmse": 16.607333466106457,
+      "rows": 719
+    },
+    "market_spread_point_metrics": {
+      "bias": 0.6397774687065368,
+      "mae": 11.791376912378302,
+      "rmse": 14.935070412745226,
+      "rows": 719
+    },
+    "moneyline_brier": 0.1790510607285388,
+    "moneyline_games": 724,
+    "moneyline_log_loss": 0.5320297879800795,
+    "primary": "market_consensus",
+    "spread_common_games": 719
+  },
+  "probability_version": "chronological-empirical-market-aware-v1",
+  "provider": {
+    "cfbd_calls": 37,
+    "odds_api_calls": 79,
+    "odds_api_credits": 2370,
+    "odds_api_remaining": 17630
+  },
+  "push_audit": {
+    "explicit_probability_field": true,
+    "integer_line_games": 0,
+    "nonzero_push_probability_rows": 0,
+    "probabilities_normalized": true
+  },
+  "push_version": "integer-lattice-settlement-v1",
+  "segments": [
+    {
+      "blend_brier": 0.4981128243641547,
+      "blend_mae": 13.754153097949033,
+      "brier_degradation": -0.0022787127832527565,
+      "family": "season_timing",
+      "gate_status": "EVALUATED",
+      "mae_degradation": -0.04528193029955574,
+      "market_brier": 0.5003915371474075,
+      "market_mae": 13.799435028248588,
+      "rows": 177,
+      "segment": "weeks_0_3"
+    },
+    {
+      "blend_brier": 0.5010010243794677,
+      "blend_mae": 12.157884649473926,
+      "brier_degradation": 0.0006904691060217738,
+      "family": "season_timing",
+      "gate_status": "EVALUATED",
+      "mae_degradation": 0.021051603002325336,
+      "market_brier": 0.5003105552734459,
+      "market_mae": 12.136833046471601,
+      "rows": 581,
+      "segment": "weeks_4_plus"
+    },
+    {
+      "blend_brier": 0.5043278961302466,
+      "blend_mae": 15.763813319621473,
+      "brier_degradation": 0.00590018108182816,
+      "family": "market_dispersion",
+      "gate_status": "UNEVALUABLE",
+      "mae_degradation": 0.04159109739925171,
+      "market_brier": 0.4984277150484185,
+      "market_mae": 15.722222222222221,
+      "rows": 18,
+      "segment": "at_or_above_0.02"
+    },
+    {
+      "blend_brier": 0.5002292742521374,
+      "blend_mae": 12.451983026929923,
+      "brier_degradation": -0.00014644982636480286,
+      "family": "market_dispersion",
+      "gate_status": "EVALUATED",
+      "mae_degradation": 0.00468572963262659,
+      "market_brier": 0.5003757240785022,
+      "market_mae": 12.447297297297297,
+      "rows": 740,
+      "segment": "below_0.02"
+    },
+    {
+      "blend_brier": 0.4993989682460612,
+      "blend_mae": 12.482588331845943,
+      "brier_degradation": -0.0011609252444858553,
+      "family": "model_market_disagreement_points",
+      "gate_status": "EVALUATED",
+      "mae_degradation": -0.005035430530295315,
+      "market_brier": 0.5005598934905471,
+      "market_mae": 12.487623762376238,
+      "rows": 404,
+      "segment": "0_to_3"
+    },
+    {
+      "blend_brier": 0.4990739457801088,
+      "blend_mae": 12.682064364793058,
+      "brier_degradation": -0.0011261064109338026,
+      "family": "model_market_disagreement_points",
+      "gate_status": "EVALUATED",
+      "mae_degradation": -0.018627676729433773,
+      "market_brier": 0.5002000521910426,
+      "market_mae": 12.700692041522492,
+      "rows": 289,
+      "segment": "3_to_7"
+    },
+    {
+      "blend_brier": 0.5116617165394755,
+      "blend_mae": 12.155904495236543,
+      "brier_degradation": 0.012189060607616153,
+      "family": "model_market_disagreement_points",
+      "gate_status": "UNEVALUABLE",
+      "mae_degradation": 0.17898141831346592,
+      "market_brier": 0.4994726559318593,
+      "market_mae": 11.976923076923077,
+      "rows": 65,
+      "segment": "7_plus"
+    },
+    {
+      "blend_brier": 0.5010154436670243,
+      "blend_mae": 12.708217804066573,
+      "brier_degradation": 0.0007019176595493004,
+      "family": "total_line",
+      "gate_status": "EVALUATED",
+      "mae_degradation": 0.02039171711005139,
+      "market_brier": 0.500313526007475,
+      "market_mae": 12.687826086956521,
+      "rows": 575,
+      "segment": "45_to_60"
+    },
+    {
+      "blend_brier": 0.4960202259841046,
+      "blend_mae": 12.732699256481403,
+      "brier_degradation": -0.004325262920981732,
+      "family": "total_line",
+      "gate_status": "EVALUATED",
+      "mae_degradation": -0.10063407685193049,
+      "market_brier": 0.5003454889050863,
+      "market_mae": 12.833333333333334,
+      "rows": 90,
+      "segment": "above_60"
+    },
+    {
+      "blend_brier": 0.500235103546427,
+      "blend_mae": 11.237074293115315,
+      "brier_degradation": -0.0001774043375212253,
+      "family": "total_line",
+      "gate_status": "EVALUATED",
+      "mae_degradation": 0.016644185588432947,
+      "market_brier": 0.5004125078839482,
+      "market_mae": 11.220430107526882,
+      "rows": 93,
+      "segment": "below_45"
+    },
+    {
+      "blend_brier": 0.49975606955437385,
+      "blend_mae": 12.377250931519457,
+      "brier_degradation": -0.0005889465267832628,
+      "family": "feature_quality",
+      "gate_status": "EVALUATED",
+      "mae_degradation": -0.004405873214270883,
+      "market_brier": 0.5003450160811571,
+      "market_mae": 12.381656804733728,
+      "rows": 676,
+      "segment": "high"
+    },
+    {
+      "blend_brier": 0.5050300250996265,
+      "blend_mae": 13.79505426797777,
+      "brier_degradation": 0.004828759025224616,
+      "family": "feature_quality",
+      "gate_status": "EVALUATED",
+      "mae_degradation": 0.08773719480703868,
+      "market_brier": 0.5002012660744019,
+      "market_mae": 13.707317073170731,
+      "rows": 82,
+      "segment": "low"
+    }
+  ],
+  "shadow_candidate": null,
+  "source_hashes": {
+    "feature_dataset": "ce04f50bea76923ece336e18d384e5f0a8a607bc91c827ebc8501a5956bde4bb",
+    "market_dataset": "2aabb8f871906dbb4ea6608967a18c4fac3d4845bde7b7ca1d876fbc47724c48",
+    "normalized": "5b965841111d47f090553e0779213f8722be3d3ea353f04ec9865fd9f393c386"
+  },
+  "status": "FAIL",
+  "total_metrics": {
+    "blend": {
+      "bias": 0.3547086548572101,
+      "mae": 12.53062807345822,
+      "multiclass_brier": 0.5003266030038603,
+      "multiclass_log_loss": 0.6934782004934114,
+      "rmse": 15.611331357576633,
+      "rows": 758,
+      "weighted_calibration_error": 0.012443271131076211
+    },
+    "differences": {
+      "brier_improvement": 2.8622850092308028e-06,
+      "log_loss_improvement": -1.5487415330195375e-06,
+      "mae_improvement": -0.005562110397532294,
+      "rmse_degradation": 0.032376775913594
+    },
+    "market": {
+      "bias": 0.1437994722955145,
+      "mae": 12.525065963060687,
+      "multiclass_brier": 0.5003294652888696,
+      "multiclass_log_loss": 0.6934766517518783,
+      "rmse": 15.578954581663039,
+      "rows": 758
+    },
+    "week_block_interval": {
+      "blend_minus_market_mae": 0.005562110397532111,
+      "blocks": 16,
+      "ci90_lower": -0.0380195405612439,
+      "ci90_upper": 0.048133809302871144,
+      "iterations": 10000,
+      "seed": 53107
+    }
+  }
+}

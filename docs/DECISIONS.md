@@ -1193,3 +1193,18 @@ Consequences:
 - Market-first margin/ML/spread does not prohibit later bets; Phase 6 must still compare fair probability with executable price under EV, uncertainty, and portfolio-risk rules.
 - Push mass remains explicit, later horizons remain diagnostic, provider calls remain zero, and Phase 4 behavior is unchanged.
 
+
+## ADR-087 — The locked 2025 holdout rejects the total blend and retains market consensus
+
+- Date: 2026-08-31
+- Status: Accepted and implemented offline for Phase 5B-9
+
+After every Phase 5B-8 hash passed, 2025 was unlocked once under an immutable access record. The fixed `0.17854145992095644` football-weight total blend was applied without refitting to an identical 758-game market cohort. It failed the frozen MAE, multiclass Brier, and multiclass log-loss improvement gates. The other aggregate, interval, calibration, push-semantics, and broad-segment gates passed.
+
+Consequences:
+
+- Market consensus remains the NCAAF total estimator; the blend is not eligible for shadow-candidate registration.
+- Market consensus also remains the already-frozen margin, spread, and moneyline estimator. Football power remains diagnostic only.
+- The one-time result is immutable and must not trigger 2025-based retuning, feature changes, calibration changes, or a replacement candidate search.
+- Phase 5B-10 may register the retained market benchmarks for prospective shadow operations, but this result does not authorize production betting, EV qualification, staking, or recommendations.
+- Ordinary development commands continue to reject 2025; reproduction requires the audited unlock record and exact immutable inputs.

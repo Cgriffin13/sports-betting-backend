@@ -311,3 +311,9 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 3. Add the Phase 6 conservative equity-scaled risk/approval engine and connect qualified baseline opportunities to immutable recommendation snapshots.
 4. Run the opening-weekend NCAAF paper-trading milestone with entry, closing, outcome, and reconciliation capture.
 
+
+## Phase 5B-9 — Locked 2025 holdout (complete)
+
+The one-time 2025 holdout was opened only after Phase 5B-8 froze finalists, artifacts, the total blend weight, and every promotion gate. The market/Ridge total blend failed the required MAE, multiclass Brier, and multiclass log-loss improvement thresholds on the 758-game identical cohort. Market consensus remains the NCAAF estimator for margin, moneyline, spread, and total; football power remains diagnostic only.
+
+Phase 5B-10 may register these retained market benchmarks for prospective shadow operation and immutable monitoring. It must not tune a replacement on 2025, promote the rejected blend, or treat holdout results as authorization for production recommendations, EV qualification, or staking.
