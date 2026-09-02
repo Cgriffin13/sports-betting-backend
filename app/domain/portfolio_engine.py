@@ -228,6 +228,20 @@ class StraightRecommendation:
 
 
 @dataclass(frozen=True, slots=True)
+class QualifiedNonActionableOpportunity:
+    """Pricing-qualified candidate that portfolio controls declined to action."""
+
+    candidate: CandidateEvaluation
+    calculated_stake: Decimal
+    minimum_operational_stake: Decimal
+    raw_kelly_fraction: Decimal
+    adjusted_kelly_fraction: Decimal
+    risk_adjustments: tuple[str, ...]
+    blocker: str
+    opportunity_hash: str
+
+
+@dataclass(frozen=True, slots=True)
 class ParlayOffer:
     offer_id: str
     sportsbook_key: str
@@ -267,6 +281,7 @@ class PortfolioDecision:
     risk_policy_version: str
     parlay_policy_version: str
     decision_hash: str
+    qualified_non_actionable: tuple[QualifiedNonActionableOpportunity, ...] = ()
 
 
 def portfolio_state(snapshot: PortfolioSnapshot, policy: RiskPolicy) -> PortfolioState:
@@ -461,16 +476,37 @@ def construct_portfolio(
         ),
     )
     recommendations: list[StraightRecommendation] = []
+    non_actionable: list[QualifiedNonActionableOpportunity] = []
     pass_reasons: list[str] = []
     if state == PortfolioState.PAUSED:
         pass_reasons.append("portfolio_paused_by_drawdown_or_bankroll_floor")
+        non_actionable.extend(
+            _qualified_non_actionable(
+                candidate,
+                calculated_stake=Decimal(0),
+                minimum_operational_stake=risk_policy.minimum_stake,
+                raw_kelly_fraction=Decimal(0),
+                adjusted_kelly_fraction=Decimal(0),
+                risk_adjustments=("portfolio_state:PAUSED",),
+                blocker="portfolio_paused",
+            )
+            for candidate in qualified
+        )
     else:
         for candidate in qualified:
             if len(recommendations) >= top_n:
                 break
-            recommendation, reason = _size_candidate(candidate, snapshot, recommendations, state, risk_policy)
+            recommendation, rejected, reason = _size_candidate(
+                candidate,
+                snapshot,
+                recommendations,
+                state,
+                risk_policy,
+            )
             if recommendation is None:
                 pass_reasons.append(reason)
+                if rejected is not None:
+                    non_actionable.append(rejected)
             else:
                 recommendations.append(recommendation)
     if not qualified:
@@ -492,6 +528,7 @@ def construct_portfolio(
     payload = {
         "state": state.value,
         "straight_hashes": [item.recommendation_hash for item in recommendations],
+        "qualified_non_actionable_hashes": [item.opportunity_hash for item in non_actionable],
         "parlay_hash": parlay.recommendation_hash if parlay else None,
         "pass_reasons": pass_reasons,
         "qualification_policy": qualification_policy.version,
@@ -508,6 +545,7 @@ def construct_portfolio(
         risk_policy_version=risk_policy.version,
         parlay_policy_version=parlay_policy.version,
         decision_hash=canonical_hash(payload),
+        qualified_non_actionable=tuple(non_actionable),
     )
 
 
@@ -770,7 +808,7 @@ def _size_candidate(
     selected: Sequence[StraightRecommendation],
     state: PortfolioState,
     policy: RiskPolicy,
-) -> tuple[StraightRecommendation | None, str]:
+) -> tuple[StraightRecommendation | None, QualifiedNonActionableOpportunity | None, str]:
     opportunity = candidate.opportunity
     all_exposures = list(snapshot.open_exposures)
     all_exposures.extend(
@@ -793,7 +831,19 @@ def _size_candidate(
         and item.selection_side != opportunity.selection_side
     ]
     if opposing:
-        return None, f"opposing_position_rejected:{candidate.candidate_id}"
+        return (
+            None,
+            _qualified_non_actionable(
+                candidate,
+                calculated_stake=Decimal(0),
+                minimum_operational_stake=policy.minimum_stake,
+                raw_kelly_fraction=Decimal(0),
+                adjusted_kelly_fraction=Decimal(0),
+                risk_adjustments=("opposing_position",),
+                blocker="opposing_position",
+            ),
+            f"opposing_position_rejected:{candidate.candidate_id}",
+        )
 
     raw_kelly, adjusted, adjustments = _kelly_allocation(candidate, state, policy)
     per_bet_fraction = (
@@ -825,7 +875,19 @@ def _size_candidate(
     if limiting_value < target:
         adjustments.append(f"cap:{limiting_name}")
     if stake < policy.minimum_stake:
-        return None, f"stake_below_minimum_after_risk:{candidate.candidate_id}"
+        return (
+            None,
+            _qualified_non_actionable(
+                candidate,
+                calculated_stake=stake,
+                minimum_operational_stake=policy.minimum_stake,
+                raw_kelly_fraction=raw_kelly,
+                adjusted_kelly_fraction=adjusted,
+                risk_adjustments=tuple(adjustments),
+                blocker="below_minimum_stake",
+            ),
+            f"stake_below_minimum_after_risk:{candidate.candidate_id}",
+        )
     payload = {
         "candidate_id": candidate.candidate_id,
         "stake": stake,
@@ -845,7 +907,39 @@ def _size_candidate(
             risk_adjustments=tuple(adjustments),
             recommendation_hash=canonical_hash(payload),
         ),
+        None,
         "selected",
+    )
+
+
+def _qualified_non_actionable(
+    candidate: CandidateEvaluation,
+    *,
+    calculated_stake: Decimal,
+    minimum_operational_stake: Decimal,
+    raw_kelly_fraction: Decimal,
+    adjusted_kelly_fraction: Decimal,
+    risk_adjustments: tuple[str, ...],
+    blocker: str,
+) -> QualifiedNonActionableOpportunity:
+    payload = {
+        "candidate_id": candidate.candidate_id,
+        "calculated_stake": calculated_stake,
+        "minimum_operational_stake": minimum_operational_stake,
+        "raw_kelly_fraction": raw_kelly_fraction,
+        "adjusted_kelly_fraction": adjusted_kelly_fraction,
+        "risk_adjustments": risk_adjustments,
+        "blocker": blocker,
+    }
+    return QualifiedNonActionableOpportunity(
+        candidate=candidate,
+        calculated_stake=calculated_stake,
+        minimum_operational_stake=minimum_operational_stake,
+        raw_kelly_fraction=raw_kelly_fraction,
+        adjusted_kelly_fraction=adjusted_kelly_fraction,
+        risk_adjustments=risk_adjustments,
+        blocker=blocker,
+        opportunity_hash=canonical_hash(payload),
     )
 
 

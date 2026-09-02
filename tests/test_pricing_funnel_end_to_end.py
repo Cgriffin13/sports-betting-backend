@@ -242,6 +242,7 @@ def test_realistic_saturday_slate_reaches_dashboard_with_auditable_funnel(
         "pricing_qualified_candidates": 1,
         "watchlist_candidates": 2,
         "qualified_candidates": 1,
+        "actionable_candidates": 1,
         "pass_candidates": 11,
     }
     assert "insufficient_books" not in research["rejection_counts"]

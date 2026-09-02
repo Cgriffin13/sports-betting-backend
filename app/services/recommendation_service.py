@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
 from app.domain.identity import Principal
@@ -10,6 +11,7 @@ from app.domain.portfolio_engine import (
     CandidateEvaluation,
     ParlayOffer,
     ParlayPolicy,
+    QualifiedNonActionableOpportunity,
     QualificationPolicy,
     RiskPolicy,
     StraightRecommendation,
@@ -172,6 +174,16 @@ class RecommendationService:
             else []
         )
         qualified_candidates = sum(item.qualified for item in evaluations)
+        qualified_opportunities = [
+            _serialize_qualified_non_actionable(
+                item,
+                as_of=as_of,
+                timing=timing,
+                qualification_policy_version=self.qualification_policy.version,
+                risk_policy_version=self.risk_policy.version,
+            )
+            for item in decision.qualified_non_actionable
+        ]
         pricing_funnel = {
             **pricing.funnel,
             "games_received": games_received
@@ -182,13 +194,20 @@ class RecommendationService:
             else pricing.funnel["observations_received"],
             "watchlist_candidates": len(watchlist),
             "qualified_candidates": qualified_candidates,
+            "actionable_candidates": len(decision.straight_recommendations),
             "pass_candidates": max(0, len(pricing.candidates) - qualified_candidates - len(watchlist)),
         }
         analysis_summary = {
             "games_analyzed": pricing.events_analyzed,
             "pricing_opportunities": pricing.opportunities_qualified,
             "candidates_evaluated": len(evaluations),
+            "qualified_candidates": qualified_candidates,
+            "actionable_straights": len(decision.straight_recommendations),
+            # Retained for compatibility with refresh clients that historically
+            # interpreted this field as actionable straight recommendations.
             "qualified_straights": len(decision.straight_recommendations),
+            "qualified_non_actionable_count": len(qualified_opportunities),
+            "qualified_opportunities": qualified_opportunities,
             "watchlist_markets": len(watchlist),
             "pricing_funnel": pricing_funnel,
             "rejection_counts": dict(sorted(rejection_counts.items())),
@@ -381,3 +400,77 @@ def _odds_band(odds: int) -> str:
         if (lower is None or odds >= lower) and (upper is None or odds <= upper):
             return label
     raise AssertionError("American odds did not map to a diagnostic band")
+
+
+def _serialize_qualified_non_actionable(
+    item: QualifiedNonActionableOpportunity,
+    *,
+    as_of: datetime,
+    timing: Mapping[str, Any] | None,
+    qualification_policy_version: str,
+    risk_policy_version: str,
+) -> dict[str, Any]:
+    candidate = item.candidate
+    opportunity = candidate.opportunity
+    observed_times = tuple(
+        value.selection_observed_at
+        for value in opportunity.book_probabilities
+        if value.selection_observed_at is not None
+    )
+    latest_observed = max(observed_times, default=as_of)
+    freshness_age_seconds = max(0, int((as_of - latest_observed).total_seconds()))
+    timing_payload = timing or {}
+    return {
+        "qualified_opportunity_id": candidate.candidate_id,
+        "event_id": str(opportunity.event_id),
+        "slate_date": opportunity.scheduled_start_utc.date().isoformat(),
+        "scheduled_start": opportunity.scheduled_start_utc.isoformat(),
+        "home_team": opportunity.home_team,
+        "away_team": opportunity.away_team,
+        "market": opportunity.market_type,
+        "side": opportunity.selection_side,
+        "selection": opportunity.selection_name,
+        "sportsbook": opportunity.best_sportsbook_key,
+        "point": _number(opportunity.point),
+        "odds": opportunity.best_american_odds,
+        "fair_probability": _number(candidate.win_probability),
+        "implied_probability": _number(candidate.implied_probability),
+        "push_probability": _number(candidate.push_probability),
+        "edge": _number(candidate.edge),
+        "ev_per_unit": _number(candidate.ev_per_unit),
+        "books_count": opportunity.books_contributing,
+        "dispersion": _number(opportunity.consensus_dispersion),
+        "freshness_age_seconds": freshness_age_seconds,
+        "calculated_stake": _number(item.calculated_stake),
+        "minimum_operational_stake": _number(item.minimum_operational_stake),
+        "raw_kelly_fraction": _number(item.raw_kelly_fraction),
+        "adjusted_kelly_fraction": _number(item.adjusted_kelly_fraction),
+        "ranking_score": _number(candidate.ranking_score),
+        "classification": candidate.classification.value if candidate.classification else None,
+        "blocker": item.blocker,
+        "risk_adjustments": list(item.risk_adjustments),
+        "source_observation_ids": [str(value) for value in opportunity.source_observation_ids],
+        "snapshot_ids": [str(value) for value in opportunity.snapshot_ids],
+        "best_executable_observation_id": str(opportunity.best_executable_observation_id),
+        "model_id": candidate.fair_value.model_id,
+        "model_version": candidate.fair_value.model_version,
+        "model_status": candidate.fair_value.model_status.value,
+        "pricing_policy_version": opportunity.pricing_policy_version,
+        "qualification_policy_version": qualification_policy_version,
+        "risk_policy_version": risk_policy_version,
+        "market_probability_policy_version": opportunity.market_probability_policy_version,
+        "timing_classification": timing_payload.get("timing_classification"),
+        "primary_horizon_at": (
+            timing_payload["primary_horizon_at"].isoformat()
+            if isinstance(timing_payload.get("primary_horizon_at"), datetime)
+            else timing_payload.get("primary_horizon_at")
+        ),
+        "qualified": True,
+        "actionable": False,
+        "approvable": False,
+        "opportunity_hash": item.opportunity_hash,
+    }
+
+
+def _number(value: Decimal | None) -> float | None:
+    return float(value) if value is not None else None

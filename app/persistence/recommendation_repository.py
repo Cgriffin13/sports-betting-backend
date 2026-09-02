@@ -344,10 +344,24 @@ class SqlAlchemyRecommendationRepository:
                     str(item["watchlist_id"]),
                 )
             )
-            qualified = 0
+            qualified_opportunities = [
+                dict(item)
+                for run in runs
+                for item in run.analysis_summary.get("qualified_opportunities", [])
+                if isinstance(item, Mapping)
+                and datetime.fromisoformat(str(item["scheduled_start"])) > _aware(as_of)
+            ]
+            qualified_opportunities.sort(
+                key=lambda item: (
+                    -Decimal(str(item.get("ranking_score", 0))),
+                    str(item["scheduled_start"]),
+                    str(item["qualified_opportunity_id"]),
+                )
+            )
+            actionable = 0
             run_ids = [run.id for run in runs]
             if run_ids:
-                qualified = int(
+                actionable = int(
                     session.scalar(
                         select(func.count())
                         .select_from(Recommendation)
@@ -362,6 +376,7 @@ class SqlAlchemyRecommendationRepository:
             aggregate_funnel: Counter[str] = Counter()
             aggregate_rejections: Counter[str] = Counter()
             funnel_samples: list[dict[str, int]] = []
+            qualified_total = 0
             for run in runs:
                 summary = dict(run.analysis_summary)
                 funnel = {
@@ -378,7 +393,7 @@ class SqlAlchemyRecommendationRepository:
                 }
                 aggregate_rejections.update(rejections)
                 slate_items = [item for item in items if item.get("slate_date") == run.slate_date.isoformat()]
-                slate_qualified = int(
+                slate_actionable = int(
                     session.scalar(
                         select(func.count())
                         .select_from(Recommendation)
@@ -389,6 +404,13 @@ class SqlAlchemyRecommendationRepository:
                     )
                     or 0
                 )
+                slate_qualified = int(
+                    summary.get(
+                        "qualified_candidates",
+                        funnel.get("qualified_candidates", slate_actionable),
+                    )
+                )
+                qualified_total += slate_qualified
                 slates.append(
                     {
                         "slate_date": run.slate_date.isoformat(),
@@ -396,6 +418,10 @@ class SqlAlchemyRecommendationRepository:
                         "as_of": _iso(run.as_of),
                         "games_analyzed": int(summary.get("games_analyzed", 0)),
                         "qualified_recommendations": slate_qualified,
+                        "actionable_recommendations": slate_actionable,
+                        "qualified_non_actionable_count": len(
+                            summary.get("qualified_opportunities", [])
+                        ),
                         "watchlist_count": len(slate_items),
                         "pricing_funnel": funnel,
                         "rejection_counts": dict(sorted(rejections.items())),
@@ -414,7 +440,8 @@ class SqlAlchemyRecommendationRepository:
                 "upcoming_games_analyzed": sum(
                     int(run.analysis_summary.get("games_analyzed", 0)) for run in runs
                 ),
-                "qualified_recommendations": qualified,
+                "qualified_recommendations": qualified_total,
+                "actionable_recommendations": actionable,
                 "watchlist_count": len(items),
                 "watchlist_version": "ncaaf-watchlist-v2",
                 "pricing_funnel": dict(sorted(aggregate_funnel.items())),
@@ -425,6 +452,7 @@ class SqlAlchemyRecommendationRepository:
                 ),
                 "slates": slates,
                 "items": items,
+                "qualified_opportunities": qualified_opportunities,
             }
 
     def reject(self, principal: Principal, recommendation_id: str) -> dict[str, Any]:
@@ -1077,6 +1105,7 @@ def _empty_watchlist(as_of: datetime) -> dict[str, Any]:
         "as_of": _iso(as_of),
         "upcoming_games_analyzed": 0,
         "qualified_recommendations": 0,
+        "actionable_recommendations": 0,
         "watchlist_count": 0,
         "watchlist_version": "ncaaf-watchlist-v2",
         "pricing_funnel": {},
@@ -1085,6 +1114,7 @@ def _empty_watchlist(as_of: datetime) -> dict[str, Any]:
         "pricing_pipeline_status_reason": None,
         "slates": [],
         "items": [],
+        "qualified_opportunities": [],
     }
 
 

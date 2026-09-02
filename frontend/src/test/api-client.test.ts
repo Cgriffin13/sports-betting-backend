@@ -33,6 +33,9 @@ describe("typed API client", () => {
     expect(data.system.models[0].status).toBe("retained_benchmark");
     expect(data.recommendations).toHaveLength(3);
     expect(data.watchlist.upcoming_games_analyzed).toBe(98);
+    expect(data.watchlist.qualified_recommendations).toBe(4);
+    expect(data.watchlist.actionable_recommendations).toBe(3);
+    expect(data.watchlist.qualified_opportunities[0].calculated_stake).toBe(0.72);
     expect(fetch).toHaveBeenCalledTimes(7);
     for (const call of vi.mocked(fetch).mock.calls) expect(String(call[0])).toMatch(/^\/api\//);
     for (const call of vi.mocked(fetch).mock.calls) expect(call[1]?.method).not.toBe("POST");

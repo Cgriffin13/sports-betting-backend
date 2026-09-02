@@ -80,10 +80,58 @@ class WatchlistItemResponse(BaseModel):
     actionable: bool = False
 
 
+class QualifiedOpportunityResponse(BaseModel):
+    qualified_opportunity_id: str
+    event_id: str
+    slate_date: date
+    scheduled_start: datetime
+    home_team: str
+    away_team: str
+    market: str
+    side: str
+    selection: str
+    sportsbook: str
+    point: float | None = None
+    odds: int
+    fair_probability: float
+    implied_probability: float
+    push_probability: float
+    edge: float
+    ev_per_unit: float
+    books_count: int
+    dispersion: float
+    freshness_age_seconds: int
+    calculated_stake: float
+    minimum_operational_stake: float
+    raw_kelly_fraction: float
+    adjusted_kelly_fraction: float
+    ranking_score: float
+    classification: str | None
+    blocker: str
+    risk_adjustments: list[str]
+    source_observation_ids: list[str]
+    snapshot_ids: list[str]
+    best_executable_observation_id: str
+    model_id: str
+    model_version: str
+    model_status: str
+    pricing_policy_version: str
+    qualification_policy_version: str
+    risk_policy_version: str
+    market_probability_policy_version: str
+    timing_classification: str | None = None
+    primary_horizon_at: datetime | None = None
+    qualified: bool = True
+    actionable: bool = False
+    approvable: bool = False
+    opportunity_hash: str
+
+
 class WatchlistResponse(BaseModel):
     as_of: datetime
     upcoming_games_analyzed: int
     qualified_recommendations: int
+    actionable_recommendations: int
     watchlist_count: int
     watchlist_version: str
     pricing_funnel: dict[str, int]
@@ -92,6 +140,7 @@ class WatchlistResponse(BaseModel):
     pricing_pipeline_status_reason: str | None
     slates: list[dict[str, Any]]
     items: list[WatchlistItemResponse]
+    qualified_opportunities: list[QualifiedOpportunityResponse]
 
 
 class RecommendationDispositionResponse(BaseModel):

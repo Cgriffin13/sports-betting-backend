@@ -436,6 +436,34 @@ def test_stake_caps_units_and_risk_states() -> None:
     assert portfolio_state(replace(_snapshot(), equity=Decimal("150"), peak_equity=Decimal("200")), RiskPolicy()) is PortfolioState.PAUSED
 
 
+def test_pricing_qualified_subminimum_stake_remains_visible_but_non_actionable() -> None:
+    opportunity = _opportunity(odds=100, fair=Decimal("0.512"))
+    candidate = _qualified(opportunity)
+
+    decision = construct_portfolio(
+        [candidate],
+        _snapshot(),
+        top_n=10,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+
+    assert candidate.qualified
+    assert candidate.edge == Decimal("0.012")
+    assert candidate.ev_per_unit == Decimal("0.024")
+    assert decision.straight_recommendations == ()
+    assert len(decision.qualified_non_actionable) == 1
+    surfaced = decision.qualified_non_actionable[0]
+    assert surfaced.calculated_stake == Decimal("0.72")
+    assert surfaced.minimum_operational_stake == Decimal("1.00")
+    assert surfaced.blocker == "below_minimum_stake"
+    assert any(
+        reason.startswith("stake_below_minimum_after_risk:")
+        for reason in decision.pass_reasons
+    )
+
+
 def test_opposing_positions_and_daily_cap_reduce_or_reject() -> None:
     first = _opportunity(side="home", odds=200, fair=Decimal("0.60"))
     second = _opportunity(event_id=first.event_id, side="away", odds=200, fair=Decimal("0.60"))

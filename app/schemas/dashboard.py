@@ -88,6 +88,8 @@ class MarketRefreshDecisionResponse(BaseModel):
     horizon_version: str
     decision_run_id: str
     qualified_straights: int
+    qualified_candidates: int
+    actionable_straights: int
     games_analyzed: int
     watchlist_count: int
     parlay_status: str

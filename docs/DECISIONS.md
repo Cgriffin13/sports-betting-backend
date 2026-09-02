@@ -1420,3 +1420,19 @@ Consequences:
 - A single obvious book cannot materially determine the center, although genuine broad cross-book disagreement still surfaces through dispersion and integrity warnings.
 - Integer spreads/totals are no longer categorically dropped from the NCAAF candidate path; they qualify only when their explicit push-aware economics and all unchanged portfolio gates pass.
 - The production loader is standard-library-only and validates the empirical artifact hash; offline audit code remains outside the FastAPI dependency graph.
+
+## ADR-100 — Preserve pricing-qualified candidates rejected by portfolio allocation
+
+- Date: 2026-09-02
+- Status: Accepted and implemented as a visibility-only production hotfix
+
+POLARIS distinguishes pricing qualification from portfolio actionability. A candidate is qualified after the unchanged edge, EV, book-depth, dispersion, freshness, structure, model-status, and quality gates pass. It is actionable only when sequential risk allocation also permits exposure and produces a stake at or above the unchanged operational minimum.
+
+When a qualified candidate is rejected by portfolio controls, its decision-run analysis preserves the candidate economics, calculated pre-rejection stake, minimum stake, risk adjustments, provenance, and normalized blocker. The current read contract exposes these rows as **Qualified Opportunities** without creating `recommendations` records. They cannot be approved, reserved in the ledger, or used as parlay legs. Watchlist continues to contain only research-safe near misses that failed production qualification.
+
+Consequences:
+
+- A calculated `$0.72` allocation at a `$1.00` minimum remains `$0.72`; the engine never rounds it up.
+- Qualified, actionable, and Watchlist counts are reported separately.
+- Pricing, fair value, thresholds, Kelly, minimum stake, exposure caps, ranking, ingestion, and approval behavior do not change.
+- The immutable decision-run JSON is sufficient; no schema migration or new public endpoint is required.

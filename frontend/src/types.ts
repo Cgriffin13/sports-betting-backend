@@ -99,10 +99,58 @@ export interface WatchlistItem {
   actionable: false;
 }
 
+export interface QualifiedOpportunity {
+  qualified_opportunity_id: string;
+  event_id: string;
+  slate_date: string;
+  scheduled_start: string;
+  home_team: string;
+  away_team: string;
+  market: string;
+  side: string;
+  selection: string;
+  sportsbook: string;
+  point: number | null;
+  odds: number;
+  fair_probability: number;
+  implied_probability: number;
+  push_probability: number;
+  edge: number;
+  ev_per_unit: number;
+  books_count: number;
+  dispersion: number;
+  freshness_age_seconds: number;
+  calculated_stake: number;
+  minimum_operational_stake: number;
+  raw_kelly_fraction: number;
+  adjusted_kelly_fraction: number;
+  ranking_score: number;
+  classification: "CORE" | "OPPORTUNISTIC" | null;
+  blocker: string;
+  risk_adjustments: string[];
+  source_observation_ids: string[];
+  snapshot_ids: string[];
+  best_executable_observation_id: string;
+  model_id: string;
+  model_version: string;
+  model_status: string;
+  pricing_policy_version: string;
+  qualification_policy_version: string;
+  risk_policy_version: string;
+  market_probability_policy_version: string;
+  timing_classification: "EARLY_LOOKAHEAD" | "OFFICIAL_PRIMARY_HORIZON" | "POST_HORIZON" | null;
+  primary_horizon_at: string | null;
+  qualified: true;
+  actionable: false;
+  approvable: false;
+  opportunity_hash: string;
+}
+
 export interface WatchlistState {
   as_of: string;
   upcoming_games_analyzed: number;
   qualified_recommendations: number;
+  actionable_recommendations: number;
   watchlist_count: number;
   watchlist_version: string;
   pricing_funnel: Record<string, number>;
@@ -115,6 +163,8 @@ export interface WatchlistState {
     as_of: string;
     games_analyzed: number;
     qualified_recommendations: number;
+    actionable_recommendations: number;
+    qualified_non_actionable_count: number;
     watchlist_count: number;
     pricing_funnel: Record<string, number>;
     rejection_counts: Record<string, number>;
@@ -122,6 +172,7 @@ export interface WatchlistState {
     pricing_pipeline_status_reason: string | null;
   }>;
   items: WatchlistItem[];
+  qualified_opportunities: QualifiedOpportunity[];
 }
 
 export interface Portfolio {
@@ -245,6 +296,8 @@ export interface MarketRefreshResult {
     horizon_version: string;
     decision_run_id: string;
     qualified_straights: number;
+    qualified_candidates: number;
+    actionable_straights: number;
     games_analyzed: number;
     watchlist_count: number;
     parlay_status: string;

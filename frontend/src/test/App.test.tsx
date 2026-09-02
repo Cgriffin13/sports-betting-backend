@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import App from "../App";
@@ -25,7 +25,14 @@ describe("portfolio dashboard", () => {
     expect(screen.getAllByText("Core picks").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Opportunistic picks").length).toBeGreaterThan(0);
     expect(screen.getByText("98 games")).toBeInTheDocument();
-    expect(screen.getByText(/3 qualified · 7 watchlist markets/)).toBeInTheDocument();
+    expect(screen.getByText(/4 qualified · 3 actionable · 7 watchlist/)).toBeInTheDocument();
+    const qualifiedPanel = screen.getByText("Qualified opportunities").closest("section");
+    expect(qualifiedPanel).not.toBeNull();
+    expect(screen.getByText("Silver State -2.5")).toBeInTheDocument();
+    expect(screen.getByText("$0.72")).toBeInTheDocument();
+    expect(screen.getByText(/Minimum \$1.00 · not rounded up/)).toBeInTheDocument();
+    expect(screen.getByText(/Qualified · not actionable · not approvable/)).toBeInTheDocument();
+    expect(within(qualifiedPanel!).queryByRole("button", { name: /approve/i })).not.toBeInTheDocument();
     expect(screen.getByText("On the radar")).toBeInTheDocument();
     expect(screen.queryByText("Harbor A&M @ Western Plains")).not.toBeInTheDocument();
     expect(screen.getByText("No verified parlay quote")).toBeInTheDocument();
@@ -68,7 +75,7 @@ describe("portfolio dashboard", () => {
     expect(screen.getAllByText("Market consensus supplies fair value").length).toBeGreaterThan(0);
     expect(screen.getByText("Latest Pricing Funnel")).toBeInTheDocument();
     expect(screen.getByText("calculable_candidate_sides")).toBeInTheDocument();
-    expect(screen.getByText(/60 games.*eligible observations.*paired markets.*280 calculable sides.*34 positive EV.*7 watchlist.*3 qualified/)).toBeInTheDocument();
+    expect(screen.getByText(/60 games.*eligible observations.*paired markets.*280 calculable sides.*34 positive EV.*7 watchlist.*4 qualified.*3 actionable/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Today" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Watchlist" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio" }).length).toBeGreaterThan(0);

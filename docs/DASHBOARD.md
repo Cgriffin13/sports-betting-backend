@@ -24,7 +24,7 @@ Today preserves the backend's risk-adjusted portfolio order. Expanded recommenda
 
 ## Pages
 
-- **Today**: equity/exposure/P&L/slate summary, scan deltas, CORE and OPPORTUNISTIC recommendations, PASS reasons, parlay state, exposure-to-limit bars, and portfolio trend.
+- **Today**: equity/exposure/P&L/slate summary, separate qualified/actionable/Watchlist counts, CORE and OPPORTUNISTIC actionable recommendations, non-actionable Qualified Opportunities, PASS reasons, parlay state, exposure-to-limit bars, and portfolio trend.
 - **Watchlist**: current research-only positive-edge, positive-EV calculable markets that narrowly missed one or more unchanged production gates. It has no stake, approval, ledger, or parlay actions.
 - **Portfolio**: ledger balances, equity curve, drawdown/ROI/turnover/hit rate, market performance, and attribution.
 - **Bets**: recommended, approved, open, settled, and rejected lifecycle views with explicit approve/reject actions.
@@ -45,7 +45,7 @@ Existing Phase 6 endpoints remain authoritative. Phase 6.5 adds only:
 - `GET /dashboard/market-movement`: a date- and cutoff-bounded scalar projection of stored observations. It does not select snapshot raw JSON.
 - `GET /dashboard/market-history`: an event/market/side-bounded scalar history used by expanded recommendation detail. Empty history is a valid state.
 - `POST /dashboard/portfolio/{portfolio_id}/refresh-markets`: the only dashboard action that invokes the odds adapter. It is API-key authenticated through the same-origin BFF, guarded against concurrent execution, fetches current NCAAF h2h/spreads/totals once, persists the raw and normalized snapshot, and reruns recommendations for every upcoming UTC slate represented by the response.
-- `GET /portfolio/{id}/watchlist?upcoming_only=true`: the latest immutable decision-run watchlist state across upcoming slates, including authoritative games-analyzed and qualified/watchlist counts, an aggregate pricing funnel, rejection counts, and UTC-date/weekday slate summaries. It is stored-data-only.
+- `GET /portfolio/{id}/watchlist?upcoming_only=true`: the latest immutable decision-run research state across upcoming slates, including authoritative games-analyzed, qualified, actionable, and Watchlist counts; non-actionable qualified-opportunity details; an aggregate pricing funnel; rejection counts; and UTC-date/weekday slate summaries. It is stored-data-only.
 
 Page loads, route navigation, browser reloads, TanStack refetches, and market-history expansion are read-only and never create provider calls or charges.
 
@@ -58,6 +58,8 @@ Ranking is deterministic: fewer failed gates first, then the sum of normalized s
 Each decision freezes the safe pricing funnel from games/observations through exact book pairs, comparable exact-line groups, calculable sides, positive edge/EV, Watchlist, qualification, and PASS. It also freezes detailed rejection counts. Settings → System / Methodology displays the aggregate latest-upcoming funnel and per-UTC-slate summaries without invoking the provider. Exact spread/total lines are still not interpolated: fragmented lines can fail two-book depth. Whole-number spread/total observations remain stored but fail closed until a validated push probability is available.
 
 Today shows the backend's stored `games_analyzed` count rather than inferring a slate from recommendation IDs. Its subdued **On the radar** section is capped at five rows; the full Watchlist page shows all current eligible rows and can expand stored market history. The Parlay page may link to the Watchlist but cannot consume watchlist rows as legs.
+
+The **Qualified Opportunities** section is separate from both actionable picks and Watchlist. It shows candidates that passed every pricing gate but failed portfolio allocation, including the calculated stake before a minimum-stake rejection, the operational minimum, and the exact risk blocker. These rows have no recommendation ID or approval control and are not parlay eligible. Counts therefore use three explicit concepts: qualified, actionable, and Watchlist.
 
 ## Timing and freshness
 

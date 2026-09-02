@@ -112,6 +112,8 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     assert watchlist.status_code == 200
     assert watchlist.json()["upcoming_games_analyzed"] == 1
     assert watchlist.json()["qualified_recommendations"] == 1
+    assert watchlist.json()["actionable_recommendations"] == 1
+    assert watchlist.json()["qualified_opportunities"] == []
     assert watchlist.json()["items"] == []
 
     assert client.get("/portfolio/main").json()["bets"] == []
@@ -127,3 +129,80 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     assert risk.json()["reserved_exposure"] == 4.0
     assert risk.json()["portfolio_state"] == "NORMAL"
     assert risk.json()["state_reason"] == "within_policy"
+
+
+def test_qualified_subminimum_stake_is_visible_without_recommendation_or_approval(
+    session_factory: sessionmaker[Session],
+    settings: Any,
+    authenticator: Any,
+) -> None:
+    from app.main import create_app
+
+    portfolio_repository = SqlAlchemyPortfolioRepository(session_factory, Decimal("200"))
+    app = create_app(
+        settings=settings,
+        provider=FakeProvider(),
+        repository=portfolio_repository,
+        authenticator=authenticator,
+    )
+    opportunity = _opportunity(odds=100, fair=Decimal("0.512"))
+    _event(session_factory, opportunity.event_id, opportunity.home_team, opportunity.away_team)
+    registry = SqlAlchemyModelRegistryRepository(session_factory)
+    registry.register_models(registered_models())
+    app.state.recommendation_service = RecommendationService(
+        pricing_service=StubPricingService(opportunity),  # type: ignore[arg-type]
+        registry_repository=registry,
+        repository=SqlAlchemyRecommendationRepository(session_factory, Decimal("200")),
+        qualification_policy=QualificationPolicy(),
+        risk_policy=RiskPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+    client = TestClient(app, headers={"X-API-Key": "test-primary-key"})
+
+    response = client.post(
+        "/portfolio/main/recommendations/analyze",
+        json={"slate_date": "2026-09-05", "as_of": NOW.isoformat()},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["straight_recommendations"] == []
+    assert body["watchlist_count"] == 0
+    assert body["analysis_summary"]["qualified_candidates"] == 1
+    assert body["analysis_summary"]["actionable_straights"] == 0
+    [qualified] = body["analysis_summary"]["qualified_opportunities"]
+    assert qualified["qualified"] is True
+    assert qualified["actionable"] is False
+    assert qualified["approvable"] is False
+    assert qualified["calculated_stake"] == 0.72
+    assert qualified["minimum_operational_stake"] == 1.0
+    assert qualified["blocker"] == "below_minimum_stake"
+
+    watchlist = client.get("/portfolio/main/watchlist", params={"upcoming_only": True})
+    assert watchlist.status_code == 200, watchlist.text
+    research = watchlist.json()
+    assert research["qualified_recommendations"] == 1
+    assert research["actionable_recommendations"] == 0
+    assert research["watchlist_count"] == 0
+    [listed_qualified] = research["qualified_opportunities"]
+    for field in (
+        "qualified_opportunity_id",
+        "calculated_stake",
+        "minimum_operational_stake",
+        "blocker",
+        "qualified",
+        "actionable",
+        "approvable",
+    ):
+        assert listed_qualified[field] == qualified[field]
+
+    listing = client.get("/portfolio/main/recommendations", params={"upcoming_only": True})
+    assert listing.status_code == 200
+    assert listing.json()["recommendations"] == []
+    assert (
+        listing.json()["latest_decision"]["analysis_summary"]["qualified_opportunities"]
+        == [qualified]
+    )
+    assert (
+        client.post(f"/recommendations/{qualified['qualified_opportunity_id']}/approve").status_code
+        == 404
+    )

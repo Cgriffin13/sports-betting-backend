@@ -89,6 +89,8 @@ At the historical `$200` starting bankroll, one displayed unit is `$8`; the defa
 
 `NORMAL` uses the calculated allocation, `REDUCED_RISK` halves it, and `PAUSED` forces PASS. Approval rechecks current cash, drawdown state, per-position, daily, game, team, market, correlated, and parlay-sleeve caps plus opposing positions inside the same database transaction, preventing a stale recommendation from bypassing newly consumed risk.
 
+Qualification and actionability are distinct. A candidate is **qualified** after it passes the pricing, quality, and model-status gates. It is **actionable** only after the sequential portfolio allocation also produces at least the configured minimum stake and passes exposure controls. A qualified candidate whose calculated stake is below `$1.00` is preserved in the immutable decision-run analysis as a non-actionable qualified opportunity with its exact pre-rejection stake and `below_minimum_stake` blocker. It is never rounded up, does not create a `recommendations` row, cannot be approved, and cannot enter a parlay. Watchlist remains reserved for positive-EV near misses that did not qualify.
+
 ## Parlay of the Day
 
 `cross-event-parlay-v2` searches only verified executable combined quotes over two or three already-qualified straight candidates. It never derives the sportsbook payout by multiplying leg prices. Each quote must link every leg to an exact stored source observation.
@@ -114,7 +116,7 @@ Authenticated routes added for a presentation layer:
 | Route | Purpose |
 | --- | --- |
 | `POST /portfolio/{id}/recommendations/analyze` | Build and persist today's NCAAF decision run; returns straights, parlay/PASS, state, stake, policies, and hashes. |
-| `GET /portfolio/{id}/recommendations` | List strategy-book recommendation history, optionally by slate date. |
+| `GET /portfolio/{id}/recommendations` | List actionable strategy-book recommendation history and the latest decision analysis, including non-actionable qualified opportunities. |
 | `POST /recommendations/{id}/approve` | Explicitly approve and reserve one paper position. |
 | `POST /recommendations/{id}/reject` | Record a human rejection without placing a bet. |
 | `GET /portfolio/{id}/risk?slate_date=...` | Current cash/equity/drawdown and exposure by game, team, market, and kind. |
