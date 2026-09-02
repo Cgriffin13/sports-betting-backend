@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -11,6 +12,7 @@ class PersistedMarketSnapshot:
     events_created: int
     observations_created: int
     warnings: tuple[dict[str, object], ...]
+    ingestion_completed_at: datetime
 
 
 class MarketDataRepository(Protocol):

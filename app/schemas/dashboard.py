@@ -98,6 +98,9 @@ class MarketRefreshResponse(BaseModel):
     status: str
     snapshot_id: str
     requested_at: datetime
+    provider_retrieved_at: datetime | None
+    ingestion_completed_at: datetime
+    decision_as_of: datetime
     provider: str
     provider_metadata: dict[str, Any]
     from_cache: bool

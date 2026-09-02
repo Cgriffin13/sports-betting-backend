@@ -137,7 +137,14 @@ class SqlAlchemyMarketDataRepository:
             session.flush()
             snapshot_id = snapshot.id
 
-        return PersistedMarketSnapshot(snapshot_id, events_created, observations_created, tuple(warnings))
+        ingestion_completed_at = self._as_utc(self._clock())
+        return PersistedMarketSnapshot(
+            snapshot_id,
+            events_created,
+            observations_created,
+            tuple(warnings),
+            ingestion_completed_at,
+        )
 
     def persist_failure(
         self,

@@ -54,7 +54,7 @@ class StubOddsService:
             self.release.wait(timeout=3)
         return MarketIngestionResult(
             self.fetch,
-            PersistedMarketSnapshot(uuid4(), 1, 18, ()),
+            PersistedMarketSnapshot(uuid4(), 1, 18, (), self.fetch.requested_at),
         )
 
 
