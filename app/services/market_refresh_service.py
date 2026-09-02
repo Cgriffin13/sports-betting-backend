@@ -84,6 +84,8 @@ class MarketRefreshService:
                         **timing,
                         "decision_run_id": decision["decision_run_id"],
                         "qualified_straights": len(decision["straight_recommendations"]),
+                        "games_analyzed": int(decision.get("analysis_summary", {}).get("games_analyzed", len(kickoffs))),
+                        "watchlist_count": int(decision.get("watchlist_count", 0)),
                         "parlay_status": (
                             "QUALIFIED" if "recommendation_id" in decision["parlay_of_the_day"] else "PASS"
                         ),

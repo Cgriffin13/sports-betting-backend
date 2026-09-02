@@ -66,6 +66,7 @@ def build_pricing_analysis(
         pricing_policy_version=policy.pricing_version,
         qualification_policy_version=policy.qualification_version,
         opportunities=tuple(opportunities),
+        events_analyzed=len({item.event_id for item in observations}),
         observations_considered=len(observations),
         paired_book_markets=len(paired),
         opportunities_qualified=len(qualified),

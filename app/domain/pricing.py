@@ -269,6 +269,7 @@ class PricingAnalysis:
     pricing_policy_version: str
     qualification_policy_version: str
     opportunities: tuple[PricingOpportunity, ...]
+    events_analyzed: int
     observations_considered: int
     paired_book_markets: int
     opportunities_qualified: int

@@ -127,6 +127,7 @@ python -m pytest
 | `GET /portfolio/{portfolio_id}/stats` | Settled-bet and sport/market statistics plus ledger-derived balances. |
 | `POST /portfolio/{portfolio_id}/recommendations/analyze` | Persist NCAAF straight recommendations, stake/risk detail, PASS reasons, and optional verified-quote parlay result. |
 | `GET /portfolio/{portfolio_id}/recommendations` | Read proposed/approved/rejected strategy-book history. |
+| `GET /portfolio/{portfolio_id}/watchlist` | Read the latest upcoming research-only near-qualification state and authoritative analyzed-game counts; never calls the provider. |
 | `POST /recommendations/{recommendation_id}/approve` | Explicit human approval; atomically creates the official paper bet and ledger reservation. |
 | `POST /recommendations/{recommendation_id}/reject` | Record a declined proposal without creating a bet. |
 | `GET /portfolio/{portfolio_id}/risk` | Cash/equity/drawdown and current exposure by game, team, market, and straight/parlay kind. |

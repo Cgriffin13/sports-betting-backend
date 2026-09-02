@@ -1304,3 +1304,17 @@ Consequences:
 - Upcoming recommendations never masquerade as validated primary-horizon decisions.
 - Raw market snapshots remain available for audit but absent from dashboard query projections.
 - The POLARIS frontend remains a paper-trading control surface; fair value, EV, staking, risk, approval, and ledger authority stay in FastAPI.
+
+## ADR-094 — Keep early-week watchlist research outside recommendation lifecycle
+
+- Date: 2026-09-01
+- Status: Accepted and implemented
+
+POLARIS persists `ncaaf-watchlist-v1` as immutable metadata on each recommendation decision run. A watchlist row must already be a structurally valid Phase 4 pricing opportunity with positive edge and EV, remain pregame, and fail only an explicit research-safe Phase 6 gate. Production qualification thresholds remain unchanged. Ranking uses failed-gate count followed by normalized distance to the existing EV, edge, book-depth, dispersion, and freshness gates.
+
+Consequences:
+
+- Watchlist rows are research only: no stake, recommendation record, approval, official bet, ledger mutation, or parlay eligibility exists.
+- Manual refresh creates a new current state; the latest run per upcoming slate can promote, demote, or remove a row without rewriting prior decisions.
+- Today uses the persisted analysis count rather than inferring analyzed games from qualified recommendations.
+- Browser reads remain stored-data-only and cannot consume provider credits.

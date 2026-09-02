@@ -97,7 +97,11 @@ class SqlAlchemyRecommendationRepository:
         input_hash: str,
         pricing_rejections: Mapping[str, int],
         top_n: int,
+        watchlist: list[dict[str, Any]] | None = None,
+        analysis_summary: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
+        watchlist = watchlist or []
+        analysis_summary = dict(analysis_summary or {})
         with self.session_factory.begin() as session:
             owner = self._owner(session, principal)
             portfolio = self._portfolio(session, owner.id, snapshot.portfolio_id)
@@ -107,6 +111,8 @@ class SqlAlchemyRecommendationRepository:
                     "slate_date": snapshot.slate_date,
                     "decision_hash": decision.decision_hash,
                     "input_hash": input_hash,
+                    "watchlist": watchlist,
+                    "analysis_summary": analysis_summary,
                 }
             )
             existing = session.scalar(
@@ -136,6 +142,8 @@ class SqlAlchemyRecommendationRepository:
                 parlay_policy_version=decision.parlay_policy_version,
                 pass_reasons=list(decision.pass_reasons),
                 rejection_summary=dict(pricing_rejections),
+                analysis_summary=analysis_summary,
+                watchlist_items=watchlist,
                 input_hash=input_hash,
                 output_hash=output_hash,
                 created_at=self.clock(),
@@ -243,12 +251,101 @@ class SqlAlchemyRecommendationRepository:
                 "portfolio_state": run.portfolio_state,
                 "pass_reasons": list(run.pass_reasons),
                 "rejection_summary": dict(run.rejection_summary),
+                "analysis_summary": dict(run.analysis_summary),
+                "watchlist_count": len(run.watchlist_items),
                 "policy_versions": {
                     "qualification": run.qualification_policy_version,
                     "risk": run.risk_policy_version,
                     "parlay": run.parlay_policy_version,
                 },
                 "decision_hash": run.output_hash,
+            }
+
+    def list_watchlist(
+        self,
+        principal: Principal,
+        portfolio_external_id: str,
+        *,
+        as_of: datetime,
+    ) -> dict[str, Any]:
+        with self.session_factory() as session:
+            owner = session.scalar(select(Owner).where(Owner.external_id == principal.external_id))
+            if owner is None:
+                return _empty_watchlist(as_of)
+            portfolio = session.scalar(select(Portfolio).where(Portfolio.external_id == portfolio_external_id))
+            if portfolio is None:
+                return _empty_watchlist(as_of)
+            if portfolio.owner_id != owner.id:
+                raise PortfolioAccessDeniedError
+            latest_by_slate = (
+                select(
+                    RecommendationDecisionRun.slate_date.label("slate_date"),
+                    func.max(RecommendationDecisionRun.as_of).label("latest_as_of"),
+                )
+                .where(
+                    RecommendationDecisionRun.portfolio_id == portfolio.id,
+                    RecommendationDecisionRun.slate_date >= as_of.date(),
+                )
+                .group_by(RecommendationDecisionRun.slate_date)
+                .subquery()
+            )
+            matched_runs = list(
+                session.scalars(
+                    select(RecommendationDecisionRun)
+                    .join(
+                        latest_by_slate,
+                        and_(
+                            latest_by_slate.c.slate_date == RecommendationDecisionRun.slate_date,
+                            latest_by_slate.c.latest_as_of == RecommendationDecisionRun.as_of,
+                        ),
+                    )
+                    .where(RecommendationDecisionRun.portfolio_id == portfolio.id)
+                    .order_by(RecommendationDecisionRun.slate_date, RecommendationDecisionRun.id)
+                )
+            )
+            runs_by_slate: dict[date, RecommendationDecisionRun] = {}
+            for run in matched_runs:
+                runs_by_slate.setdefault(run.slate_date, run)
+            runs = list(runs_by_slate.values())
+            items = [
+                dict(item)
+                for run in runs
+                for item in run.watchlist_items
+                if datetime.fromisoformat(str(item["scheduled_start"])) > _aware(as_of)
+            ]
+            items.sort(
+                key=lambda item: (
+                    int(item["failed_gate_count"]),
+                    Decimal(str(item["distance_to_qualification"])),
+                    -Decimal(str(item["ev_per_unit"])),
+                    -Decimal(str(item["edge"])),
+                    str(item["scheduled_start"]),
+                    str(item["watchlist_id"]),
+                )
+            )
+            qualified = 0
+            run_ids = [run.id for run in runs]
+            if run_ids:
+                qualified = int(
+                    session.scalar(
+                        select(func.count())
+                        .select_from(Recommendation)
+                        .where(
+                            Recommendation.decision_run_id.in_(run_ids),
+                            Recommendation.recommendation_kind == "straight",
+                        )
+                    )
+                    or 0
+                )
+            return {
+                "as_of": _iso(as_of),
+                "upcoming_games_analyzed": sum(
+                    int(run.analysis_summary.get("games_analyzed", 0)) for run in runs
+                ),
+                "qualified_recommendations": qualified,
+                "watchlist_count": len(items),
+                "watchlist_version": "ncaaf-watchlist-v1",
+                "items": items,
             }
 
     def reject(self, principal: Principal, recommendation_id: str) -> dict[str, Any]:
@@ -533,7 +630,7 @@ class SqlAlchemyRecommendationRepository:
         rows = list(session.scalars(select(Recommendation).where(Recommendation.decision_run_id == run.id).order_by(Recommendation.recommendation_kind, Recommendation.external_id)))
         straight = [self._serialize_recommendation(session, row) for row in rows if row.recommendation_kind == "straight"]
         parlay = next((self._serialize_recommendation(session, row) for row in rows if row.recommendation_kind == "parlay"), None)
-        return {"decision_run_id": run.external_id, "as_of": _iso(run.as_of), "slate_date": run.slate_date.isoformat(), "portfolio_state": run.portfolio_state, "top_n": run.top_n, "pass_reasons": list(run.pass_reasons), "policy_versions": {"qualification": run.qualification_policy_version, "risk": run.risk_policy_version, "parlay": run.parlay_policy_version}, "portfolio": {"cash": money_json(run.cash), "reserved_exposure": money_json(run.reserved_exposure), "equity": money_json(run.equity), "peak_equity": money_json(run.peak_equity), "drawdown_fraction": float(run.drawdown_fraction)}, "straight_recommendations": straight, "parlay_of_the_day": parlay or {"status": "PASS", "reasons": [reason for reason in run.pass_reasons if reason.startswith("parlay_pass:")]}, "decision_hash": run.output_hash}
+        return {"decision_run_id": run.external_id, "as_of": _iso(run.as_of), "slate_date": run.slate_date.isoformat(), "portfolio_state": run.portfolio_state, "top_n": run.top_n, "pass_reasons": list(run.pass_reasons), "policy_versions": {"qualification": run.qualification_policy_version, "risk": run.risk_policy_version, "parlay": run.parlay_policy_version}, "portfolio": {"cash": money_json(run.cash), "reserved_exposure": money_json(run.reserved_exposure), "equity": money_json(run.equity), "peak_equity": money_json(run.peak_equity), "drawdown_fraction": float(run.drawdown_fraction)}, "straight_recommendations": straight, "parlay_of_the_day": parlay or {"status": "PASS", "reasons": [reason for reason in run.pass_reasons if reason.startswith("parlay_pass:")]}, "analysis_summary": dict(run.analysis_summary), "watchlist_count": len(run.watchlist_items), "decision_hash": run.output_hash}
 
     def _serialize_recommendation(self, session: Session, row: Recommendation) -> dict[str, Any]:
         legs = list(session.scalars(select(RecommendationLeg).where(RecommendationLeg.recommendation_id == row.id).order_by(RecommendationLeg.leg_index)))
@@ -801,6 +898,21 @@ def _decimal(value: Decimal | None) -> float | None:
 
 def _iso(value: datetime) -> str:
     return (value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)).isoformat()
+
+
+def _aware(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def _empty_watchlist(as_of: datetime) -> dict[str, Any]:
+    return {
+        "as_of": _iso(as_of),
+        "upcoming_games_analyzed": 0,
+        "qualified_recommendations": 0,
+        "watchlist_count": 0,
+        "watchlist_version": "ncaaf-watchlist-v1",
+        "items": [],
+    }
 
 
 def _exposure(items: list[OpenExposure], predicate: Any) -> Decimal:

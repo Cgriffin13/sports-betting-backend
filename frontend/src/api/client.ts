@@ -1,4 +1,4 @@
-import type { DashboardData, MarketHistory, MarketMovement, MarketRefreshResult, Portfolio, PortfolioStats, Recommendation, RiskExposure, SystemStatus } from "../types";
+import type { DashboardData, MarketHistory, MarketMovement, MarketRefreshResult, Portfolio, PortfolioStats, Recommendation, RiskExposure, SystemStatus, WatchlistState } from "../types";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -20,12 +20,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function loadDashboard(portfolioId: string, slateDate: string): Promise<DashboardData> {
   const encoded = encodeURIComponent(portfolioId);
-  const [system, portfolio, stats, risk, recommendationResponse, movement] = await Promise.all([
+  const [system, portfolio, stats, risk, recommendationResponse, watchlist, movement] = await Promise.all([
     request<SystemStatus>("/dashboard/system"),
     request<Portfolio>(`/portfolio/${encoded}`),
     request<PortfolioStats>(`/portfolio/${encoded}/stats`),
     request<RiskExposure>(`/portfolio/${encoded}/risk?slate_date=${slateDate}`),
     request<{ recommendations: Recommendation[]; latest_decision: { as_of: string; pass_reasons: string[]; rejection_summary: Record<string, number> } | null }>(`/portfolio/${encoded}/recommendations?upcoming_only=true`),
+    request<WatchlistState>(`/portfolio/${encoded}/watchlist?upcoming_only=true`),
     request<MarketMovement>(`/dashboard/market-movement?slate_date=${slateDate}`),
   ]);
   return {
@@ -34,6 +35,7 @@ export async function loadDashboard(portfolioId: string, slateDate: string): Pro
     stats,
     risk,
     recommendations: recommendationResponse.recommendations,
+    watchlist,
     movement,
     passReasons: recommendationResponse.latest_decision?.pass_reasons ?? [],
     rejectionSummary: recommendationResponse.latest_decision?.rejection_summary ?? {},

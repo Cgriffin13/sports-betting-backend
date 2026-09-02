@@ -6,7 +6,7 @@ Status: implemented as a paper-trading dashboard. It does not place real-money w
 
 The dashboard is branded **POLARIS**, with the product subtitle **NCAAF Portfolio**. It is a separate React 19 + TypeScript + Vite application under `frontend/`. It uses React Router for the page map, TanStack Query for server state/mutation revalidation, Recharts for restrained portfolio/market charts, and plain design-token CSS for the terminal-style responsive layout.
 
-The primary navigation is deliberately limited to Today, Portfolio, Bets, Parlay, History, and Settings. Model-registry and research-methodology transparency remain available under Settings → System / Methodology. Stored market movement is embedded in exact recommendation detail rather than competing for a primary destination.
+The primary navigation is deliberately limited to Today, Watchlist, Portfolio, Bets, Parlay, History, and Settings. Model-registry and research-methodology transparency remain available under Settings → System / Methodology. Stored market movement is embedded in exact recommendation and watchlist detail rather than competing for a primary destination.
 
 ```text
 Browser
@@ -23,6 +23,7 @@ The client does not calculate fair value, implied probability, edge, EV, Kelly s
 ## Pages
 
 - **Today**: equity/exposure/P&L/slate summary, scan deltas, CORE and OPPORTUNISTIC recommendations, PASS reasons, parlay state, exposure-to-limit bars, and portfolio trend.
+- **Watchlist**: current research-only positive-edge markets that survived the Phase 4 baseline but missed one or more unchanged production gates. It has no stake, approval, ledger, or parlay actions.
 - **Portfolio**: ledger balances, equity curve, drawdown/ROI/turnover/hit rate, market performance, and attribution.
 - **Bets**: recommended, approved, open, settled, and rejected lifecycle views with explicit approve/reject actions.
 - **Parlay**: qualified combined quote or an intentional PASS with the sleeve's correlation and risk requirements.
@@ -42,8 +43,17 @@ Existing Phase 6 endpoints remain authoritative. Phase 6.5 adds only:
 - `GET /dashboard/market-movement`: a date- and cutoff-bounded scalar projection of stored observations. It does not select snapshot raw JSON.
 - `GET /dashboard/market-history`: an event/market/side-bounded scalar history used by expanded recommendation detail. Empty history is a valid state.
 - `POST /dashboard/portfolio/{portfolio_id}/refresh-markets`: the only dashboard action that invokes the odds adapter. It is API-key authenticated through the same-origin BFF, guarded against concurrent execution, fetches current NCAAF h2h/spreads/totals once, persists the raw and normalized snapshot, and reruns recommendations for every upcoming UTC slate represented by the response.
+- `GET /portfolio/{id}/watchlist?upcoming_only=true`: the latest immutable decision-run watchlist state across upcoming slates, including authoritative games-analyzed and qualified/watchlist counts. It is stored-data-only.
 
 Page loads, route navigation, browser reloads, TanStack refetches, and market-history expansion are read-only and never create provider calls or charges.
+
+## Watchlist definition
+
+`ncaaf-watchlist-v1` does not loosen qualification. Eligibility starts only after a market has already survived Phase 4 structural pairing, supported-book, exact-line, freshness, ambiguity, and baseline pricing gates. The candidate must retain positive edge and positive EV, remain pregame, fail at least one Phase 6 production gate, and have no hard identity/model blocker. This deliberately bounds the research list without inventing a substitute recommendation threshold.
+
+Ranking is deterministic: fewer failed gates first, then the sum of normalized shortfalls to the unchanged 1.5% EV, 0.75% edge, two-book, 6% dispersion, and 120-second freshness gates; remaining ties use higher EV, higher edge, kickoff, and candidate hash. Every blocker remains visible. Watchlist JSON is frozen with its decision run, while retrieval uses only the newest run per upcoming slate, so refreshes can promote, demote, or remove current research state without mutating recommendations or ledger history.
+
+Today shows the backend's stored `games_analyzed` count rather than inferring a slate from recommendation IDs. Its subdued **On the radar** section is capped at five rows; the full Watchlist page shows all current eligible rows and can expand stored market history. The Parlay page may link to the Watchlist but cannot consume watchlist rows as legs.
 
 ## Timing and freshness
 

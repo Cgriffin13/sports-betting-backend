@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from dataclasses import replace
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import cast
 
@@ -78,6 +79,54 @@ def test_persist_approve_and_settle_recommendation_use_one_ledger(
     assert stats["equity"] == 204.8
     assert stats["attribution"]["classification"]["CORE"]["pnl"] == 4.8
     assert stats["attribution"]["bet_kind"]["straight"]["bets"] == 1
+
+
+def test_latest_watchlist_state_promotes_without_becoming_actionable(
+    session_factory: sessionmaker[Session],
+) -> None:
+    principal = Principal("owner-primary", "Primary Owner")
+    repository = SqlAlchemyRecommendationRepository(session_factory, Decimal("200"))
+    opportunity = _opportunity(odds=120, fair=Decimal("0.55"))
+    _event(session_factory, opportunity.event_id, opportunity.home_team, opportunity.away_team)
+    snapshot = repository.portfolio_snapshot(principal, "main", date(2026, 9, 5))
+    qualified = construct_portfolio(
+        [_qualified(opportunity)], snapshot, top_n=10, risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(), parlay_policy=ParlayPolicy(),
+    )
+    watchlist_item = {
+        "watchlist_id": "candidate-1", "event_id": str(opportunity.event_id),
+        "slate_date": "2026-09-05", "scheduled_start": opportunity.scheduled_start_utc.isoformat(),
+        "home_team": opportunity.home_team, "away_team": opportunity.away_team,
+        "market": "moneyline", "side": "home", "selection": opportunity.selection_name,
+        "sportsbook": "draftkings", "point": None, "odds": 100,
+        "fair_probability": 0.507, "implied_probability": 0.5, "edge": 0.007,
+        "ev_per_unit": 0.014, "books_count": 3, "dispersion": 0.01,
+        "freshness_age_seconds": 0, "fresh": True, "timing_classification": "EARLY_LOOKAHEAD",
+        "primary_horizon_at": NOW.isoformat(), "rejection_reasons": ["below_minimum_ev"],
+        "primary_blocker": "below_minimum_ev", "failed_gate_count": 1,
+        "distance_to_qualification": 0.0666666667, "ranking_score": 0.9375,
+        "source_observation_ids": [], "snapshot_ids": [],
+        "best_executable_observation_id": str(opportunity.best_executable_observation_id),
+        "watchlist_version": "ncaaf-watchlist-v1", "actionable": False,
+    }
+    repository.persist_decision(
+        principal, snapshot, replace(qualified, straight_recommendations=()), as_of=NOW,
+        input_hash="w" * 64, pricing_rejections={}, top_n=10, watchlist=[watchlist_item],
+        analysis_summary={"games_analyzed": 1, "watchlist_markets": 1},
+    )
+    first = repository.list_watchlist(principal, "main", as_of=NOW)
+    assert first["upcoming_games_analyzed"] == 1
+    assert first["watchlist_count"] == 1
+    assert first["items"][0]["actionable"] is False
+
+    repository.persist_decision(
+        principal, snapshot, qualified, as_of=NOW + timedelta(minutes=1),
+        input_hash="q" * 64, pricing_rejections={}, top_n=10, watchlist=[],
+        analysis_summary={"games_analyzed": 1, "watchlist_markets": 0},
+    )
+    promoted = repository.list_watchlist(principal, "main", as_of=NOW + timedelta(minutes=1))
+    assert promoted["watchlist_count"] == 0
+    assert promoted["qualified_recommendations"] == 1
 
 
 def test_risk_snapshot_counts_open_recommended_exposure(

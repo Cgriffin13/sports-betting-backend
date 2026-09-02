@@ -19,6 +19,7 @@ from app.schemas.recommendations import (
     RecommendationListResponse,
     RecommendationRequest,
     RiskExposureResponse,
+    WatchlistResponse,
 )
 from app.services.recommendation_service import RecommendationService
 
@@ -98,6 +99,21 @@ def approve_recommendation(
         raise HTTPException(status_code=409, detail=str(exc)) from None
     except InsufficientBankrollError:
         raise HTTPException(status_code=400, detail="Insufficient bankroll for the recommended stake") from None
+
+
+@router.get("/portfolio/{portfolio_id}/watchlist", response_model=WatchlistResponse)
+def portfolio_watchlist(
+    portfolio_id: str,
+    request: Request,
+    principal: Annotated[Principal, Depends(require_principal)],
+    upcoming_only: bool = True,
+) -> dict[str, Any]:
+    if not upcoming_only:
+        raise HTTPException(status_code=422, detail="Only current upcoming watchlist state is supported")
+    try:
+        return _service(request).watchlist(principal, portfolio_id, as_of=request.app.state.clock())
+    except PortfolioAccessDeniedError:
+        raise HTTPException(status_code=403, detail="Portfolio belongs to another owner") from None
 
 
 @router.post("/recommendations/{recommendation_id}/reject")

@@ -15,6 +15,8 @@ from app.domain.portfolio_engine import (
     construct_portfolio,
     evaluate_candidate,
 )
+from app.domain.recommendation_timing import classify_recommendation_timing
+from app.domain.watchlist import build_watchlist
 from app.persistence.model_registry_repository import SqlAlchemyModelRegistryRepository
 from app.persistence.recommendation_repository import SqlAlchemyRecommendationRepository
 from app.services.model_registry_service import FairValueService
@@ -124,6 +126,31 @@ class RecommendationService:
             parlay_policy=self.parlay_policy,
             parlay_offers=verified_offers,
         )
+        timing = (
+            classify_recommendation_timing(
+                as_of,
+                min(item.scheduled_start_utc for item in pricing.opportunities),
+            )
+            if pricing.opportunities
+            else None
+        )
+        watchlist = (
+            build_watchlist(
+                decision.evaluated_candidates,
+                self.qualification_policy,
+                as_of=as_of,
+                timing=timing,
+            )
+            if timing is not None
+            else []
+        )
+        analysis_summary = {
+            "games_analyzed": pricing.events_analyzed,
+            "pricing_opportunities": pricing.opportunities_qualified,
+            "candidates_evaluated": len(evaluations),
+            "qualified_straights": len(decision.straight_recommendations),
+            "watchlist_markets": len(watchlist),
+        }
         input_hash = canonical_hash(
             {
                 "portfolio_id": portfolio_id,
@@ -144,6 +171,8 @@ class RecommendationService:
             input_hash=input_hash,
             pricing_rejections=dict(rejection_counts),
             top_n=top_n,
+            watchlist=watchlist,
+            analysis_summary=analysis_summary,
         )
 
     def list(
@@ -163,6 +192,9 @@ class RecommendationService:
 
     def latest_decision(self, principal: Principal, portfolio_id: str, *, slate_date: date | None) -> dict[str, Any] | None:
         return self.repository.latest_decision_summary(principal, portfolio_id, slate_date=slate_date)
+
+    def watchlist(self, principal: Principal, portfolio_id: str, *, as_of: datetime) -> dict[str, Any]:
+        return self.repository.list_watchlist(principal, portfolio_id, as_of=as_of)
 
     def approve(self, principal: Principal, recommendation_id: str, *, idempotency_key: str | None) -> dict[str, Any]:
         return self.repository.approve(principal, recommendation_id, idempotency_key=idempotency_key)

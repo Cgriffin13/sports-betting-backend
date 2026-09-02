@@ -228,7 +228,7 @@ Exit criteria status: **Satisfied for the NCAAF v1 paper baseline.** Trusted par
 
 Goal: present the implemented portfolio workflow without moving decision logic into the client.
 
-Status: **Implemented on 2026-09-01 and production-readiness hardened.** The POLARIS React/TypeScript dashboard renders the backend-authoritative paper workflow across Today, Portfolio, Bets, Parlay, History, and read-only Settings. Research/model transparency lives under System / Methodology; stored movement lives in recommendation detail. A same-origin Cloudflare Pages Function keeps `APP_API_KEY` out of the static browser bundle. Only the prominent authenticated Refresh Markets action invokes provider ingestion; ordinary browser refetches read stored state.
+Status: **Implemented on 2026-09-01 and production-readiness hardened.** The POLARIS React/TypeScript dashboard renders the backend-authoritative paper workflow across Today, Watchlist, Portfolio, Bets, Parlay, History, and read-only Settings. Watchlist is explicitly research-only and preserves the existing qualification discipline. Research/model transparency lives under System / Methodology; stored movement lives in decision detail. A same-origin Cloudflare Pages Function keeps `APP_API_KEY` out of the static browser bundle. Only the prominent authenticated Refresh Markets action invokes provider ingestion; ordinary browser refetches read stored state.
 
 - Render fair value and executable price as separate fields.
 - Show proposed recommendations separately from approved official paper bets.
