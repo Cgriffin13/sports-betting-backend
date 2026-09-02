@@ -1299,6 +1299,7 @@ The committed Phase 5 registry manifest is validated and idempotently registered
 Consequences:
 
 - Navigation, page reload, background query revalidation, and history inspection incur no Odds API calls.
+- Production registry bootstrap reads the frozen committed JSON through lightweight domain validation only; offline `app.research` dependencies remain outside Render's web dependency graph.
 - Manual refresh is deliberate, visibly in-flight, safely retry-bounded by the adapter, and followed by persisted-state revalidation.
 - Upcoming recommendations never masquerade as validated primary-horizon decisions.
 - Raw market snapshots remain available for audit but absent from dashboard query projections.

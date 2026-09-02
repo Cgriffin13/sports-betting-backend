@@ -346,7 +346,7 @@ Recommendation timing uses a pure versioned domain policy. Each slate derives it
 
 `SqlAlchemyDashboardRepository` exposes snapshot status and exact stored market history using scalar projections only. Raw payload JSON is never materialized on dashboard read paths. Application health, market freshness/provider status, and portfolio risk are three separate concerns.
 
-Production startup validates and idempotently installs `docs/reports/NCAAF_MODEL_REGISTRY_V1.json` into PostgreSQL. This closes the prior operational gap where deployment depended on a manual CLI sync. Conflicting immutable registry content fails closed.
+Production startup validates and idempotently installs `docs/reports/NCAAF_MODEL_REGISTRY_V1.json` into PostgreSQL. This closes the prior operational gap where deployment depended on a manual CLI sync. The startup decoder uses production domain registrations and hashing only; it never imports `app.research` or its optional PyArrow/data-science stack. Conflicting immutable registry content fails closed.
 
 ### Phase 5B-3 baseline-model architecture (implemented offline)
 

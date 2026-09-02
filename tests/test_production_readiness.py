@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from threading import Event, Thread
 from typing import Any
 from uuid import uuid4
@@ -23,7 +28,7 @@ from app.services.market_refresh_service import (
     MarketRefreshService,
     MarketRefreshUnavailableError,
 )
-from app.services.model_registry_bootstrap import bootstrap_ncaaf_registry
+from app.services.model_registry_bootstrap import DEFAULT_REGISTRY_MANIFEST, bootstrap_ncaaf_registry
 from app.persistence.dashboard_repository import SqlAlchemyDashboardRepository
 from app.persistence.market_base import PersistedMarketSnapshot
 from app.main import create_app
@@ -98,7 +103,52 @@ def test_registry_bootstrap_is_idempotent_and_complete(session_factory: sessionm
         assert artifact_count >= 2
     assert len(models) == 7
     assert sum(item.status == "retained_benchmark" for item in models) == 4
-    assert {item.status for item in models} >= {"retained_benchmark", "diagnostic", "rejected"}
+    assert sum(item.status == "diagnostic" for item in models) == 2
+    assert sum(item.status == "rejected" for item in models) == 1
+
+
+def test_production_import_does_not_require_research_or_pyarrow() -> None:
+    script = """
+import builtins
+original_import = builtins.__import__
+def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'pyarrow' or name.startswith('pyarrow.') or name.startswith('app.research'):
+        raise ModuleNotFoundError(f'production import attempted forbidden dependency: {name}')
+    return original_import(name, globals, locals, fromlist, level)
+builtins.__import__ = guarded_import
+from main import app
+assert app.title == 'Sports Betting Portfolio Backend'
+"""
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "DATABASE_URL": "sqlite+pysqlite:///:memory:",
+            "APP_API_KEY": "production-import-test-only",
+        }
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=Path(__file__).resolve().parents[1],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_registry_bootstrap_fails_closed_on_manifest_tampering(
+    session_factory: sessionmaker[Session],
+    tmp_path: Path,
+) -> None:
+    manifest = json.loads(DEFAULT_REGISTRY_MANIFEST.read_text(encoding="utf-8"))
+    manifest["models"][0]["status"] = "diagnostic"
+    tampered = tmp_path / "tampered-registry.json"
+    tampered.write_text(json.dumps(manifest), encoding="utf-8")
+    repository = SqlAlchemyModelRegistryRepository(session_factory)
+    with pytest.raises(RuntimeError, match="registry hash mismatch"):
+        bootstrap_ncaaf_registry(repository, tampered)
+    assert repository.list_models(league="NCAAF") == []
 
 
 def test_production_app_startup_bootstraps_registry(tmp_path: Any) -> None:
