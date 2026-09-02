@@ -22,6 +22,9 @@ from app.domain.errors import (
 from app.domain.identity import Principal
 from app.domain.money import money, money_json
 from app.domain.portfolio_engine import (
+    PARLAY_POLICY_VERSION,
+    RECOMMENDATION_VERSION,
+    RISK_POLICY_VERSION,
     OpenExposure,
     ParlayPolicy,
     ParlayRecommendation,
@@ -150,8 +153,16 @@ class SqlAlchemyRecommendationRepository:
             )
             session.add(run)
             session.flush()
-            for item in decision.straight_recommendations:
-                session.add(self._straight_row(portfolio.id, run.id, run.output_hash, item))
+            for portfolio_rank, item in enumerate(decision.straight_recommendations, start=1):
+                session.add(
+                    self._straight_row(
+                        portfolio.id,
+                        run.id,
+                        run.output_hash,
+                        item,
+                        portfolio_rank=portfolio_rank,
+                    )
+                )
             if decision.parlay is not None:
                 row = self._parlay_row(portfolio.id, run.id, run.output_hash, decision.parlay)
                 session.add(row)
@@ -216,8 +227,18 @@ class SqlAlchemyRecommendationRepository:
                         )
                     )
                 )
-            rows = list(session.scalars(statement.order_by(Recommendation.created_at.desc(), Recommendation.external_id)))
-            return [self._serialize_recommendation(session, row) for row in rows]
+            rows = list(
+                session.scalars(
+                    statement.order_by(
+                        Recommendation.created_at.desc(),
+                        Recommendation.external_id,
+                    )
+                )
+            )
+            serialized = [self._serialize_recommendation(session, row) for row in rows]
+            if slate_date is not None or upcoming_as_of is not None:
+                serialized.sort(key=_serialized_recommendation_order)
+            return serialized
 
     def latest_decision_summary(
         self,
@@ -603,7 +624,15 @@ class SqlAlchemyRecommendationRepository:
             raise PortfolioAccessDeniedError
         return row
 
-    def _straight_row(self, portfolio_id: UUID, run_id: UUID, run_hash: str, item: StraightRecommendation) -> Recommendation:
+    def _straight_row(
+        self,
+        portfolio_id: UUID,
+        run_id: UUID,
+        run_hash: str,
+        item: StraightRecommendation,
+        *,
+        portfolio_rank: int,
+    ) -> Recommendation:
         candidate = item.candidate
         opportunity = candidate.opportunity
         persistent_hash = canonical_hash({"run_hash": run_hash, "recommendation_hash": item.recommendation_hash})
@@ -619,20 +648,35 @@ class SqlAlchemyRecommendationRepository:
             implied_probability=candidate.implied_probability, push_probability=candidate.push_probability,
             consensus_probability=candidate.win_probability, fair_probability=candidate.win_probability,
             probability_edge=candidate.edge, ev_per_unit=candidate.ev_per_unit,
-            uncertainty_metadata=dict(candidate.fair_value.uncertainty_quality),
+            uncertainty_metadata={
+                **dict(candidate.fair_value.uncertainty_quality),
+                "quote_integrity": candidate.quote_integrity,
+            },
             executable_alternatives=_alternatives(opportunity), risk_adjustments=list(item.risk_adjustments),
             provenance={
                 **dict(candidate.fair_value.provenance),
                 "fair_value_hash": candidate.fair_value.fair_value_hash,
                 "source_observation_ids": [str(value) for value in opportunity.source_observation_ids],
+                "portfolio_rank": portfolio_rank,
+                "ranking_score": str(candidate.ranking_score),
+                "expected_log_growth": str(candidate.expected_log_growth),
+                "robust_expected_log_growth": str(candidate.robust_expected_log_growth),
+                "ranking_kelly_fraction": str(candidate.ranking_kelly_fraction),
+                "quote_integrity": candidate.quote_integrity,
+                "books_contributing": opportunity.books_contributing,
+                "consensus_dispersion": str(opportunity.consensus_dispersion),
+                "outlier_sportsbooks": list(opportunity.outlier_sportsbooks),
+                "best_executable_is_consensus_outlier": (
+                    opportunity.best_sportsbook_key in opportunity.outlier_sportsbooks
+                ),
                 "research_explanation": _straight_explanation(item),
             },
             classification=item.candidate.classification.value if item.candidate.classification else None,
             recommended_stake=item.recommended_stake, bankroll_fraction=item.bankroll_fraction, units=item.units,
             raw_kelly_fraction=item.raw_kelly_fraction, adjusted_kelly_fraction=item.adjusted_kelly_fraction,
-            recommendation_hash=persistent_hash, recommendation_version="ncaaf-portfolio-recommendation-v1",
+            recommendation_hash=persistent_hash, recommendation_version=RECOMMENDATION_VERSION,
             model_version=f"{candidate.fair_value.model_id}@{candidate.fair_value.model_version}",
-            policy_version="fractional-kelly-risk-budget-v1", status="proposed", created_at=self.clock(),
+            policy_version=RISK_POLICY_VERSION, status="proposed", created_at=self.clock(),
         )
 
     def _parlay_row(self, portfolio_id: UUID, run_id: UUID, run_hash: str, item: ParlayRecommendation) -> Recommendation:
@@ -659,16 +703,16 @@ class SqlAlchemyRecommendationRepository:
             risk_adjustments=["separate_parlay_sleeve", "duplicate_exposure_accounted"],
             provenance={
                 **dict(item.offer.provenance),
-                "selection_reason": "highest_eligible_joint_ev_score",
+                "selection_reason": "highest_eligible_expected_log_growth_score",
                 "research_explanation": (
                     "Verified cross-event, disjoint-team quote with independently qualified legs; "
-                    "selected by the versioned joint-EV score after duplicate-exposure penalty."
+                    "selected by versioned expected log growth after duplicate-exposure penalty."
                 ),
             },
             classification="OPPORTUNISTIC", recommended_stake=item.stake,
             bankroll_fraction=item.bankroll_fraction, units=item.units, recommendation_hash=persistent_hash,
-            recommendation_version="ncaaf-portfolio-recommendation-v1", model_version="joint-market-consensus-v1",
-            policy_version="cross-event-parlay-v1", status="proposed", created_at=self.clock(),
+            recommendation_version=RECOMMENDATION_VERSION, model_version="joint-market-consensus-v1",
+            policy_version=PARLAY_POLICY_VERSION, status="proposed", created_at=self.clock(),
         )
 
     def _leg_row(self, recommendation_id: UUID, index: int, leg: StraightRecommendation) -> RecommendationLeg:
@@ -685,8 +729,19 @@ class SqlAlchemyRecommendationRepository:
         )
 
     def _serialize_run(self, session: Session, run: RecommendationDecisionRun) -> dict[str, Any]:
-        rows = list(session.scalars(select(Recommendation).where(Recommendation.decision_run_id == run.id).order_by(Recommendation.recommendation_kind, Recommendation.external_id)))
-        straight = [self._serialize_recommendation(session, row) for row in rows if row.recommendation_kind == "straight"]
+        rows = list(
+            session.scalars(
+                select(Recommendation)
+                .where(Recommendation.decision_run_id == run.id)
+                .order_by(Recommendation.recommendation_kind, Recommendation.external_id)
+            )
+        )
+        straight = [
+            self._serialize_recommendation(session, row)
+            for row in rows
+            if row.recommendation_kind == "straight"
+        ]
+        straight.sort(key=_serialized_recommendation_order)
         parlay = next((self._serialize_recommendation(session, row) for row in rows if row.recommendation_kind == "parlay"), None)
         return {"decision_run_id": run.external_id, "as_of": _iso(run.as_of), "slate_date": run.slate_date.isoformat(), "portfolio_state": run.portfolio_state, "top_n": run.top_n, "pass_reasons": list(run.pass_reasons), "policy_versions": {"qualification": run.qualification_policy_version, "risk": run.risk_policy_version, "parlay": run.parlay_policy_version}, "portfolio": {"cash": money_json(run.cash), "reserved_exposure": money_json(run.reserved_exposure), "equity": money_json(run.equity), "peak_equity": money_json(run.peak_equity), "drawdown_fraction": float(run.drawdown_fraction)}, "straight_recommendations": straight, "parlay_of_the_day": parlay or {"status": "PASS", "reasons": [reason for reason in run.pass_reasons if reason.startswith("parlay_pass:")]}, "analysis_summary": dict(run.analysis_summary), "watchlist_count": len(run.watchlist_items), "decision_hash": run.output_hash}
 
@@ -729,6 +784,16 @@ class SqlAlchemyRecommendationRepository:
             "stake": money_json(row.recommended_stake or Decimal(0)),
             "bankroll_fraction": _decimal(row.bankroll_fraction),
             "units": _decimal(row.units),
+            "raw_kelly_fraction": _decimal(row.raw_kelly_fraction),
+            "adjusted_kelly_fraction": _decimal(row.adjusted_kelly_fraction),
+            "portfolio_rank": (row.provenance or {}).get("portfolio_rank"),
+            "ranking_score": _provenance_decimal(row, "ranking_score"),
+            "expected_log_growth": _provenance_decimal(row, "expected_log_growth"),
+            "robust_expected_log_growth": _provenance_decimal(
+                row,
+                "robust_expected_log_growth",
+            ),
+            "quote_integrity": (row.provenance or {}).get("quote_integrity"),
             "classification": row.classification,
             "risk_adjustments": row.risk_adjustments or [],
             "executable_alternatives": row.executable_alternatives or [],
@@ -946,12 +1011,38 @@ def _straight_explanation(item: StraightRecommendation) -> str:
         f"market-consensus opportunity at {opportunity.best_sportsbook_name}: "
         f"fair probability {candidate.win_probability}, executable odds "
         f"{opportunity.best_american_odds:+d}, edge {candidate.edge}, and EV per unit "
-        f"{candidate.ev_per_unit}; stake is constrained by {item.risk_adjustments}."
+        f"{candidate.ev_per_unit}; robust expected log-growth score "
+        f"{candidate.robust_expected_log_growth} with quote integrity "
+        f"{candidate.quote_integrity}; stake is constrained by {item.risk_adjustments}."
     )
 
 
 def _decimal(value: Decimal | None) -> float | None:
     return float(value) if value is not None else None
+
+
+def _provenance_decimal(row: Recommendation, key: str) -> float | None:
+    value = (row.provenance or {}).get(key)
+    return float(Decimal(str(value))) if value is not None else None
+
+
+def _serialized_recommendation_order(
+    item: dict[str, Any],
+) -> tuple[str, float, int, int, str]:
+    rank = item.get("portfolio_rank")
+    decision_as_of = item.get("decision_as_of")
+    decision_timestamp = (
+        _aware(datetime.fromisoformat(str(decision_as_of))).timestamp()
+        if decision_as_of is not None
+        else 0.0
+    )
+    return (
+        str(item.get("slate_date") or ""),
+        -decision_timestamp,
+        0 if item.get("kind") == "straight" else 1,
+        int(rank) if rank is not None else 2**31 - 1,
+        str(item["recommendation_id"]),
+    )
 
 
 def _iso(value: datetime) -> str:

@@ -20,6 +20,8 @@ The browser never calls The Odds API. Current-market refreshes read stored backe
 
 The client does not calculate fair value, implied probability, edge, EV, Kelly size, qualification, exposure eligibility, correlation, or parlay joint probability. It renders values and decisions returned by FastAPI. Approval and rejection mutations are re-fetched after the server responds; approval-time portfolio risk is revalidated transactionally by the backend.
 
+Today preserves the backend's risk-adjusted portfolio order. Expanded recommendation details show portfolio rank, full and adjusted Kelly, robust expected-log-growth score, and quote-integrity state. The browser never re-sorts by raw EV and never applies a cosmetic market-type or odds-range quota. The backend's `>+500` no-longshot-sleeve guardrail appears only as a read-only PASS/rejection reason; the client does not recalculate or relax it.
+
 ## Pages
 
 - **Today**: equity/exposure/P&L/slate summary, scan deltas, CORE and OPPORTUNISTIC recommendations, PASS reasons, parlay state, exposure-to-limit bars, and portfolio trend.

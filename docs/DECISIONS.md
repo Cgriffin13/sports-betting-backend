@@ -1342,3 +1342,49 @@ Consequences:
 - **Decision:** `MarketSnapshot.requested_at` is the hard live freshness clock. Provider `last_update` remains source/quality metadata with a separate configurable pathological ceiling. Latest-state selection prioritizes the newest time-eligible snapshot. The default supported US sportsbook allowlist is BetMGM, BetRivers, Caesars (`williamhill_us`), DraftKings, Fanatics, and FanDuel.
 - **Reason:** The former code compared an unchanged bookmaker-price timestamp to the 120-second snapshot limit. A fresh 12:00 retrieval could reject an executable 11:55 quote and collapse before pairing. The prior DraftKings/FanDuel/BetMGM list was a prototype default rather than a frozen consensus-method rule.
 - **Consequences:** EV, edge, two-book depth, dispersion, staking, and fair-value methods do not change. Quote age is visible. Pathological ages fail closed. A pre-candidate collapse is `DEGRADED`, never PASS.
+
+## ADR-096 — Rank qualified positions by robust expected log growth and separate outlier labels from integrity failures
+
+- Date: 2026-09-02
+- Status: Accepted and implemented; refines ADR-041, ADR-089, and ADR-090
+
+Phase 6 must first apply the unchanged production EV, edge, book-depth, freshness, dispersion, structural, model-status, and integrity gates. It then ranks qualified NCAAF positions under `expected-log-growth-risk-budget-v2` by the minimum expected log growth across contributing paired no-vig probabilities at the projected standalone adjusted-Kelly fraction. Consensus expected growth, adjusted Kelly, quote integrity, depth, dispersion, moderate break-even probability, raw EV, and edge are deterministic later tie-breakers. Top N follows ranking. Watchlist continues to use gate distance.
+
+The exact score is:
+
+```text
+g(p, f) = p_win * ln(1 + f*(decimal_odds - 1)) + p_loss * ln(1 - f)
+robust_score = min(g(p_book, f) for each complete contributing book)
+```
+
+`f` uses the existing push-aware full-Kelly solution, quarter-Kelly factor, uncertainty/classification/state multipliers, and current standalone portfolio caps. V2 changes selection order, not stake limits. No explicit longshot ban or spread/total quota is introduced; the economics naturally require an extreme price to support meaningful prudent growth and robust book agreement before outranking a strong moderate-odds market.
+
+The `unweighted-median-v1` fair-value method is unchanged. `material_book_outlier` and `best_executable_book_outlier` are now explicit informational audit labels. A supported, active, fresh, correctly paired best quote is not rejected merely because it is better than the median. Unknown integrity warnings and the 6-point Phase 6 dispersion ceiling remain hard failures. Median consensus prevents one extreme book from defining fair value; the robust score and integrity tie-break address corroboration without inventing book weights.
+
+`cross-event-parlay-v2` likewise ranks otherwise eligible verified offers by expected log growth at the capped sleeve stake after duplicate-exposure penalty, with joint, minimum-leg, and aggregate leg probabilities before raw joint EV. It retains the cross-event/disjoint-team requirement and does not force a parlay.
+
+Consequences:
+
+- Raw EV remains visible and required but cannot dominate Today solely through a large longshot payout.
+- CORE/OPPORTUNISTIC thresholds, quarter-Kelly sizing, minimum stake, all exposure caps, approval, and ledger behavior are unchanged.
+- Recommendation snapshots preserve portfolio rank, full/adjusted Kelly, expected/robust log growth, quote-integrity state, and outlier provenance.
+- `ncaaf-qualification-v2`, `expected-log-growth-risk-budget-v2`, `cross-event-parlay-v2`, and `ncaaf-portfolio-recommendation-v2` make the changed semantics auditable.
+
+## ADR-097 — Keep risk-adjusted growth primary and bound the main board at +500
+
+- Date: 2026-09-02
+- Status: Accepted and implemented; narrowly supersedes ADR-096's statement that no explicit longshot guardrail exists
+
+POLARIS has no dedicated longshot/high-variance sleeve. `ncaaf-qualification-v3` therefore preserves every structurally calculable candidate and its fair probability, executable probability, edge, EV, books, dispersion, and provenance, but marks a best executable price above `+500` as `outside_main_board_odds_profile`. Such a row is diagnostic/PASS only: it cannot receive a stake, approval, ledger entry, or parlay eligibility. Exact `+500` remains eligible for the ordinary rules.
+
+This boundary is a final safety guardrail, not the primary ranking method. POLARIS does not impose a `-300/+300` hard band, does not reject heavy favorites merely for price, does not add market-type quotas, and does not change fair-value or EV formulas. All otherwise eligible prices through `+500` continue to rank by robust expected log growth at the Kelly-supported risk fraction, consensus expected growth, quote integrity, depth, dispersion, and deterministic tie-breakers. Tests independently establish that representative `+1000` and `+2000` candidates with larger raw EV already trail a strong `-110` spread on expected log growth before the safety guardrail is applied.
+
+The guardrail is necessary because an extreme payout can support high calculated log growth when a small market-consensus probability difference is treated as precise, while the current portfolio has neither a separately validated tail-probability policy nor an isolated exposure budget for that estimation risk. A future longshot sleeve must be explicitly designed, versioned, empirically validated, separately capped, and recorded in a new decision before these rows can become actionable.
+
+Consequences:
+
+- `expected-log-growth-risk-budget-v2` remains unchanged and primary.
+- `ncaaf-portfolio-recommendation-v3` records the new qualification semantics; no staking or exposure limit changes.
+- Prices above `+500` remain visible in the evaluated-candidate/funnel diagnostics and retain unchanged economics.
+- Watchlist does not promote them, because Watchlist is near-production research rather than a substitute longshot sleeve.
+- Parlay construction still begins only from actionable straights, so excluded extreme prices cannot enter parlays indirectly.

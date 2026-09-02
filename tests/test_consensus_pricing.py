@@ -303,7 +303,10 @@ def test_median_consensus_is_robust_reports_outlier_and_separates_best_price() -
     assert opportunity.probability_edge == Decimal("0.5") - Decimal(10) / Decimal(21)
     assert opportunity.ev_per_unit == Decimal("0.05")
     assert opportunity.outlier_sportsbooks == ("betmgm",)
-    assert opportunity.quality_warnings == ("material_book_outlier",)
+    assert opportunity.quality_warnings == (
+        "material_book_outlier",
+        "best_executable_book_outlier",
+    )
     assert opportunity.proprietary_model_probability is None
     assert opportunity.final_fair_probability_source == "market_consensus"
     assert len(opportunity.source_observation_ids) == 6

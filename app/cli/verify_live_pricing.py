@@ -17,6 +17,10 @@ from app.db.base import Base
 from app.db.session import create_session_factory
 from app.domain.consensus import build_pricing_analysis
 from app.domain.identity import Principal
+from app.domain.portfolio_engine import (
+    INFORMATIONAL_PRICING_WARNINGS,
+    MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS,
+)
 from app.domain.pricing import PricingObservation
 from app.persistence.pricing_base import PricingObservationQuery
 from app.persistence.pricing_repository import SqlAlchemyPricingObservationRepository
@@ -261,7 +265,9 @@ def _closest_positive_ev(
                 blockers.append("below_minimum_ev")
             if candidate.consensus_dispersion > settings.portfolio_maximum_dispersion:
                 blockers.append("excessive_consensus_dispersion")
-            if candidate.quality_warnings:
+            if candidate.best_american_odds > MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS:
+                blockers.append("outside_main_board_odds_profile")
+            if set(candidate.quality_warnings) - INFORMATIONAL_PRICING_WARNINGS:
                 blockers.append("pricing_quality_warning")
             blockers = sorted(set(blockers))
             distance = sum(

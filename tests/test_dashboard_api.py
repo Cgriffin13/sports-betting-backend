@@ -29,6 +29,7 @@ def test_dashboard_reads_are_authenticated_and_expose_safe_policy(
     assert body["paper_trading"] is True
     assert body["league"] == "NCAAF"
     assert body["policies"]["kelly_fraction"] == 0.25
+    assert body["policies"]["maximum_actionable_positive_american_odds"] == 500
     assert "app_api_key" not in body["policies"]
     assert "odds_api_key" not in body["policies"]
 

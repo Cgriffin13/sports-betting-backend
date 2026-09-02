@@ -354,7 +354,11 @@ def _build_opportunities(
                     key=str,
                 )
             )
-            warnings = tuple(["material_book_outlier"] if outliers else [])
+            warnings: tuple[str, ...] = ()
+            if outliers:
+                warnings = ("material_book_outlier",)
+                if best.sportsbook_key in outliers:
+                    warnings += ("best_executable_book_outlier",)
             first = book_markets[0]
             opportunity = PricingOpportunity(
                 event_id=first.event_id,

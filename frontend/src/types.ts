@@ -24,6 +24,13 @@ export interface Recommendation {
   stake: number;
   bankroll_fraction: number | null;
   units: number | null;
+  raw_kelly_fraction: number | null;
+  adjusted_kelly_fraction: number | null;
+  portfolio_rank: number | null;
+  ranking_score: number | null;
+  expected_log_growth: number | null;
+  robust_expected_log_growth: number | null;
+  quote_integrity: string | null;
   classification: "CORE" | "OPPORTUNISTIC" | null;
   risk_adjustments: string[];
   executable_alternatives: Array<Record<string, unknown>>;

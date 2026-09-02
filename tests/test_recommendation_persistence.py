@@ -81,6 +81,48 @@ def test_persist_approve_and_settle_recommendation_use_one_ledger(
     assert stats["attribution"]["bet_kind"]["straight"]["bets"] == 1
 
 
+def test_persistence_and_upcoming_api_order_preserve_portfolio_ranking(
+    session_factory: sessionmaker[Session],
+) -> None:
+    principal = Principal("owner-primary", "Primary Owner")
+    repository = SqlAlchemyRecommendationRepository(session_factory, Decimal("200"))
+    lower = _opportunity(odds=120, fair=Decimal("0.55"), home="Lower", away="Peer A")
+    higher = _opportunity(odds=120, fair=Decimal("0.60"), home="Higher", away="Peer B")
+    for item in (lower, higher):
+        _event(session_factory, item.event_id, item.home_team, item.away_team)
+    snapshot = repository.portfolio_snapshot(principal, "main", date(2026, 9, 5))
+    decision = construct_portfolio(
+        [_qualified(lower), _qualified(higher)],
+        snapshot,
+        top_n=10,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+
+    persisted = repository.persist_decision(
+        principal,
+        snapshot,
+        decision,
+        as_of=NOW,
+        input_hash="r" * 64,
+        pricing_rejections={},
+        top_n=10,
+    )
+    straight = persisted["straight_recommendations"]
+    assert [item["selection"] for item in straight] == ["Higher", "Lower"]
+    assert [item["portfolio_rank"] for item in straight] == [1, 2]
+    assert straight[0]["ranking_score"] > straight[1]["ranking_score"]
+    assert straight[0]["raw_kelly_fraction"] is not None
+    assert straight[0]["adjusted_kelly_fraction"] is not None
+    assert straight[0]["quote_integrity"] == "verified"
+
+    listed = repository.list_recommendations(principal, "main", upcoming_as_of=NOW)
+    assert [item["recommendation_id"] for item in listed] == [
+        item["recommendation_id"] for item in straight
+    ]
+
+
 def test_latest_watchlist_state_promotes_without_becoming_actionable(
     session_factory: sessionmaker[Session],
 ) -> None:

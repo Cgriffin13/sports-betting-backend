@@ -18,11 +18,17 @@ from app.domain.portfolio_engine import (
     RiskPolicy,
     construct_portfolio,
     evaluate_candidate,
+    expected_log_growth,
     fractional_kelly_with_push,
     optimize_parlay,
     portfolio_state,
 )
-from app.domain.pricing import BookNoVigPrice, PricingOpportunity, american_odds_to_decimal
+from app.domain.pricing import (
+    BookNoVigPrice,
+    PricingOpportunity,
+    american_odds_to_decimal,
+    american_odds_to_implied_probability,
+)
 from app.domain.portfolio_simulator import SimulationOutcome, SimulationSlate, simulate_portfolio
 
 NOW = datetime(2026, 9, 5, 13, tzinfo=UTC)
@@ -33,8 +39,25 @@ def test_push_aware_ev_and_fractional_kelly_math() -> None:
     assert fraction == Decimal("0.1578947368421052631578947368")
     assert fraction > 0
     assert RiskPolicy().kelly_fraction == Decimal("0.25")
+    assert QualificationPolicy().maximum_actionable_positive_american_odds == 500
     with pytest.raises(ValueError, match="Full Kelly"):
         RiskPolicy(kelly_fraction=Decimal(1))
+    with pytest.raises(ValueError, match=r"at least \+100"):
+        QualificationPolicy(maximum_actionable_positive_american_odds=99)
+
+
+def test_expected_log_growth_is_push_aware_and_numerically_safe() -> None:
+    growth = expected_log_growth(
+        Decimal("0.55"),
+        Decimal("0.05"),
+        Decimal("2.0"),
+        Decimal("0.01"),
+    )
+    expected = Decimal("0.55") * Decimal("1.01").ln() + Decimal("0.40") * Decimal("0.99").ln()
+    assert growth == expected
+    assert expected_log_growth(Decimal("0.55"), Decimal(0), Decimal("2.0"), Decimal(0)) == 0
+    with pytest.raises(ValueError, match="between zero and one"):
+        expected_log_growth(Decimal("0.55"), Decimal(0), Decimal("2.0"), Decimal(1))
 
 
 def test_candidate_keeps_fair_value_separate_from_best_executable_price() -> None:
@@ -79,6 +102,252 @@ def test_top_n_is_ceiling_and_zero_positions_is_valid() -> None:
     assert decision.parlay is None
     assert "no_candidates_passed_qualification" in decision.pass_reasons
     assert any(reason.startswith("parlay_pass:") for reason in decision.pass_reasons)
+
+
+def test_risk_adjusted_ranking_and_main_board_guardrail_prefer_standard_juice() -> None:
+    longshots = (
+        _qualified(
+            _opportunity(
+                odds=1000,
+                fair=Decimal("0.10"),
+                home="Longshot One",
+                away="Favorite One",
+            )
+        ),
+        _qualified(
+            _opportunity(
+                odds=2000,
+                fair=Decimal("0.06"),
+                home="Longshot Two",
+                away="Favorite Two",
+            )
+        ),
+    )
+    standard_juice = _qualified(
+        _opportunity(
+            market="spread",
+            side="home",
+            point=Decimal("-3.5"),
+            odds=-110,
+            fair=Decimal("0.55"),
+            home="Balanced State",
+            away="Peer University",
+        )
+    )
+
+    assert all(longshot.ev_per_unit > standard_juice.ev_per_unit for longshot in longshots)
+    decision = construct_portfolio(
+        [*longshots, standard_juice],
+        _snapshot(),
+        top_n=1,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+    repeated = construct_portfolio(
+        [standard_juice, *reversed(longshots)],
+        _snapshot(),
+        top_n=1,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+
+    selected = decision.straight_recommendations[0]
+    assert selected.candidate.candidate_id == standard_juice.candidate_id
+    assert repeated.decision_hash == decision.decision_hash
+    assert all(not item.qualified for item in longshots)
+    assert all("outside_main_board_odds_profile" in item.rejection_reasons for item in longshots)
+
+    # The mathematical ranking correction is independently sufficient for these
+    # realistic weak longshots: at quarter Kelly their expected log growth is
+    # below the standard-juice spread even before the +500 safety guardrail.
+    standard_fraction = fractional_kelly_with_push(
+        standard_juice.win_probability,
+        standard_juice.push_probability,
+        standard_juice.opportunity.best_decimal_odds,
+    ) * RiskPolicy().kelly_fraction
+    standard_growth = expected_log_growth(
+        standard_juice.win_probability,
+        standard_juice.push_probability,
+        standard_juice.opportunity.best_decimal_odds,
+        standard_fraction,
+    )
+    longshot_growth = tuple(
+        expected_log_growth(
+            item.win_probability,
+            item.push_probability,
+            item.opportunity.best_decimal_odds,
+            fractional_kelly_with_push(
+                item.win_probability,
+                item.push_probability,
+                item.opportunity.best_decimal_odds,
+            )
+            * RiskPolicy().kelly_fraction
+            * RiskPolicy().opportunistic_multiplier,
+        )
+        for item in longshots
+    )
+    assert standard_growth > max(longshot_growth)
+
+
+def test_main_board_guardrail_keeps_extreme_longshot_calculable_but_non_actionable() -> None:
+    longshot = _qualified(_opportunity(odds=1000, fair=Decimal("0.13")))
+    decision = construct_portfolio(
+        [longshot],
+        _snapshot(),
+        top_n=10,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+    assert longshot.ev_per_unit == Decimal("0.43")
+    assert longshot.edge > 0
+    assert not longshot.qualified
+    assert longshot.rejection_reasons == ("outside_main_board_odds_profile",)
+    assert decision.straight_recommendations == ()
+    assert decision.parlay is None
+
+
+def test_positive_500_boundary_remains_growth_ranked_but_501_is_diagnostic_only() -> None:
+    at_boundary = _qualified(
+        _opportunity(odds=500, fair=Decimal("0.20"), home="Boundary", away="Peer")
+    )
+    outside = _qualified(
+        _opportunity(odds=501, fair=Decimal("0.20"), home="Outside", away="Other")
+    )
+
+    assert at_boundary.qualified
+    assert at_boundary.classification == PositionClass.CORE
+    assert not outside.qualified
+    assert outside.ev_per_unit > 0
+    assert outside.rejection_reasons == ("outside_main_board_odds_profile",)
+
+    decision = construct_portfolio(
+        [outside, at_boundary],
+        _snapshot(),
+        top_n=10,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+        parlay_offers=(
+            ParlayOffer(
+                "guardrail-parlay",
+                "draftkings",
+                (at_boundary.candidate_id, outside.candidate_id),
+                (
+                    str(at_boundary.opportunity.best_executable_observation_id),
+                    str(outside.opportunity.best_executable_observation_id),
+                ),
+                1200,
+                NOW,
+                {"verified_provider_quote": True, "source_snapshot_id": "snapshot"},
+            ),
+        ),
+    )
+    assert [item.candidate.candidate_id for item in decision.straight_recommendations] == [
+        at_boundary.candidate_id
+    ]
+    assert decision.parlay is None
+
+
+def test_main_board_guardrail_is_not_a_negative_odds_band_or_primary_ranker() -> None:
+    strong_favorite = _qualified(_opportunity(odds=-400, fair=Decimal("0.84")))
+    moderate = _qualified(_opportunity(odds=400, fair=Decimal("0.23")))
+
+    assert strong_favorite.qualified
+    assert moderate.qualified
+    decision = construct_portfolio(
+        [moderate, strong_favorite],
+        _snapshot(),
+        top_n=10,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+    assert len(decision.straight_recommendations) == 2
+    assert all(item.candidate.ranking_score > 0 for item in decision.straight_recommendations)
+
+
+def test_consensus_outlier_warning_is_informational_but_dispersion_still_fails_closed() -> None:
+    opportunity = replace(
+        _opportunity(odds=120, fair=Decimal("0.55")),
+        consensus_dispersion=Decimal("0.04"),
+        outlier_sportsbooks=("draftkings",),
+        quality_warnings=("material_book_outlier", "best_executable_book_outlier"),
+    )
+    quote = replace(_quote(opportunity), consensus_dispersion=Decimal("0.04"))
+    evaluation = evaluate_candidate(quote, opportunity, QualificationPolicy(), as_of=NOW)
+    assert evaluation.qualified
+    assert evaluation.quote_integrity == "verified_best_price_consensus_outlier"
+
+    excessive = replace(_quote(opportunity), consensus_dispersion=Decimal("0.061"))
+    rejected = evaluate_candidate(excessive, opportunity, QualificationPolicy(), as_of=NOW)
+    assert not rejected.qualified
+    assert "excessive_or_unknown_dispersion" in rejected.rejection_reasons
+
+
+def test_robust_growth_uses_least_favorable_contributing_probability() -> None:
+    stable_opportunity = _opportunity(
+        odds=120,
+        fair=Decimal("0.55"),
+        home="Stable",
+        away="Peer Stable",
+    )
+    fragile_books = (
+        replace(
+            stable_opportunity.book_probabilities[0],
+            selection_probability=Decimal("0.50"),
+            opposing_probability=Decimal("0.50"),
+        ),
+        *stable_opportunity.book_probabilities[1:],
+    )
+    fragile_opportunity = replace(
+        stable_opportunity,
+        event_id=uuid4(),
+        home_team="Fragile",
+        away_team="Peer Fragile",
+        book_probabilities=fragile_books,
+        consensus_dispersion=Decimal("0.05"),
+        outlier_sportsbooks=("draftkings",),
+        quality_warnings=("material_book_outlier", "best_executable_book_outlier"),
+    )
+    stable = evaluate_candidate(
+        _quote(stable_opportunity),
+        stable_opportunity,
+        QualificationPolicy(),
+        as_of=NOW,
+    )
+    fragile = evaluate_candidate(
+        replace(_quote(fragile_opportunity), consensus_dispersion=Decimal("0.05")),
+        fragile_opportunity,
+        QualificationPolicy(),
+        as_of=NOW,
+    )
+    decision = construct_portfolio(
+        [fragile, stable],
+        _snapshot(),
+        top_n=2,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+    ranked = {item.candidate_id: item for item in decision.evaluated_candidates}
+    assert stable.qualified and fragile.qualified
+    assert ranked[stable.candidate_id].expected_log_growth == ranked[fragile.candidate_id].expected_log_growth
+    assert (
+        ranked[stable.candidate_id].robust_expected_log_growth
+        > ranked[fragile.candidate_id].robust_expected_log_growth
+    )
+
+
+def test_unknown_pricing_warning_remains_a_hard_rejection() -> None:
+    opportunity = replace(
+        _opportunity(odds=120, fair=Decimal("0.55")),
+        quality_warnings=("malformed_executable_quote",),
+    )
+    rejected = evaluate_candidate(_quote(opportunity), opportunity, QualificationPolicy(), as_of=NOW)
+    assert "pricing_quality_warning" in rejected.rejection_reasons
 
 
 def test_stake_caps_units_and_risk_states() -> None:
@@ -156,6 +425,63 @@ def test_same_game_parlay_is_rejected_without_correlation_model() -> None:
         300, NOW, {"verified_provider_quote": True, "source_snapshot_id": "x"},
     )
     assert optimize_parlay(straight, [offer], _snapshot(), state=PortfolioState.NORMAL, risk_policy=RiskPolicy(), policy=ParlayPolicy())[0] is None
+
+
+def test_parlay_ranking_uses_expected_growth_before_raw_joint_ev() -> None:
+    risk = RiskPolicy(
+        maximum_daily_fraction=Decimal("0.20"),
+        maximum_market_fraction=Decimal("0.20"),
+    )
+    snapshot = replace(
+        _snapshot(),
+        starting_bankroll=Decimal("1000"),
+        cash=Decimal("1000"),
+        equity=Decimal("1000"),
+        peak_equity=Decimal("1000"),
+    )
+    opportunities = (
+        _opportunity(odds=500, fair=Decimal("0.20"), home="L1", away="L2"),
+        _opportunity(odds=500, fair=Decimal("0.20"), home="L3", away="L4"),
+        _opportunity(odds=-150, fair=Decimal("0.70"), home="M1", away="M2"),
+        _opportunity(odds=-150, fair=Decimal("0.70"), home="M3", away="M4"),
+    )
+    straight = construct_portfolio(
+        [_qualified(item) for item in opportunities],
+        snapshot,
+        top_n=10,
+        risk_policy=risk,
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    ).straight_recommendations
+    by_home = {item.candidate.opportunity.home_team: item for item in straight}
+
+    def offer(offer_id: str, homes: tuple[str, str], odds: int) -> ParlayOffer:
+        legs = tuple(by_home[home] for home in homes)
+        return ParlayOffer(
+            offer_id,
+            "draftkings",
+            tuple(item.candidate.candidate_id for item in legs),
+            tuple(str(item.candidate.opportunity.best_executable_observation_id) for item in legs),
+            odds,
+            NOW,
+            {"verified_provider_quote": True, "source_snapshot_id": "snapshot"},
+        )
+
+    longshot_offer = offer("longshot", ("L1", "L3"), 4000)
+    moderate_offer = offer("moderate", ("M1", "M3"), 150)
+    parlay, reason = optimize_parlay(
+        straight,
+        [longshot_offer, moderate_offer],
+        snapshot,
+        state=PortfolioState.NORMAL,
+        risk_policy=risk,
+        policy=ParlayPolicy(),
+    )
+
+    assert reason == "selected"
+    assert parlay is not None
+    assert Decimal("0.64") > Decimal("0.225")  # longshot raw joint EV is larger
+    assert parlay.offer.offer_id == "moderate"
 
 
 def test_simulator_is_deterministic_and_rejects_outcome_leakage() -> None:
@@ -252,10 +578,11 @@ def _opportunity(
         scheduled_start_utc=NOW + timedelta(hours=8), market_type=market, period="full_game",
         selection_side=side, selection_name=home if side == "home" else side.title(), point=point,
         best_sportsbook_key="draftkings", best_sportsbook_name="DraftKings", best_american_odds=odds,
-        best_decimal_odds=american_odds_to_decimal(odds), raw_implied_probability=Decimal(100) / Decimal(odds + 100),
+        best_decimal_odds=american_odds_to_decimal(odds),
+        raw_implied_probability=american_odds_to_implied_probability(odds),
         no_vig_consensus_probability=fair, proprietary_model_probability=None,
         final_fair_probability_source="market_consensus", final_fair_probability=fair,
-        probability_edge=fair - Decimal(100) / Decimal(odds + 100),
+        probability_edge=fair - american_odds_to_implied_probability(odds),
         ev_per_unit=fair * american_odds_to_decimal(odds) - Decimal(1), books_contributing=3,
         consensus_dispersion=Decimal("0.01"), uncertainty_indicator="low", outlier_sportsbooks=(),
         quality_warnings=(), vig_removal_policy_version="proportional-v1",

@@ -143,7 +143,8 @@ time-bounded stored observations
   -> separate best executable offer
   -> probability edge and binary EV
   -> versioned qualification
-  -> deterministic EV/data-quality ranking
+  -> production qualification
+  -> robust expected-log-growth portfolio ranking
   -> Top N per league (ceiling, never quota)
 ```
 
@@ -344,6 +345,8 @@ The frontend uses a same-origin API path in every environment. Vite's local deve
 The dashboard now has one explicit write-like market workflow: `POST /dashboard/portfolio/{portfolio_id}/refresh-markets`. The browser calls the Cloudflare Pages Function; the BFF injects `APP_API_KEY`; FastAPI acquires a process-local nonblocking refresh guard; the provider adapter performs its existing bounded retry/cache policy; `MarketIngestionService` persists raw and normalized state transactionally; `RecommendationService` evaluates each upcoming slate; and the client invalidates and rereads PostgreSQL-backed dashboard queries. Browser reads never call the provider.
 
 Each decision run also freezes `analysis_summary` and `watchlist_items`. Phase 4 now returns two projections: externally compatible Top-N `opportunities` that meet its baseline policy and an internal untruncated `candidates` collection containing every structurally calculable side before edge/EV/dispersion qualification. Recommendation evaluation consumes the latter, so top-N and baseline threshold filters cannot erase research visibility. Watchlist construction retains only positive-edge/positive-EV candidates that narrowly fail research-safe production gates. It never creates a `Recommendation`, stake, approval route, bet, ledger entry, or parlay leg. `GET /portfolio/{id}/watchlist` selects the newest decision per upcoming UTC slate and aggregates persisted funnel/rejection diagnostics; reads never invoke ingestion.
+
+Actionable ordering is owned by `app.domain.portfolio_engine`, not Phase 4's bankroll-free EV projection or the frontend. `expected-log-growth-risk-budget-v2` computes a projected standalone adjusted-Kelly fraction under current risk capacity, evaluates consensus and worst-contributing-book expected log growth at the executable price, and applies Top N afterward. Phase 6 treats consensus-outlier labels as audit metadata while continuing to reject excessive dispersion and hard quote-integrity failures. `ncaaf-qualification-v3` additionally preserves but marks any executable price above `+500` as diagnostic-only because no longshot sleeve exists; it does not alter pricing math or impose a negative-odds band. Recommendation provenance persists the score, Kelly values, quote-integrity state, explicit rank, and rejection reasons; repository reads restore that rank instead of ordering by generated hashes.
 
 The funnel records games and observations received/considered, latest/eligible observations, exact paired book markets, comparable exact-line groups, calculable sides, positive edge/EV, pricing-qualified, Watchlist, Phase 6-qualified, and PASS counts. Structural failures remain reason-coded before candidate construction. Spread pairing canonicalizes home `-3.5` with away `+3.5`; inconsistent opposing points are diagnosed explicitly. Distinct points remain distinct groups and integer spread/total lines remain stored but unpriced until push probability is validated.
 

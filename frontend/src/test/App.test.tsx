@@ -37,6 +37,9 @@ describe("portfolio dashboard", () => {
     const expand = await screen.findByLabelText("Expand Redwood State -3.5");
     fireEvent.click(expand);
     expect(screen.getByText("Recommended → Approved → Open → Settled")).toBeInTheDocument();
+    expect(screen.getByText("Full Kelly")).toBeInTheDocument();
+    expect(screen.getByText("Robust log-growth score")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
     expect(screen.getByText("Stored market history appears here when connected to the backend.")).toBeInTheDocument();
     const approve = screen.getByRole("button", { name: "Approve paper bet" });
     fireEvent.click(approve);
