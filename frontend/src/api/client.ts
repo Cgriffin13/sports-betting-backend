@@ -1,4 +1,4 @@
-import type { DashboardData, MarketMovement, Portfolio, PortfolioStats, Recommendation, RiskExposure, SystemStatus } from "../types";
+import type { DashboardData, MarketHistory, MarketMovement, MarketRefreshResult, Portfolio, PortfolioStats, Recommendation, RiskExposure, SystemStatus } from "../types";
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -25,7 +25,7 @@ export async function loadDashboard(portfolioId: string, slateDate: string): Pro
     request<Portfolio>(`/portfolio/${encoded}`),
     request<PortfolioStats>(`/portfolio/${encoded}/stats`),
     request<RiskExposure>(`/portfolio/${encoded}/risk?slate_date=${slateDate}`),
-    request<{ recommendations: Recommendation[]; latest_decision: { as_of: string; pass_reasons: string[]; rejection_summary: Record<string, number> } | null }>(`/portfolio/${encoded}/recommendations?slate_date=${slateDate}`),
+    request<{ recommendations: Recommendation[]; latest_decision: { as_of: string; pass_reasons: string[]; rejection_summary: Record<string, number> } | null }>(`/portfolio/${encoded}/recommendations?upcoming_only=true`),
     request<MarketMovement>(`/dashboard/market-movement?slate_date=${slateDate}`),
   ]);
   return {
@@ -39,6 +39,21 @@ export async function loadDashboard(portfolioId: string, slateDate: string): Pro
     rejectionSummary: recommendationResponse.latest_decision?.rejection_summary ?? {},
     decisionAsOf: recommendationResponse.latest_decision?.as_of ?? null,
   };
+}
+
+export async function refreshMarkets(portfolioId: string): Promise<MarketRefreshResult> {
+  return request<MarketRefreshResult>(`/dashboard/portfolio/${encodeURIComponent(portfolioId)}/refresh-markets`, {
+    method: "POST",
+  });
+}
+
+export async function loadMarketHistory(
+  eventId: string,
+  market: string,
+  side: string,
+): Promise<MarketHistory> {
+  const params = new URLSearchParams({ event_id: eventId, market_type: market, selection_side: side });
+  return request<MarketHistory>(`/dashboard/market-history?${params.toString()}`);
 }
 
 export async function approveRecommendation(recommendationId: string): Promise<void> {

@@ -21,3 +21,16 @@ def commence_date_utc(commence_time: Any) -> date | None:
     if parsed.tzinfo is None:
         return None
     return parsed.astimezone(UTC).date()
+
+
+def commence_datetime_utc(commence_time: Any) -> datetime | None:
+    """Parse a provider kickoff timestamp without accepting naive datetimes."""
+    if not isinstance(commence_time, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(UTC)

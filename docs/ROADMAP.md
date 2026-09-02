@@ -228,7 +228,7 @@ Exit criteria status: **Satisfied for the NCAAF v1 paper baseline.** Trusted par
 
 Goal: present the implemented portfolio workflow without moving decision logic into the client.
 
-Status: **Implemented on 2026-09-01.** A responsive React/TypeScript dashboard now renders the backend-authoritative paper workflow across Today, Portfolio, Bets, Parlay, Market Movement, Models, Research, History, and read-only Settings. A same-origin Cloudflare Pages Function keeps `APP_API_KEY` out of the static browser bundle; browser refreshes read stored state and never call the odds provider.
+Status: **Implemented on 2026-09-01 and production-readiness hardened.** The POLARIS React/TypeScript dashboard renders the backend-authoritative paper workflow across Today, Portfolio, Bets, Parlay, History, and read-only Settings. Research/model transparency lives under System / Methodology; stored movement lives in recommendation detail. A same-origin Cloudflare Pages Function keeps `APP_API_KEY` out of the static browser bundle. Only the prominent authenticated Refresh Markets action invokes provider ingestion; ordinary browser refetches read stored state.
 
 - Render fair value and executable price as separate fields.
 - Show proposed recommendations separately from approved official paper bets.
@@ -243,6 +243,16 @@ Exit criteria:
 - No client action can bypass approval-time risk revalidation.
 
 Exit criteria status: **Satisfied for the requested Phase 6.5 presentation scope.** Direct dashboard settlement/analysis controls, scheduled-refresh publication, full ledger time-series/CLV, and Cloudflare Access/deployment are launch follow-ups rather than client-side calculations.
+
+### POLARIS production-readiness completion
+
+- [x] Replace user-facing prototype branding and reduce primary navigation to six operational destinations.
+- [x] Add explicit secure all-upcoming-NCAAF manual market refresh with concurrency protection and structured results.
+- [x] Preserve the primary `first kickoff - 3 hours` horizon and label early/official/post-horizon decisions distinctly.
+- [x] Separate market freshness/provider failure from application health and portfolio risk.
+- [x] Bootstrap the frozen Phase 5 model registry idempotently at startup.
+- [x] Embed exact stored market history in recommendation detail without provider calls or raw JSON reads.
+- [ ] Configure Cloudflare Access and production Pages/Render environment secrets, then perform the operator-owned deployment and smoke test.
 
 ## Phase 7 — NFL and NBA model expansion
 

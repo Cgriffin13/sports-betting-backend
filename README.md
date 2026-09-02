@@ -4,7 +4,7 @@ Experimental FastAPI backend for a quantitative sports-wagering portfolio manage
 
 NCAAF/College Football is the immediate league priority, followed by NFL and NBA. Python **3.12.x** is the supported development and CI runtime.
 
-The Phase 6.5 dashboard lives in `frontend/` and uses Node.js **22+**, pnpm **11.x**, React, TypeScript, and Vite. See [`docs/DASHBOARD.md`](docs/DASHBOARD.md) for local setup and Cloudflare Pages configuration.
+The POLARIS NCAAF Portfolio dashboard lives in `frontend/` and uses Node.js **22+**, pnpm **11.x**, React, TypeScript, and Vite. See [`docs/DASHBOARD.md`](docs/DASHBOARD.md) for local setup and Cloudflare Pages configuration.
 
 ## Local setup
 
@@ -132,6 +132,8 @@ python -m pytest
 | `GET /portfolio/{portfolio_id}/risk` | Cash/equity/drawdown and current exposure by game, team, market, and straight/parlay kind. |
 | `GET /dashboard/system` | Safe read-only policy/model/freshness status for the dashboard; never returns credentials. |
 | `GET /dashboard/market-movement` | Bounded stored observation history for one UTC slate date and optional cutoff; never calls the provider. |
+| `GET /dashboard/market-history` | Exact event/market/side history from stored scalar observations; never selects raw snapshot payloads or calls the provider. |
+| `POST /dashboard/portfolio/{portfolio_id}/refresh-markets` | Explicit authenticated NCAAF refresh: fetches h2h/spreads/totals once, persists the snapshot, and evaluates all upcoming slates. Page loads never invoke it. |
 
 `payout` remains a compatibility field meaning **net profit/loss**, not gross returned cash. Settlement adds `stake + payout` to cash. Open stake reduces available cash but remains part of equity as reserved exposure.
 
@@ -328,7 +330,7 @@ python -m app.cli.ncaaf_shadow summarize
 
 See [`NCAAF_MODEL_REGISTRY_AND_SHADOW.md`](docs/NCAAF_MODEL_REGISTRY_AND_SHADOW.md). Registry inspection requires no provider call; live market ingestion remains a separate explicit operation.
 
-Before using the Phase 6 recommendation endpoint in a new database, apply migrations and idempotently load the retained registry:
+Before using the Phase 6 recommendation endpoint in a new database, apply migrations. Application startup then validates and idempotently loads the retained registry manifest; the explicit sync command remains available for repair and inspection:
 
 ```powershell
 python -m alembic upgrade head

@@ -16,6 +16,7 @@ describe("portfolio dashboard", () => {
   it("renders the paper-trading shell, core and opportunistic picks, risk state, and parlay PASS", async () => {
     renderApp();
     expect(await screen.findByText("Portfolio decision desk")).toBeInTheDocument();
+    expect(screen.getAllByText("POLARIS").length).toBeGreaterThan(0);
     expect(screen.getByText("Paper trading")).toBeInTheDocument();
     expect(screen.getAllByText("Core picks").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Opportunistic picks").length).toBeGreaterThan(0);
@@ -28,6 +29,7 @@ describe("portfolio dashboard", () => {
     const expand = await screen.findByLabelText("Expand Redwood State -3.5");
     fireEvent.click(expand);
     expect(screen.getByText("Recommended → Approved → Open → Settled")).toBeInTheDocument();
+    expect(screen.getByText("Stored market history appears here when connected to the backend.")).toBeInTheDocument();
     const approve = screen.getByRole("button", { name: "Approve paper bet" });
     fireEvent.click(approve);
     await waitFor(() => expect(approve).toBeDisabled());
@@ -38,16 +40,29 @@ describe("portfolio dashboard", () => {
     demoData.system.stale = true;
     renderApp();
     expect(await screen.findByText("Stored market data is stale")).toBeInTheDocument();
-    expect(screen.getByText(/Run backend ingestion before approving/)).toBeInTheDocument();
+    expect(screen.getByText(/Use Refresh Markets before approving/)).toBeInTheDocument();
   });
 
-  it("provides all required routes and the mobile navigation destinations", async () => {
-    renderApp("/models");
-    expect(await screen.findByText("Fair-value authority")).toBeInTheDocument();
-    expect(screen.getAllByText("Market consensus powers fair value").length).toBeGreaterThan(0);
+  it("provides the six primary destinations and nests methodology under settings", async () => {
+    renderApp("/settings");
+    expect(await screen.findByText("System / Methodology")).toBeInTheDocument();
+    expect(screen.getAllByText("Market consensus supplies fair value").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Today" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Bets" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Parlay" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "History" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Settings" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Models" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Research" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Market Movement" })).not.toBeInTheDocument();
+  });
+
+  it("runs a visible manual refresh workflow and disables duplicate clicks", async () => {
+    renderApp();
+    const refresh = await screen.findByRole("button", { name: "Refresh Markets" });
+    fireEvent.click(refresh);
+    await waitFor(() => expect(refresh).toBeDisabled());
+    expect(await screen.findByText("Markets refreshed")).toBeInTheDocument();
   });
 });

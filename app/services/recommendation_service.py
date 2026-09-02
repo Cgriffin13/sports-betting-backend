@@ -146,8 +146,20 @@ class RecommendationService:
             top_n=top_n,
         )
 
-    def list(self, principal: Principal, portfolio_id: str, *, slate_date: date | None) -> list[dict[str, Any]]:
-        return self.repository.list_recommendations(principal, portfolio_id, slate_date=slate_date)
+    def list(
+        self,
+        principal: Principal,
+        portfolio_id: str,
+        *,
+        slate_date: date | None,
+        upcoming_as_of: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        return self.repository.list_recommendations(
+            principal,
+            portfolio_id,
+            slate_date=slate_date,
+            upcoming_as_of=upcoming_as_of,
+        )
 
     def latest_decision(self, principal: Principal, portfolio_id: str, *, slate_date: date | None) -> dict[str, Any] | None:
         return self.repository.latest_decision_summary(principal, portfolio_id, slate_date=slate_date)

@@ -1,10 +1,12 @@
-# Phase 6.5 NCAAF portfolio dashboard
+# POLARIS — NCAAF Portfolio dashboard
 
 Status: implemented as a paper-trading dashboard. It does not place real-money wagers.
 
 ## Architecture
 
-The dashboard is a separate React 19 + TypeScript + Vite application under `frontend/`. It uses React Router for the page map, TanStack Query for server state/mutation revalidation, Recharts for restrained portfolio/market charts, and plain design-token CSS for the terminal-style responsive layout.
+The dashboard is branded **POLARIS**, with the product subtitle **NCAAF Portfolio**. It is a separate React 19 + TypeScript + Vite application under `frontend/`. It uses React Router for the page map, TanStack Query for server state/mutation revalidation, Recharts for restrained portfolio/market charts, and plain design-token CSS for the terminal-style responsive layout.
+
+The primary navigation is deliberately limited to Today, Portfolio, Bets, Parlay, History, and Settings. Model-registry and research-methodology transparency remain available under Settings → System / Methodology. Stored market movement is embedded in exact recommendation detail rather than competing for a primary destination.
 
 ```text
 Browser
@@ -38,6 +40,18 @@ Existing Phase 6 endpoints remain authoritative. Phase 6.5 adds only:
 
 - `GET /dashboard/system`: safe policy values, retained/diagnostic/rejected registry entries, latest stored NCAAF snapshot time, and freshness/system status. It never returns credentials.
 - `GET /dashboard/market-movement`: a date- and cutoff-bounded scalar projection of stored observations. It does not select snapshot raw JSON.
+- `GET /dashboard/market-history`: an event/market/side-bounded scalar history used by expanded recommendation detail. Empty history is a valid state.
+- `POST /dashboard/portfolio/{portfolio_id}/refresh-markets`: the only dashboard action that invokes the odds adapter. It is API-key authenticated through the same-origin BFF, guarded against concurrent execution, fetches current NCAAF h2h/spreads/totals once, persists the raw and normalized snapshot, and reruns recommendations for every upcoming UTC slate represented by the response.
+
+Page loads, route navigation, browser reloads, TanStack refetches, and market-history expansion are read-only and never create provider calls or charges.
+
+## Timing and freshness
+
+The validated primary horizon remains `first scheduled kickoff - 3 hours` for each UTC slate. A decision before that cutoff is labeled `EARLY_LOOKAHEAD`; a run from the cutoff through the frozen 15-minute operational tolerance is `OFFICIAL_PRIMARY_HORIZON`; a later pregame run is `POST_HORIZON`. The actual decision timestamp and primary cutoff are both exposed.
+
+Market freshness is independent of portfolio risk and application configuration. `FRESH`, `STALE`, `UNAVAILABLE`, and `ERROR` describe stored market state. A stale snapshot no longer makes the whole application appear degraded. A failed provider attempt retains the last successful snapshot and presents a sanitized error.
+
+The committed Phase 5 registry manifest is validated and installed idempotently at FastAPI startup. The CLI sync remains an operator repair/inspection tool, not a prerequisite for a normal production boot.
 - `GET /portfolio/{id}/recommendations` now includes nullable `latest_decision` metadata (PASS reasons, rejection summary, policy versions, state, timestamp, and hash) while preserving the existing `recommendations` list.
 
 All three remain authenticated with `X-API-Key` at the FastAPI boundary. The Pages Function supplies that credential server-side.

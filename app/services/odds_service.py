@@ -6,6 +6,7 @@ from app.domain.sports import DEFAULT_SPORTS, SUPPORTED_SPORTS, normalize_sport
 from app.persistence.market_base import MarketDataRepository
 from app.providers.base import MarketDataProvider, MarketDataProviderError, MarketGame
 from app.services.market_ingestion_service import MarketIngestionService
+from app.services.market_ingestion_service import MarketIngestionResult
 from app.time import commence_date_utc
 
 DEFAULT_ALLOWED_BOOKS: Final = frozenset({"DraftKings", "FanDuel", "BetMGM"})
@@ -18,6 +19,13 @@ class OddsService:
     @property
     def provider_configured(self) -> bool:
         return self._ingestion.provider_configured
+
+    def ingest_current(self, *, sport: str, markets: list[str]) -> MarketIngestionResult:
+        """Fetch and persist one provider-neutral current-market snapshot."""
+        normalized_sport = normalize_sport(sport)
+        if normalized_sport not in SUPPORTED_SPORTS:
+            raise ValueError(f"Unsupported sport '{normalized_sport}'")
+        return self._ingestion.ingest(normalized_sport, normalize_markets(markets))
 
     def get_odds(
         self,
