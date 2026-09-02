@@ -34,6 +34,10 @@ def test_watchlist_is_non_actionable_stakeless_and_deterministic() -> None:
     assert all(item["actionable"] is False for item in first)
     assert all("stake" not in item for item in first)
     assert first[0]["distance_to_qualification"] < 0.2
+    assert (
+        first[0]["market_probability_policy_version"]
+        == near.market_probability_policy_version
+    )
 
 
 def test_exact_qualification_watchlist_and_pass_boundaries() -> None:

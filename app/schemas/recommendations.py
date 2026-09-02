@@ -75,7 +75,7 @@ class WatchlistItemResponse(BaseModel):
     snapshot_ids: list[str]
     best_executable_observation_id: str
     watchlist_version: str
-    market_probability_policy_version: str
+    market_probability_policy_version: str | None = None
     market_curve_artifact_hash: str | None = None
     actionable: bool = False
 

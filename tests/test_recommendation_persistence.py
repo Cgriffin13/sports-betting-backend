@@ -3,14 +3,18 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 from typing import cast
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import Table, func, select
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.schema import CreateTable
 
+from app.api import recommendations as recommendations_api
 from app.db.market_models import CanonicalEvent
 from app.db.models import Bet, BetApproval, LedgerEntry, Recommendation
 from app.db.portfolio_models import RecommendationDecisionRun, RecommendationLeg
@@ -19,6 +23,7 @@ from app.domain.errors import RecommendationStateError
 from app.domain.portfolio_engine import ParlayOffer, ParlayPolicy, QualificationPolicy, RiskPolicy, construct_portfolio
 from app.persistence.recommendation_repository import SqlAlchemyRecommendationRepository
 from app.persistence.sqlalchemy_repository import SqlAlchemyPortfolioRepository
+from app.security import ApiKeyAuthenticator
 from app.services.portfolio_service import PortfolioService
 from tests.test_portfolio_engine import NOW, _qualified, _opportunity
 
@@ -169,6 +174,76 @@ def test_latest_watchlist_state_promotes_without_becoming_actionable(
     promoted = repository.list_watchlist(principal, "main", as_of=NOW + timedelta(minutes=1))
     assert promoted["watchlist_count"] == 0
     assert promoted["qualified_recommendations"] == 1
+
+
+def test_watchlist_api_serializes_legacy_and_current_policy_provenance(
+    session_factory: sessionmaker[Session],
+) -> None:
+    principal = Principal("owner-primary", "Primary Owner")
+    repository = SqlAlchemyRecommendationRepository(session_factory, Decimal("200"))
+    opportunity = _opportunity(odds=120, fair=Decimal("0.55"))
+    _event(session_factory, opportunity.event_id, opportunity.home_team, opportunity.away_team)
+    snapshot = repository.portfolio_snapshot(principal, "main", date(2026, 9, 5))
+    decision = construct_portfolio(
+        [_qualified(opportunity)], snapshot, top_n=10, risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(), parlay_policy=ParlayPolicy(),
+    )
+    legacy_item = {
+        "watchlist_id": "legacy-candidate", "event_id": str(opportunity.event_id),
+        "slate_date": "2026-09-05", "scheduled_start": opportunity.scheduled_start_utc.isoformat(),
+        "home_team": opportunity.home_team, "away_team": opportunity.away_team,
+        "market": "moneyline", "side": "home", "selection": opportunity.selection_name,
+        "sportsbook": "draftkings", "point": None, "odds": 100,
+        "fair_probability": 0.507, "implied_probability": 0.5, "edge": 0.007,
+        "ev_per_unit": 0.014, "books_count": 3, "dispersion": 0.01,
+        "freshness_age_seconds": 0, "fresh": True, "timing_classification": "EARLY_LOOKAHEAD",
+        "primary_horizon_at": NOW.isoformat(), "rejection_reasons": ["below_minimum_ev"],
+        "primary_blocker": "below_minimum_ev", "failed_gate_count": 1,
+        "distance_to_qualification": 0.0666666667, "ranking_score": 0.9375,
+        "source_observation_ids": [], "snapshot_ids": [],
+        "best_executable_observation_id": str(opportunity.best_executable_observation_id),
+        "watchlist_version": "ncaaf-watchlist-v1", "actionable": False,
+    }
+    current_item = {
+        **legacy_item,
+        "watchlist_id": "current-candidate",
+        "market_probability_policy_version": "ncaaf-market-probability-v1",
+    }
+    repository.persist_decision(
+        principal,
+        snapshot,
+        replace(decision, straight_recommendations=()),
+        as_of=NOW,
+        input_hash="l" * 64,
+        pricing_rejections={},
+        top_n=10,
+        watchlist=[legacy_item, current_item],
+        analysis_summary={"games_analyzed": 1, "watchlist_markets": 2},
+    )
+
+    application = FastAPI()
+    application.state.authenticator = ApiKeyAuthenticator({"watchlist-key": principal})
+    application.state.clock = lambda: NOW
+    application.state.recommendation_service = SimpleNamespace(
+        watchlist=lambda owner, portfolio_id, *, as_of: repository.list_watchlist(
+            owner, portfolio_id, as_of=as_of
+        )
+    )
+    application.include_router(recommendations_api.router)
+
+    response = TestClient(application).get(
+        "/portfolio/main/watchlist",
+        params={"upcoming_only": True},
+        headers={"X-API-Key": "watchlist-key"},
+    )
+
+    assert response.status_code == 200, response.text
+    items = {item["watchlist_id"]: item for item in response.json()["items"]}
+    assert items["legacy-candidate"]["market_probability_policy_version"] is None
+    assert (
+        items["current-candidate"]["market_probability_policy_version"]
+        == "ncaaf-market-probability-v1"
+    )
 
 
 def test_risk_snapshot_counts_open_recommended_exposure(
