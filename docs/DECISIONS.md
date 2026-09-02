@@ -1402,3 +1402,19 @@ Consequences:
 - The SQL and historical replay cutoffs are not weakened; caller-supplied historical cutoffs still exclude later observations and later ingestion.
 - Snapshot freshness remains based on request start, so normal HTTP/persistence elapsed time is visible rather than backdated to zero.
 - The multi-slate Watchlist diagnostic reports the freshest/latest snapshot-age gauge, while quote-age maximum and p90 remain conservative cross-slate maxima.
+
+## ADR-099 — Do not reuse the opened 2025 holdout to promote a replacement football model
+
+- Date: 2026-09-02
+- Status: Accepted as a fail-closed production-promotion gate
+
+The proposed NCAAF v1.1 pre-weekend model search cannot treat 2025 as a locked holdout. Phase 5B-9 opened that season exactly once after freezing candidates, recorded a failed promotion decision, and required market-consensus fallback. Any replacement feature, model, calibration, blend, cohort, or threshold chosen after that evidence became visible would be development influenced by the holdout.
+
+Consequences:
+
+- No new v1.1 model is trained, selected, registered, or allowed to supply production fair value under this run.
+- No live provider request is made because the requested live check was conditional on a successful independent historical promotion gate.
+- 2025 may remain immutable descriptive evidence but cannot be represented as an untouched test for a newly designed candidate.
+- Market consensus remains the retained NCAAF v1 benchmark; existing football models remain diagnostic/rejected under their exact registry statuses.
+- A future football candidate requires a predeclared frozen specification and an untouched prospective cohort, currently 2026 shadow evidence, before promotion can be reconsidered.
+- The auditable result is `NCAAF_V11_PRODUCTION_SCORING_GATE.md` and its machine-readable companion; the explicit recommendation is **DO NOT MERGE FOR WEEKEND USE**.

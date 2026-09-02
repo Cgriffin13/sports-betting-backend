@@ -1,0 +1,89 @@
+{
+  "actions": {
+    "live_board_generated": false,
+    "live_feature_acquisition": false,
+    "model_training_or_tuning": false,
+    "production_registry_changed": false,
+    "provider_calls": 0,
+    "provider_credits": 0
+  },
+  "blocked_outputs": {
+    "friday_board": "NOT_RUN",
+    "ranked_primetime_analysis": "NOT_RUN",
+    "saturday_board": "NOT_RUN",
+    "thursday_board": "NOT_RUN",
+    "top_10_live_opportunities": "NOT_RUN"
+  },
+  "branch": "codex/ncaaf-v11-football-model",
+  "evaluated_on": "2026-09-02",
+  "existing_evidence": {
+    "development": {
+      "feature_dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+      "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+      "feature_set_version": "ncaaf-efficiency-point-in-time-v1",
+      "rows_per_horizon": 8277,
+      "seasons": [
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ]
+    },
+    "locked_2025_holdout": {
+      "decision": "fallback_to_market_consensus",
+      "eligible_fbs_vs_fbs_rows": 808,
+      "first_access": true,
+      "freeze_hash": "5aff62fe0faf9a246c49f2e1ad732b4b6bbb412aa084f9ccd1f635aacb498420",
+      "football_power_spread_mae": 13.035473510671096,
+      "holdout_run_hash": "e32e8102de3ac51d1a5690fd6cd3e680fa36d9424060784be645c80d8e526256",
+      "market_spread_mae": 11.791376912378302,
+      "moneyline_brier": 0.1790510607285388,
+      "moneyline_games": 724,
+      "moneyline_log_loss": 0.5320297879800795,
+      "spread_games": 719,
+      "status": "FAIL",
+      "total_blend_brier_improvement": 0.000002862285009230803,
+      "total_blend_log_loss_improvement": -0.0000015487415330195375,
+      "total_blend_mae_improvement": -0.005562110397532294,
+      "total_common_games": 758,
+      "unlocked_at": "2026-08-31T23:56:44.749145+00:00"
+    },
+    "registry": {
+      "diagnostic_models": 2,
+      "registry_hash": "42bba06ef7165127615ae3724db4c333655581f41c076b63ab2748b1cbc64418",
+      "rejected_models": 1,
+      "retained_benchmarks": 4,
+      "retained_fair_value": "market_consensus"
+    }
+  },
+  "gate_results": {
+    "historical_data_supports_leakage_safe_research": "PASS",
+    "live_feature_pipeline_ready_for_all_requested_families": "NOT_EVALUATED",
+    "locked_2025_holdout_available_for_new_model_selection": "FAIL",
+    "locked_2025_holdout_passed": "FAIL",
+    "production_promotion_authorized": "FAIL",
+    "untouched_completed_evaluation_season_available": "FAIL"
+  },
+  "reason_codes": [
+    "LOCKED_HOLDOUT_ALREADY_OPENED",
+    "LOCKED_HOLDOUT_FAILED",
+    "REPLACEMENT_SEARCH_AFTER_HOLDOUT_WOULD_CONTAMINATE_SELECTION",
+    "NO_UNTOUCHED_COMPLETED_EVALUATION_SEASON"
+  ],
+  "recommendation": "DO_NOT_MERGE",
+  "required_next_evidence": {
+    "allowed_immediate_use": "retain registered market-consensus v1; football models remain diagnostic",
+    "evaluation": "prospective 2026 shadow predictions frozen before outcomes and evaluated only after adequate sample accrues",
+    "holdout": "a new untouched future cohort; 2025 may be reported only as already-observed evidence",
+    "live_calls_before_gate_resolution": false
+  },
+  "schema_version": "ncaaf-v11-production-scoring-gate-v1",
+  "status": "BLOCKED"
+}

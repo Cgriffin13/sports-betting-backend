@@ -358,3 +358,7 @@ Autonomous real-money execution remains out of scope. Any change to that boundar
 The one-time 2025 holdout was opened only after Phase 5B-8 froze finalists, artifacts, the total blend weight, and every promotion gate. The market/Ridge total blend failed the required MAE, multiclass Brier, and multiclass log-loss improvement thresholds on the 758-game identical cohort. Market consensus remains the NCAAF estimator for margin, moneyline, spread, and total; football power remains diagnostic only.
 
 Phase 5B-10 registered these retained market benchmarks for prospective shadow operation and immutable monitoring. It did not tune a replacement on 2025, promote the rejected blend, or treat holdout results as authorization for production recommendations, EV qualification, or staking.
+
+## NCAAF v1.1 pre-weekend proprietary scoring gate (blocked)
+
+The September 2, 2026 preflight correctly stopped before training or a live provider call. The requested protocol depended on a locked 2025 promotion test, but Phase 5B-9 had already opened that season exactly once and recorded a failed result. Designing a replacement after observing those outcomes would invalidate the holdout boundary, and no untouched completed evaluation season remains. Market consensus therefore stays registered as the NCAAF v1 fair-value benchmark; prospective 2026 shadow evidence is the next valid promotion input. See `NCAAF_V11_PRODUCTION_SCORING_GATE.md`.
