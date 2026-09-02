@@ -1402,3 +1402,20 @@ Consequences:
 - The SQL and historical replay cutoffs are not weakened; caller-supplied historical cutoffs still exclude later observations and later ingestion.
 - Snapshot freshness remains based on request start, so normal HTTP/persistence elapsed time is visible rather than backdated to zero.
 - The multi-slate Watchlist diagnostic reports the freshest/latest snapshot-age gauge, while quote-age maximum and p90 remain conservative cross-slate maxima.
+
+## ADR-099 — Reject the September 2026 football-scoring candidate after same-horizon validation
+
+- Date: 2026-09-02
+- Status: Rejected; no production behavior changed
+
+A focused NCAAF scoring experiment reused the frozen point-in-time feature corpus to test engineered Ridge margin and total candidates and conservative market blends. For this operator-approved experiment, 2025 was treated as diagnostic evidence rather than an untouched holdout, but remained excluded from training, preprocessing, regularization selection, residual fitting, and blend selection. Current 2026 games were not used for training or tuning.
+
+The enhanced margin model improved on the old football diagnostic but still lost to same-horizon market consensus in every 2020–2024 season and in 2025; the development blend selected zero football weight. Normal-derived moneyline probabilities also lost to market Brier score in every season and selected zero football weight. A 20% football total blend improved 2020–2024 MAE by only 0.030 points and reversed in 2025, while historical and diagnostic edge buckets were unstable.
+
+Consequences:
+
+- Market consensus remains the registered NCAAF v1 fair-value benchmark for moneyline, spread, and total.
+- No football candidate, blend, feature driver, or scoring field is added to the production recommendation path.
+- Qualification, expected log-growth ranking, the `+500` guardrail, Watchlist, Kelly sizing, exposure controls, approval, and ledger behavior remain unchanged.
+- The conditional live provider sanity check, merge, and deployment were not performed because the offline validation gate failed.
+- Future football scoring work requires genuinely new point-in-time information or a better-validated target formulation; it may not manufacture activity by weakening downstream portfolio rules.

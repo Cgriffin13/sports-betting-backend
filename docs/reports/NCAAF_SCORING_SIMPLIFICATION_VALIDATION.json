@@ -1,0 +1,88 @@
+{
+  "decision": "DO_NOT_USE",
+  "evaluated_at": "2026-09-02",
+  "provider_calls": 0,
+  "provider_credits_consumed": 0,
+  "live_validation_performed": false,
+  "production_integration_performed": false,
+  "merged": false,
+  "deployed": false,
+  "reason": "Enhanced football scoring did not demonstrate stable incremental same-horizon signal beyond market consensus.",
+  "inputs": {
+    "development_rows": 8277,
+    "development_season_range": [2014, 2024],
+    "development_dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+    "diagnostic_2025_rows": 808,
+    "diagnostic_2025_dataset_hash": "ce04f50bea76923ece336e18d384e5f0a8a607bc91c827ebc8501a5956bde4bb",
+    "feature_set_version": "ncaaf-efficiency-point-in-time-v1",
+    "feature_set_hash": "0d4d5b3e9996c5682bc6e5366f70c4a82fd80fce8a3ebaa8db7a6ee22bc446ad",
+    "market_comparison_dataset_hash": "cf8669b7f4dd371d12ae03e6e0de180ffb63c196a848a6d7ac791bba8f023bcc"
+  },
+  "selection": {
+    "development_folds": "expanding chronological 2019-2023",
+    "validation_season": 2024,
+    "diagnostic_season": 2025,
+    "trained_on_2025": false,
+    "used_2026_labels_or_slate": false,
+    "candidate_family": "ridge",
+    "alpha_grid": [100.0, 1000.0]
+  },
+  "margin": {
+    "selected_alpha": 100.0,
+    "feature_count": 79,
+    "development": {"mae": 13.1164551730, "rmse": 16.5134575394, "bias": 0.6282353932},
+    "validation_2024": {"mae": 13.0055607860, "rmse": 16.3163014099, "bias": -0.5034638477},
+    "diagnostic_2025": {"mae": 12.5695943787, "rmse": 15.9103803418, "bias": -1.1966464076},
+    "selected_football_weight": 0.0,
+    "market_comparison_2020_2024": {
+      "rows": 2499,
+      "market": {"mae": 12.1054421769, "rmse": 15.1969694068},
+      "football": {"mae": 12.9276606964, "rmse": 16.1868424268},
+      "blend": {"mae": 12.1054421769, "rmse": 15.1969694068}
+    },
+    "diagnostic_2025_market_comparison": {
+      "rows": 719,
+      "market_mae": 11.7913769124,
+      "football_mae": 12.4882290585,
+      "blend_mae": 11.7913769124
+    },
+    "edge_bucket_roi_2020_2024": {"0_to_1": -0.1460087468, "1_to_2": -0.0652286588, "2_to_3": -0.1356420710, "3_to_5": -0.0365732361, "5_plus": -0.0575848830}
+  },
+  "total": {
+    "selected_alpha": 1000.0,
+    "feature_count": 148,
+    "development": {"mae": 13.2184420112, "rmse": 16.5680200729, "bias": 1.2918476808},
+    "validation_2024": {"mae": 12.8992024691, "rmse": 16.3011763856, "bias": 0.1387268852},
+    "diagnostic_2025": {"mae": 12.8483353355, "rmse": 16.0071569787, "bias": 0.2110991696},
+    "selected_football_weight": 0.2,
+    "market_comparison_2020_2024": {
+      "rows": 2417,
+      "market": {"mae": 12.5920562681, "rmse": 15.9235347014},
+      "football": {"mae": 12.9485710749, "rmse": 16.3129400740},
+      "blend": {"mae": 12.5619482716, "rmse": 15.8846988598}
+    },
+    "diagnostic_2025_market_comparison": {
+      "rows": 758,
+      "market_mae": 12.5250659631,
+      "football_mae": 12.9286074372,
+      "blend_mae": 12.5435707847
+    },
+    "edge_bucket_roi_2020_2024": {"0_to_1": -0.0229386894, "1_to_2": -0.0369216007, "2_to_3": -0.0947843993, "3_to_5": 0.0385367184, "5_plus": 0.0507664514},
+    "edge_bucket_roi_2025": {"0_to_1": 0.0429845166, "1_to_2": -0.0305876886, "2_to_3": 0.0139741854, "3_to_5": -0.1020534373, "5_plus": -0.0747559963}
+  },
+  "moneyline": {
+    "residual_sigma": 16.5015029678,
+    "selected_football_weight": 0.0,
+    "all_2020_2024": {"rows": 3132, "market_brier": 0.1817030947, "football_brier": 0.1926241222, "blend_brier": 0.1817030947},
+    "validation_2024": {"rows": 720, "market_brier": 0.1884008163, "football_brier": 0.1992951455, "blend_brier": 0.1884008163},
+    "diagnostic_2025": {"rows": 724, "market_brier": 0.1790510607, "football_brier": 0.1844883506, "blend_brier": 0.1790510607}
+  },
+  "final_state": {
+    "retained_fair_value": "market_consensus",
+    "football_model_status": "diagnostic_only",
+    "threshold_changes": false,
+    "risk_or_staking_changes": false,
+    "schema_or_migration_changes": false,
+    "frontend_changes": false
+  }
+}

@@ -198,6 +198,8 @@ Phase 5B implementation order:
 
 Phase 5 exit criteria are **satisfied**. The research produced reproducible predictions, direct same-horizon market comparison, a locked holdout, an honest no-promotion result, immutable registry evidence, and a prospective shadow boundary. The result is a retained market benchmark, not proprietary edge or production betting approval.
 
+A focused September 2026 scoring simplification was evaluated after Phase 5 and rejected before integration. Enhanced Ridge football models did not provide stable incremental same-horizon signal: margin and moneyline selected zero football weight, while a small total-blend development gain reversed in the 2025 diagnostic sample. See `NCAAF_SCORING_SIMPLIFICATION_VALIDATION.md`. Market consensus remains the production fair-value benchmark; no live provider call, threshold change, merge, or deployment resulted from the failed experiment.
+
 ## Phase 6 — Portfolio risk, staking, and approval
 
 Goal: turn positive-EV observations into conservative, reviewable portfolio recommendations.
