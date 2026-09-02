@@ -1335,3 +1335,10 @@ Consequences:
 - Exact spread/total points remain separate. The system diagnoses fragmented line depth rather than interpolating across `-17`, `-17.5`, and `-18`.
 - Whole-number spread/total observations remain preserved but fail closed until validated push-aware pricing exists.
 - The pricing funnel exposes whether a zero-recommendation slate is an honest result or pipeline attrition without changing fair value, staking, exposure, or approval behavior.
+
+## ADR: Separate live snapshot freshness from provider quote age
+
+- **Status:** Accepted (2026-09-01)
+- **Decision:** `MarketSnapshot.requested_at` is the hard live freshness clock. Provider `last_update` remains source/quality metadata with a separate configurable pathological ceiling. Latest-state selection prioritizes the newest time-eligible snapshot. The default supported US sportsbook allowlist is BetMGM, BetRivers, Caesars (`williamhill_us`), DraftKings, Fanatics, and FanDuel.
+- **Reason:** The former code compared an unchanged bookmaker-price timestamp to the 120-second snapshot limit. A fresh 12:00 retrieval could reject an executable 11:55 quote and collapse before pairing. The prior DraftKings/FanDuel/BetMGM list was a prototype default rather than a frozen consensus-method rule.
+- **Consequences:** EV, edge, two-book depth, dispersion, staking, and fair-value methods do not change. Quote age is visible. Pathological ages fail closed. A pre-candidate collapse is `DEGRADED`, never PASS.

@@ -56,6 +56,7 @@ def test_database_url_normalization_is_vendor_neutral(configured: str, normalize
         {"provider_cache_ttl_seconds": -1},
         {"provider_low_quota_threshold": -1},
         {"market_freshness_seconds": 0},
+        {"provider_quote_max_age_seconds": 120},
     ],
 )
 def test_settings_reject_invalid_provider_and_freshness_policy(overrides: dict[str, Any]) -> None:
@@ -70,6 +71,7 @@ def test_settings_read_provider_and_freshness_policy(monkeypatch: pytest.MonkeyP
     monkeypatch.setenv("PROVIDER_CACHE_TTL_SECONDS", "30")
     monkeypatch.setenv("PROVIDER_LOW_QUOTA_THRESHOLD", "7")
     monkeypatch.setenv("MARKET_FRESHNESS_SECONDS", "180")
+    monkeypatch.setenv("PROVIDER_QUOTE_MAX_AGE_SECONDS", "86400")
 
     settings = Settings.from_env()
 
@@ -79,6 +81,7 @@ def test_settings_read_provider_and_freshness_policy(monkeypatch: pytest.MonkeyP
     assert settings.provider_cache_ttl_seconds == 30
     assert settings.provider_low_quota_threshold == 7
     assert settings.market_freshness_seconds == 180
+    assert settings.provider_quote_max_age_seconds == 86400
 
 
 def test_settings_reject_malformed_environment_bankroll(monkeypatch: pytest.MonkeyPatch) -> None:

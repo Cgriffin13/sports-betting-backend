@@ -35,6 +35,7 @@ class DashboardSystemResponse(BaseModel):
     snapshot_age_seconds: int | None = None
     stale: bool
     next_scheduled_refresh: datetime | None = None
+    supported_sportsbooks: list[str]
     policies: dict[str, Any]
     models: list[DashboardModelResponse]
 

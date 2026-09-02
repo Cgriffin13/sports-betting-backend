@@ -261,8 +261,8 @@ def test_freshness_fields_are_versioned_and_stale_is_identifiable(
         assert observation is not None
         assert observation.observation_age_seconds == 300
         assert observation.stale_after_seconds == 120
-        assert observation.freshness_policy_version == "market-freshness-v1"
-        assert observation.is_stale is True
+        assert observation.freshness_policy_version == "snapshot-and-provider-quote-freshness-v2"
+        assert observation.is_stale is False
 
 
 def test_transaction_rolls_back_raw_and_normalized_rows_when_observation_insert_fails(

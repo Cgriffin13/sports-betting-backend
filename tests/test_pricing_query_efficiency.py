@@ -55,6 +55,7 @@ def test_postgresql_pricing_sql_uses_ranked_scalar_projection_without_json_colum
     assert "pricing_latest_states" in sql
     assert "market_observations.observed_at <=" in sql
     assert "market_observations.ingested_at <=" in sql
+    assert "market_snapshots.requested_at <=" in sql
     for forbidden in (
         "raw_payload",
         "request_parameters",

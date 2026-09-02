@@ -65,6 +65,7 @@ def create_app(
         resolved_market_repository: MarketDataRepository | None = market_repository or SqlAlchemyMarketDataRepository(
             session_factory,
             freshness_seconds=resolved_settings.market_freshness_seconds,
+            provider_quote_max_age_seconds=resolved_settings.provider_quote_max_age_seconds,
             clock=clock,
         )
         resolved_pricing_repository: PricingObservationRepository = (
@@ -118,6 +119,8 @@ def create_app(
             outlier_threshold=resolved_settings.pricing_outlier_threshold,
             maximum_dispersion=resolved_settings.pricing_maximum_dispersion,
             supported_books=resolved_settings.pricing_supported_books,
+            snapshot_freshness_seconds=resolved_settings.market_freshness_seconds,
+            maximum_provider_quote_age_seconds=resolved_settings.provider_quote_max_age_seconds,
         ),
     )
     application.state.pricing_service = pricing_service

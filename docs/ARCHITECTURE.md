@@ -388,3 +388,9 @@ Phase 6                                               -> edge / EV / risk / appr
 `ShadowPredictionService` plans the UTC slate cutoff at first kickoff minus three hours, appends immutable pregame states, and attaches outcomes in a separate table. It does not schedule itself, call providers implicitly, update the bankroll, or create recommendations. New market state creates a new hash/row; registry updates do not alter the version stored on an older prediction.
 
 The migration is additive and PostgreSQL-compatible. FastAPI routes and `uvicorn main:app` remain unchanged. Registry/shadow CLIs explicitly use `DATABASE_URL`; provider access is a separate explicit operation.
+
+## Live pricing integrity
+
+The pricing read path separates current-snapshot freshness from provider quote age. SQL latest-state selection prioritizes `market_snapshots.requested_at`, projects only normalized scalar fields, and enforces `observed_at`, `requested_at`, and `ingested_at` cutoffs. The domain layer applies the snapshot policy while reporting provider quote-age min/median/p90/max and a distinct pathological-age rejection.
+
+Every decision records a pricing funnel plus `HEALTHY` or `DEGRADED`. Observations with zero eligible rows always degrade. A slate with at least ten games and twenty latest observations but zero exact book pairs also degrades. Dashboard reads remain stored-data-only and cannot present that pre-candidate collapse as intentional PASS.

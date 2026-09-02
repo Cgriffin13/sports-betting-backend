@@ -100,6 +100,8 @@ export interface WatchlistState {
   watchlist_version: string;
   pricing_funnel: Record<string, number>;
   rejection_counts: Record<string, number>;
+  pricing_pipeline_status: "HEALTHY" | "DEGRADED";
+  pricing_pipeline_status_reason: string | null;
   slates: Array<{
     slate_date: string;
     weekday: string;
@@ -109,6 +111,8 @@ export interface WatchlistState {
     watchlist_count: number;
     pricing_funnel: Record<string, number>;
     rejection_counts: Record<string, number>;
+    pricing_pipeline_status: "HEALTHY" | "DEGRADED";
+    pricing_pipeline_status_reason: string | null;
   }>;
   items: WatchlistItem[];
 }
@@ -209,6 +213,7 @@ export interface SystemStatus {
   snapshot_age_seconds: number | null;
   stale: boolean;
   next_scheduled_refresh: string | null;
+  supported_sportsbooks: string[];
   policies: Record<string, number | boolean>;
   models: ModelEntry[];
 }

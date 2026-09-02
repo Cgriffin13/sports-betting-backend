@@ -32,6 +32,7 @@ def build_pricing_observation_statement(query: PricingObservationQuery) -> Selec
         MarketObservation.market_type.in_(query.market_types),
         MarketObservation.observed_at <= cutoff,
         MarketObservation.ingested_at <= cutoff,
+        MarketSnapshot.requested_at <= cutoff,
     ]
     if event_start is not None and event_end is not None:
         candidate_conditions.extend(
@@ -61,8 +62,8 @@ def build_pricing_observation_statement(query: PricingObservationQuery) -> Selec
                     MarketObservation.snapshot_id,
                 ),
                 order_by=(
-                    MarketObservation.observed_at.desc(),
                     MarketSnapshot.requested_at.desc(),
+                    MarketObservation.observed_at.desc(),
                     MarketObservation.ingested_at.desc(),
                     MarketObservation.snapshot_id.desc(),
                     MarketObservation.id.desc(),
@@ -101,8 +102,8 @@ def build_pricing_observation_statement(query: PricingObservationQuery) -> Selec
                     snapshot_heads.c.period,
                 ),
                 order_by=(
-                    snapshot_heads.c.state_observed_at.desc(),
                     snapshot_heads.c.snapshot_requested_at.desc(),
+                    snapshot_heads.c.state_observed_at.desc(),
                     snapshot_heads.c.state_ingested_at.desc(),
                     snapshot_heads.c.snapshot_id.desc(),
                 ),
@@ -168,6 +169,7 @@ def build_pricing_observation_statement(query: PricingObservationQuery) -> Selec
             MarketObservation.market_type.in_(query.market_types),
             MarketObservation.observed_at <= cutoff,
             MarketObservation.ingested_at <= cutoff,
+            latest_states.c.snapshot_requested_at <= cutoff,
         )
         .order_by(
             CanonicalEvent.league,

@@ -116,3 +116,7 @@ The checked-in `_redirects` file provides SPA route fallback. The `/api/*` Pages
 - The current market archive does not mark a true opening price, so the UI displays “Opening unavailable” and separately labels the first stored observation.
 - The backend does not yet expose a full time-series bankroll ledger or CLV series. The UI shows the available current/settled evidence and does not manufacture missing values in production.
 - Profit factor and editable settings remain hidden/read-only unless the backend supplies authoritative values.
+
+Settings → Latest Pricing Funnel distinguishes supported/unsupported observations, snapshot age, provider quote-age distribution, eligible observations, paired markets, and calculable candidates. If observations exist but none are eligible—or a materially sized slate has no exact pairs—Today and Settings show **PRICING PIPELINE DEGRADED**, not “capital preserved.”
+
+The hotfix completion check is one bounded current NCAAF US-region request for `h2h,spreads,totals` against an isolated verification database. It never approves a recommendation or touches the production ledger. Acceptance requires nonzero eligible observations, exact paired book markets, and calculable candidate sides on the live slate.

@@ -534,3 +534,11 @@ Prospective shadow predictions beginning in 2026 are immutable pregame records a
 Phase 6.5 is a rendering and human-approval surface, not another pricing engine. Every displayed fair probability, implied probability, edge, push-aware EV, stake, bankroll fraction, unit value, classification, exposure decision, and parlay status comes from the backend decision snapshot. Formatting percentages, currency, chart points, and stored line history in the browser does not create a competing calculation policy.
 
 The UI always labels retained market consensus separately from the best executable sportsbook offer. Diagnostic football models remain visible as evidence but cannot supply the fair-value fields. A dashboard approval is not assumed successful until the server transaction completes and the client re-fetches portfolio/recommendation state.
+
+## Live snapshot freshness versus provider quote age
+
+Live eligibility uses two clocks under `snapshot-and-provider-quote-freshness-v2`. `MarketSnapshot.requested_at` is when POLARIS fetched the current response and is subject to the hard 120-second snapshot guard. `MarketObservation.observed_at` is the provider's sportsbook/market `last_update`; an unchanged but still-current quote may legitimately be several minutes old, so quote age is quality metadata rather than the snapshot cutoff.
+
+A fresh snapshot with a five-minute-old quote remains eligible. A separate configurable seven-day quote-age ceiling fails closed on pathological source timestamps. Historical replay still enforces observation, snapshot, and ingestion cutoffs and selects the newest eligible snapshot first.
+
+The default live allowlist is `betmgm`, `betrivers`, `williamhill_us` (Caesars), `draftkings`, `fanatics`, and `fanduel`. The earlier three-book list was a configurable MVP starting set, not a frozen fair-value requirement. Proportional no-vig, unweighted-median consensus, and the minimum two-complete-book rule remain unchanged.

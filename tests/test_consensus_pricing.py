@@ -23,6 +23,7 @@ class ObservationKwargs(TypedDict):
     match_review_status: NotRequired[str]
     observation_status: NotRequired[str]
     stale_after_seconds: NotRequired[int]
+    snapshot_requested_at: NotRequired[datetime | None]
 
 
 def identifier(value: str) -> UUID:
@@ -45,6 +46,7 @@ def observation(
     match_review_status: str = "matched",
     observation_status: str = "active",
     stale_after_seconds: int = 7_200,
+    snapshot_requested_at: datetime | None = None,
 ) -> PricingObservation:
     point_value = None if point is None else Decimal(point)
     sportsbook_id = identifier(f"book:{book}")
@@ -73,7 +75,7 @@ def observation(
         selection_name=names[side],
         point=point_value,
         american_odds=odds,
-        snapshot_requested_at=ingested_at or observed_at,
+        snapshot_requested_at=snapshot_requested_at or ingested_at or observed_at,
         observed_at=observed_at,
         ingested_at=ingested_at or observed_at,
         stale_after_seconds=stale_after_seconds,
@@ -170,8 +172,111 @@ def test_stale_ambiguous_suspended_and_unsupported_observations_are_excluded() -
     assert result.rejection_counts == {
         "ambiguous_event": 2,
         "inactive_observation": 2,
-        "stale_observation": 2,
+        "stale_snapshot": 2,
         "unsupported_or_inactive_book": 2,
+    }
+
+
+def test_fresh_snapshot_with_five_minute_old_provider_quote_remains_eligible() -> None:
+    quote_time = datetime(2026, 8, 29, 19, 55, tzinfo=UTC)
+    snapshot_time = datetime(2026, 8, 29, 20, 0, tzinfo=UTC)
+    observations = (
+        *pair(
+            "draftkings",
+            "moneyline",
+            -110,
+            -110,
+            observed_at=quote_time,
+            ingested_at=snapshot_time,
+            snapshot_requested_at=snapshot_time,
+            stale_after_seconds=120,
+        ),
+        *pair(
+            "fanduel",
+            "moneyline",
+            -110,
+            -110,
+            observed_at=quote_time,
+            ingested_at=snapshot_time,
+            snapshot_requested_at=snapshot_time,
+            stale_after_seconds=120,
+        ),
+    )
+
+    result = build_pricing_analysis(observations, as_of=AS_OF, policy=policy())
+
+    assert result.funnel["eligible_observations"] == 4
+    assert result.funnel["exact_paired_book_markets"] == 2
+    assert result.funnel["calculable_candidate_sides"] == 2
+    assert result.funnel["snapshot_age_seconds"] == 60
+    assert result.funnel["provider_quote_age_median_seconds"] == 300
+    assert "stale_snapshot" not in result.rejection_counts
+
+
+def test_pathologically_old_provider_quotes_fail_closed_separately_from_snapshot_age() -> None:
+    snapshot_time = datetime(2026, 8, 29, 20, 0, tzinfo=UTC)
+    old_quote = snapshot_time.replace(year=2025)
+    observations = (
+        *pair(
+            "draftkings",
+            "moneyline",
+            -110,
+            -110,
+            observed_at=old_quote,
+            ingested_at=snapshot_time,
+            snapshot_requested_at=snapshot_time,
+            stale_after_seconds=120,
+        ),
+    )
+
+    result = build_pricing_analysis(observations, as_of=AS_OF, policy=policy())
+
+    assert result.funnel["eligible_observations"] == 0
+    assert result.rejection_counts == {"pathologically_old_provider_quote": 2}
+    assert result.pipeline_status == "DEGRADED"
+
+
+def test_freshest_snapshot_wins_even_when_its_provider_quote_timestamp_is_older() -> None:
+    older_snapshot = datetime(2026, 8, 29, 19, 59, tzinfo=UTC)
+    fresh_snapshot = datetime(2026, 8, 29, 20, 0, tzinfo=UTC)
+    observations = (
+        *pair(
+            "draftkings",
+            "moneyline",
+            120,
+            -140,
+            observed_at=older_snapshot,
+            snapshot_requested_at=older_snapshot,
+            snapshot="older",
+        ),
+        *pair(
+            "draftkings",
+            "moneyline",
+            110,
+            -130,
+            observed_at=older_snapshot.replace(minute=55),
+            snapshot_requested_at=fresh_snapshot,
+            ingested_at=fresh_snapshot,
+            snapshot="fresh",
+        ),
+        *pair(
+            "fanduel",
+            "moneyline",
+            -110,
+            -110,
+            observed_at=older_snapshot.replace(minute=55),
+            snapshot_requested_at=fresh_snapshot,
+            ingested_at=fresh_snapshot,
+            snapshot="fresh",
+        ),
+    )
+
+    result = build_pricing_analysis(observations, as_of=AS_OF, policy=policy())
+
+    assert result.funnel["latest_observations"] == 4
+    assert {str(value) for item in result.candidates for value in item.snapshot_ids} == {
+        str(identifier("snapshot:draftkings:fresh")),
+        str(identifier("snapshot:fanduel:fresh")),
     }
 
 

@@ -168,6 +168,8 @@ class RecommendationService:
             "watchlist_markets": len(watchlist),
             "pricing_funnel": pricing_funnel,
             "rejection_counts": dict(sorted(rejection_counts.items())),
+            "pricing_pipeline_status": pricing.pipeline_status,
+            "pricing_pipeline_status_reason": pricing.pipeline_status_reason,
         }
         input_hash = canonical_hash(
             {

@@ -3,8 +3,18 @@ from typing import Final
 
 BOOK_ALIASES: Final = {
     "draftkings": ("draftkings", "DraftKings"),
+    "draft kings": ("draftkings", "DraftKings"),
     "fanduel": ("fanduel", "FanDuel"),
+    "fan duel": ("fanduel", "FanDuel"),
     "betmgm": ("betmgm", "BetMGM"),
+    "bet mgm": ("betmgm", "BetMGM"),
+    "betrivers": ("betrivers", "BetRivers"),
+    "bet rivers": ("betrivers", "BetRivers"),
+    "williamhill_us": ("williamhill_us", "Caesars"),
+    "caesars": ("williamhill_us", "Caesars"),
+    "caesars sportsbook": ("williamhill_us", "Caesars"),
+    "fanatics": ("fanatics", "Fanatics"),
+    "fanatics sportsbook": ("fanatics", "Fanatics"),
 }
 
 

@@ -242,6 +242,8 @@ class PricingPolicy:
     outlier_threshold: Decimal
     maximum_dispersion: Decimal
     supported_books: frozenset[str]
+    snapshot_freshness_seconds: int = 120
+    maximum_provider_quote_age_seconds: int = 604_800
     pricing_version: str = PRICING_POLICY_VERSION
     consensus_version: str = CONSENSUS_POLICY_VERSION
     vig_removal_version: str = VIG_REMOVAL_POLICY_VERSION
@@ -262,6 +264,10 @@ class PricingPolicy:
             raise ValueError("Pricing dispersion thresholds must be nonnegative")
         if not self.supported_books:
             raise ValueError("At least one supported sportsbook is required")
+        if self.snapshot_freshness_seconds <= 0:
+            raise ValueError("Snapshot freshness threshold must be positive")
+        if self.maximum_provider_quote_age_seconds <= self.snapshot_freshness_seconds:
+            raise ValueError("Provider quote-age ceiling must exceed snapshot freshness")
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,3 +285,5 @@ class PricingAnalysis:
     top_n_per_league: int
     rejection_counts: dict[str, int]
     funnel: dict[str, int]
+    pipeline_status: str = "HEALTHY"
+    pipeline_status_reason: str | None = None

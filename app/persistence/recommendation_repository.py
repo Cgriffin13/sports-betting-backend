@@ -340,6 +340,7 @@ class SqlAlchemyRecommendationRepository:
             slates = []
             aggregate_funnel: Counter[str] = Counter()
             aggregate_rejections: Counter[str] = Counter()
+            funnel_samples: list[dict[str, int]] = []
             for run in runs:
                 summary = dict(run.analysis_summary)
                 funnel = {
@@ -348,6 +349,7 @@ class SqlAlchemyRecommendationRepository:
                     if isinstance(value, int)
                 }
                 aggregate_funnel.update(funnel)
+                funnel_samples.append(funnel)
                 rejections = {
                     key: int(value)
                     for key, value in dict(run.rejection_summary).items()
@@ -376,8 +378,16 @@ class SqlAlchemyRecommendationRepository:
                         "watchlist_count": len(slate_items),
                         "pricing_funnel": funnel,
                         "rejection_counts": dict(sorted(rejections.items())),
+                        "pricing_pipeline_status": str(
+                            summary.get("pricing_pipeline_status", "HEALTHY")
+                        ),
+                        "pricing_pipeline_status_reason": summary.get(
+                            "pricing_pipeline_status_reason"
+                        ),
                     }
                 )
+            degraded = [item for item in slates if item["pricing_pipeline_status"] == "DEGRADED"]
+            _normalize_aggregate_funnel_gauges(aggregate_funnel, funnel_samples)
             return {
                 "as_of": _iso(as_of),
                 "upcoming_games_analyzed": sum(
@@ -388,6 +398,10 @@ class SqlAlchemyRecommendationRepository:
                 "watchlist_version": "ncaaf-watchlist-v2",
                 "pricing_funnel": dict(sorted(aggregate_funnel.items())),
                 "rejection_counts": dict(sorted(aggregate_rejections.items())),
+                "pricing_pipeline_status": "DEGRADED" if degraded else "HEALTHY",
+                "pricing_pipeline_status_reason": (
+                    degraded[0]["pricing_pipeline_status_reason"] if degraded else None
+                ),
                 "slates": slates,
                 "items": items,
             }
@@ -957,9 +971,40 @@ def _empty_watchlist(as_of: datetime) -> dict[str, Any]:
         "watchlist_version": "ncaaf-watchlist-v2",
         "pricing_funnel": {},
         "rejection_counts": {},
+        "pricing_pipeline_status": "HEALTHY",
+        "pricing_pipeline_status_reason": None,
         "slates": [],
         "items": [],
     }
+
+
+def _normalize_aggregate_funnel_gauges(
+    aggregate: Counter[str],
+    samples: list[dict[str, int]],
+) -> None:
+    if not samples:
+        return
+    for key in ("snapshot_age_seconds", "provider_quote_age_max_seconds", "provider_quote_age_p90_seconds"):
+        aggregate[key] = max((item.get(key, 0) for item in samples), default=0)
+    minimums = [item["provider_quote_age_min_seconds"] for item in samples if "provider_quote_age_min_seconds" in item]
+    if minimums:
+        aggregate["provider_quote_age_min_seconds"] = min(minimums)
+    for key in ("supported_books_seen", "unsupported_books_seen"):
+        aggregate[key] = max((item.get(key, 0) for item in samples), default=0)
+    weighted = sorted(
+        (
+            item.get("provider_quote_age_median_seconds", 0),
+            item.get("latest_observations", 0),
+        )
+        for item in samples
+    )
+    halfway = sum(weight for _, weight in weighted) / 2
+    cumulative = 0
+    for value, weight in weighted:
+        cumulative += weight
+        if cumulative >= halfway:
+            aggregate["provider_quote_age_median_seconds"] = value
+            break
 
 
 def _exposure(items: list[OpenExposure], predicate: Any) -> Decimal:
