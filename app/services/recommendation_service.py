@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date, datetime
-from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
 from app.domain.identity import Principal
 from app.domain.model_registry import ConsensusFairValueInput, RegistryError, canonical_hash
 from app.domain.portfolio_engine import (
+    CandidateEvaluation,
     ParlayOffer,
     ParlayPolicy,
     QualificationPolicy,
     RiskPolicy,
+    StraightRecommendation,
     construct_portfolio,
     evaluate_candidate,
 )
@@ -81,7 +82,11 @@ class RecommendationService:
                         selection_side=opportunity.selection_side,
                         fair_probability=opportunity.final_fair_probability,
                         fair_point=opportunity.point,
-                        push_probability=None if opportunity.market_type == "moneyline" else Decimal(0),
+                        push_probability=(
+                            None
+                            if opportunity.market_type == "moneyline"
+                            else opportunity.push_probability
+                        ),
                         as_of=pricing.as_of,
                         source_books=tuple(item.sportsbook_key for item in opportunity.book_probabilities),
                         consensus_dispersion=opportunity.consensus_dispersion,
@@ -89,6 +94,21 @@ class RecommendationService:
                             "uncertainty": opportunity.uncertainty_indicator,
                             "quality_warnings": list(opportunity.quality_warnings),
                             "fresh": True,
+                            "consensus_fair_point": (
+                                str(opportunity.consensus_fair_point)
+                                if opportunity.consensus_fair_point is not None
+                                else None
+                            ),
+                            "line_advantage": (
+                                str(opportunity.line_advantage)
+                                if opportunity.line_advantage is not None
+                                else None
+                            ),
+                            "center_dispersion": (
+                                str(opportunity.center_dispersion)
+                                if opportunity.center_dispersion is not None
+                                else None
+                            ),
                         },
                         provenance={
                             "pricing_policy_version": opportunity.pricing_policy_version,
@@ -96,6 +116,10 @@ class RecommendationService:
                             "source_observation_ids": [str(value) for value in opportunity.source_observation_ids],
                             "snapshot_ids": [str(value) for value in opportunity.snapshot_ids],
                             "best_executable_observation_id": str(opportunity.best_executable_observation_id),
+                            "market_probability_policy_version": (
+                                opportunity.market_probability_policy_version
+                            ),
+                            "market_curve_artifact_hash": opportunity.market_curve_artifact_hash,
                         },
                     ),
                 )
@@ -170,6 +194,11 @@ class RecommendationService:
             "rejection_counts": dict(sorted(rejection_counts.items())),
             "pricing_pipeline_status": pricing.pipeline_status,
             "pricing_pipeline_status_reason": pricing.pipeline_status_reason,
+            "candidate_diagnostics": build_candidate_diagnostics(
+                decision.evaluated_candidates,
+                watchlist,
+                decision.straight_recommendations,
+            ),
         }
         input_hash = canonical_hash(
             {
@@ -273,3 +302,82 @@ def build_recommendation_policies(values: Mapping[str, Any]) -> tuple[Qualificat
             maximum_daily_parlay_fraction=values["parlay_daily_fraction"],
         ),
     )
+
+
+ODDS_BANDS: tuple[tuple[str, int | None, int | None], ...] = (
+    ("lte_-221", None, -221),
+    ("-220_to_-151", -220, -151),
+    ("-150_to_-121", -150, -121),
+    ("-120_to_+120", -120, 120),
+    ("+121_to_+150", 121, 150),
+    ("+151_to_+220", 151, 220),
+    ("+221_to_+300", 221, 300),
+    ("+301_to_+500", 301, 500),
+    ("gt_+500", 501, None),
+)
+
+
+def build_candidate_diagnostics(
+    candidates: Sequence[CandidateEvaluation],
+    watchlist: Sequence[Mapping[str, Any]],
+    recommendations: Sequence[StraightRecommendation],
+) -> dict[str, Any]:
+    """Summarize candidate survival without changing qualification or ranking."""
+    watchlist_ids = {str(item["watchlist_id"]) for item in watchlist}
+    actionable_ids = {item.candidate.candidate_id for item in recommendations}
+    by_market = {market: _empty_stage_counts() for market in ("moneyline", "spread", "total")}
+    by_odds_band = {label: _empty_stage_counts() for label, _, _ in ODDS_BANDS}
+    practical_core = _empty_stage_counts()
+    for candidate in candidates:
+        market_counts = by_market.setdefault(
+            candidate.opportunity.market_type,
+            _empty_stage_counts(),
+        )
+        band_counts = by_odds_band[_odds_band(candidate.opportunity.best_american_odds)]
+        for counts in (market_counts, band_counts):
+            _increment_candidate_stage(counts, candidate, watchlist_ids, actionable_ids)
+        if -220 <= candidate.opportunity.best_american_odds <= 220:
+            _increment_candidate_stage(practical_core, candidate, watchlist_ids, actionable_ids)
+    return {
+        "by_market": by_market,
+        "by_odds_band": by_odds_band,
+        "practical_core_odds_band": {
+            "minimum_american_odds": -220,
+            "maximum_american_odds": 220,
+            **practical_core,
+        },
+    }
+
+
+def _empty_stage_counts() -> dict[str, int]:
+    return {
+        "calculable": 0,
+        "positive_edge": 0,
+        "positive_ev": 0,
+        "pricing_qualified": 0,
+        "watchlist": 0,
+        "portfolio_qualified": 0,
+        "actionable": 0,
+    }
+
+
+def _increment_candidate_stage(
+    counts: dict[str, int],
+    candidate: CandidateEvaluation,
+    watchlist_ids: set[str],
+    actionable_ids: set[str],
+) -> None:
+    counts["calculable"] += 1
+    counts["positive_edge"] += int(candidate.edge > 0)
+    counts["positive_ev"] += int(candidate.ev_per_unit > 0)
+    counts["pricing_qualified"] += int(not candidate.opportunity.pricing_gate_failures)
+    counts["watchlist"] += int(candidate.candidate_id in watchlist_ids)
+    counts["portfolio_qualified"] += int(candidate.qualified)
+    counts["actionable"] += int(candidate.candidate_id in actionable_ids)
+
+
+def _odds_band(odds: int) -> str:
+    for label, lower, upper in ODDS_BANDS:
+        if (lower is None or odds >= lower) and (upper is None or odds <= upper):
+            return label
+    raise AssertionError("American odds did not map to a diagnostic band")

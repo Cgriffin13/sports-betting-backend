@@ -1,0 +1,134 @@
+{
+  "version": "ncaaf-market-value-calibration-v1",
+  "purpose": "Cross-line market-value and production-gate falsification audit; not a profitability claim",
+  "source": {
+    "league": "NCAAF",
+    "seasons": [2020, 2021, 2022, 2023, 2024],
+    "horizon": "morning_first_kickoff_minus_3h",
+    "market_dataset_hash": "96c3236ea6770e669b351398900b92289a9263cbfe625f3cf986dad235c5274b",
+    "feature_dataset_hash": "b2f7444e2a7451d90c9078fb3b694d1586b1d30dd7f9c3a60b869381532b8bfe",
+    "holdout_2025_accessed": false,
+    "outcomes_2026_used": false,
+    "provider_calls": 0
+  },
+  "curve": {
+    "version": "ncaaf-empirical-cross-line-v1",
+    "artifact_hash": "199e8170c86acb497b864b20b60abf190ce5a8cae1d6b8352e3ef584183c76bb",
+    "spread_residual_games": 3199,
+    "total_residual_games": 3245,
+    "center_policy": "overround-weighted-huber-center-v1",
+    "discretization": "integer-score-lattice-linear-mass-v1"
+  },
+  "evaluation_design": {
+    "spread_total": "For season S, infer book centers and probabilities from residuals in seasons before S; 2020 initializes the residual pool and scored evaluation is 2021-2024.",
+    "moneyline": "Same-horizon proportional no-vig book pairs and unweighted median consensus are evaluated by season without refitting.",
+    "production_filters_in_threshold_summary": {
+      "minimum_books": 2,
+      "maximum_probability_dispersion": 0.06
+    },
+    "portfolio_main_board_guardrail": {
+      "maximum_actionable_positive_american_odds": 500,
+      "applied_after_pricing_qualification": true
+    }
+  },
+  "thresholds": {
+    "before": {
+      "spread": {"minimum_edge": 0.0075, "minimum_ev": 0.015},
+      "total": {"minimum_edge": 0.0075, "minimum_ev": 0.015},
+      "moneyline": {"minimum_edge": 0.0075, "minimum_ev": 0.015}
+    },
+    "after": {
+      "spread": {"minimum_edge": 0.0075, "minimum_ev": 0.015},
+      "total": {"minimum_edge": 0.0075, "minimum_ev": 0.015},
+      "moneyline": {"minimum_edge": 0.0075, "minimum_ev": 0.015}
+    },
+    "decision": "retain_existing_conservative_gates",
+    "reason": "Positive-signal tails were too sparse and season-unstable to support any threshold reduction or market-specific replacement."
+  },
+  "markets": {
+    "spread": {
+      "calculable_candidate_sides": 5526,
+      "eligible_candidate_sides": 5525,
+      "evaluation_seasons": [2021, 2022, 2023, 2024],
+      "mean_modeled_ev": -0.034414794912426994,
+      "realized_unit_roi": -0.03739643981815052,
+      "existing_gate": {
+        "candidate_sides": 13,
+        "mean_modeled_ev": 0.031820275530863404,
+        "realized_unit_roi": -0.27322615974052966,
+        "validation_2024_sides": 6,
+        "validation_2024_roi": -0.0689019896831246
+      },
+      "line_advantage_buckets": [
+        {"minimum": null, "maximum_exclusive": 0.0, "count": 2140, "realized_unit_roi": -0.006887584751282383},
+        {"minimum": 0.0, "maximum_exclusive": 0.5, "count": 2678, "realized_unit_roi": -0.06106463207506843},
+        {"minimum": 0.5, "maximum_exclusive": 1.0, "count": 652, "realized_unit_roi": -0.022133221126181796},
+        {"minimum": 1.0, "maximum_exclusive": 2.0, "count": 48, "realized_unit_roi": -0.22276270588991184},
+        {"minimum": 2.0, "maximum_exclusive": null, "count": 7, "realized_unit_roi": -0.4601919819311124}
+      ],
+      "interpretation": "Overall expectation and realized return align, but positive-edge and large-advantage tails are sparse and unstable. Quote-integrity, dispersion, robust-growth ranking, stake minimums, and unchanged gates remain essential."
+    },
+    "total": {
+      "eligible_candidate_sides": 5606,
+      "evaluation_seasons": [2021, 2022, 2023, 2024],
+      "mean_modeled_ev": -0.03412994794287983,
+      "realized_unit_roi": -0.03315020895629913,
+      "existing_gate": {
+        "candidate_sides": 4,
+        "mean_modeled_ev": 0.021607114291040022,
+        "realized_unit_roi": 0.44039451114922823,
+        "validation_2024_sides": 1,
+        "validation_2024_roi": -1.0
+      },
+      "line_advantage_buckets": [
+        {"minimum": null, "maximum_exclusive": 0.0, "count": 1957, "realized_unit_roi": -0.06361366904754802},
+        {"minimum": 0.0, "maximum_exclusive": 0.5, "count": 2290, "realized_unit_roi": -0.03885620763091716},
+        {"minimum": 0.5, "maximum_exclusive": 1.0, "count": 807, "realized_unit_roi": -0.015213689238455655},
+        {"minimum": 1.0, "maximum_exclusive": 2.0, "count": 490, "realized_unit_roi": 0.0586838044840949},
+        {"minimum": 2.0, "maximum_exclusive": null, "count": 62, "realized_unit_roi": 0.17991899048493612}
+      ],
+      "interpretation": "Line-advantage buckets improve directionally, but the positive-EV qualification tail is far too small and 2024 is adverse; no threshold change is justified."
+    },
+    "moneyline": {
+      "calculable_candidate_sides": 6264,
+      "main_board_eligible_candidate_sides": 5522,
+      "seasons": [2020, 2021, 2022, 2023, 2024],
+      "mean_modeled_ev": -0.021286597491495457,
+      "realized_unit_roi": -0.038194764777084604,
+      "existing_gate": {
+        "candidate_sides": 167,
+        "mean_modeled_ev": 0.14304337501684394,
+        "realized_unit_roi": -0.01051611063587113,
+        "validation_2024_sides": 33,
+        "validation_2024_roi": -0.19545454545454544
+      },
+      "existing_gate_after_main_board_guardrail": {
+        "candidate_sides": 77,
+        "realized_unit_roi": 0.0434
+      },
+      "practical_core_odds_band": {
+        "minimum_american_odds": -220,
+        "maximum_american_odds": 220,
+        "candidate_sides": 2507,
+        "existing_gate_sides": 20,
+        "existing_gate_realized_unit_roi": 0.4321904761904761,
+        "validation_2024_gate_sides": 3,
+        "validation_2024_gate_roi": 0.85
+      },
+      "plus_221_to_plus_500": {
+        "candidate_sides": 1021,
+        "existing_gate_sides": 57,
+        "existing_gate_realized_unit_roi": -0.09298245614035086,
+        "validation_2024_gate_sides": 6,
+        "validation_2024_gate_roi": -1.0
+      },
+      "interpretation": "The practical core band is structurally viable, while longer-positive-price tails are less stable. Counts are too small for new odds-band probability or qualification rules; risk-adjusted ranking and the existing +500 main-board guardrail remain unchanged."
+    }
+  },
+  "limitations": [
+    "This is morning-horizon historical audit evidence, not a betting-profitability claim.",
+    "Spread positive-edge tails contain material cross-book line disagreement and are not monotonically reliable at large advantages.",
+    "Qualified-tail samples, especially 2024, are too small for threshold optimization.",
+    "Portfolio-level robust expected-log-growth, exposure, stake-minimum, and approval behavior are tested separately."
+  ]
+}

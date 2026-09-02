@@ -1402,3 +1402,21 @@ Consequences:
 - The SQL and historical replay cutoffs are not weakened; caller-supplied historical cutoffs still exclude later observations and later ingestion.
 - Snapshot freshness remains based on request start, so normal HTTP/persistence elapsed time is visible rather than backdated to zero.
 - The multi-slate Watchlist diagnostic reports the freshest/latest snapshot-age gauge, while quote-age maximum and p90 remain conservative cross-slate maxima.
+
+## ADR-099 — Price NCAAF spread/total offers against a robust empirical cross-line market curve
+
+- Date: 2026-09-02
+- Status: Accepted and implemented; supersedes the NCAAF production portions of ADR-045/046 that required identical lines across books and excluded integer-line EV
+
+Exact opposing sides and points remain mandatory inside each sportsbook. Across supported books, `ncaaf-empirical-cross-line-v1` uses every coherent main line instead of requiring identical points: proportional no-vig probability and line imply a per-book market center, then `overround-weighted-huber-center-v1` combines centers with bounded inverse-overround weights and bounded outlier influence. Moneyline remains `proportional-v1` plus `unweighted-median-v1`.
+
+The committed curve is derived from immutable 2020–2024 NCAAF morning-market/final-score artifacts and contains discrete spread/total residuals. It maps the robust center to integer football outcomes, so half-points have zero push mass and integer lines carry explicit push probability. Every book-side executable line is evaluated separately with push-aware EV; the best executable offer remains distinct from fair value. Outputs preserve fair center, line advantage, curve version/hash, source observations, book centers, dispersion, and warnings.
+
+A chronological audit evaluated existing production gates separately by market. Positive-signal tails were too sparse and season-unstable to justify lowering or splitting them, so Phase 6 retains 0.75 percentage-point edge, 1.5% EV, two complete books, and 6 percentage-point maximum dispersion. Fixed odds-band diagnostics and the practical `-220` through `+220` band are observational only. Robust expected-log-growth ranking and the `+500` main-board guardrail remain unchanged; no market quota or odds-based probability adjustment exists.
+
+Consequences:
+
+- A home `-3.5` can receive value when the robust market center is `-4.5`, and an Over `53.5` can receive value against a robust total near `55.5`, without pretending different lines are identical.
+- A single obvious book cannot materially determine the center, although genuine broad cross-book disagreement still surfaces through dispersion and integrity warnings.
+- Integer spreads/totals are no longer categorically dropped from the NCAAF candidate path; they qualify only when their explicit push-aware economics and all unchanged portfolio gates pass.
+- The production loader is standard-library-only and validates the empirical artifact hash; offline audit code remains outside the FastAPI dependency graph.

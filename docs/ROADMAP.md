@@ -234,6 +234,8 @@ Status: **Implemented on 2026-09-01 and production-readiness hardened.** The POL
 
 Production correctness follow-up: the candidate funnel now retains structurally calculable below-threshold sides for deterministic Watchlist/PASS classification before Phase 4 Top-N truncation. Persisted aggregate and per-UTC-slate funnel/rejection diagnostics appear under Settings → System / Methodology. Qualification, fair value, risk, staking, and parlay policies are unchanged.
 
+NCAAF market-scoring follow-up: `ncaaf-empirical-cross-line-v1` now keeps exact pairing inside each book but derives one robust market center across differing supported-book spread/total main lines. It evaluates each executable line with empirical discrete win/push/loss mass, preserves fair-line and line-advantage provenance, and segments funnel diagnostics by market and fixed odds bands. The chronological 2020–2024 audit retained the existing 0.75pp edge and 1.5% EV gates for every initial market; no quota or current-slate optimization was introduced.
+
 - Render fair value and executable price as separate fields.
 - Show proposed recommendations separately from approved official paper bets.
 - Make PASS, risk adjustments, portfolio state, and approval status visible.

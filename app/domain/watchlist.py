@@ -70,6 +70,8 @@ def build_watchlist(
             "selection": opportunity.selection_name,
             "sportsbook": opportunity.best_sportsbook_key,
             "point": _number(opportunity.point),
+            "consensus_fair_point": _number(opportunity.consensus_fair_point),
+            "line_advantage": _number(opportunity.line_advantage),
             "odds": opportunity.best_american_odds,
             "fair_probability": _number(candidate.win_probability),
             "implied_probability": _number(candidate.implied_probability),
@@ -90,6 +92,8 @@ def build_watchlist(
             "snapshot_ids": [str(value) for value in opportunity.snapshot_ids],
             "best_executable_observation_id": str(opportunity.best_executable_observation_id),
             "watchlist_version": WATCHLIST_VERSION,
+            "market_probability_policy_version": opportunity.market_probability_policy_version,
+            "market_curve_artifact_hash": opportunity.market_curve_artifact_hash,
             "actionable": False,
         }
         sort_key = (

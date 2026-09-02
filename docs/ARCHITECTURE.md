@@ -136,23 +136,24 @@ Phase 4 itself added no tables. Pricing remains a transient deterministic projec
 time-bounded stored observations
   -> latest snapshot state per event/book/market/period
   -> supported/active/fresh/matched gates
-  -> exact coherent two-outcome book pairs
+  -> exact coherent two-outcome pair inside each book
   -> proportional no-vig probability per book
-  -> unweighted median across books
+  -> moneyline median OR robust cross-line spread/total center
+  -> empirical integer-score win/push/loss projection
   -> dispersion and material-outlier diagnostics
-  -> separate best executable offer
-  -> probability edge and binary EV
+  -> separate best executable line and price
+  -> probability edge and push-aware EV
   -> versioned qualification
   -> production qualification
   -> robust expected-log-growth portfolio ranking
   -> Top N per league (ceiling, never quota)
 ```
 
-Initial policy versions are `proportional-v1`, `unweighted-median-v1`, `market-baseline-v1`, and `baseline-qualification-v1`. Proportional no-vig probabilities use Decimal arithmetic, round to 12 decimal places with half-even rounding, and force the final outcome to the residual so paired probabilities sum exactly to one. Consensus is the unweighted median of complete paired book probabilities; no unsupported empirical “sharp book” weights exist. Dispersion is the across-book probability range. Deviations above the configurable outlier threshold are surfaced, while dispersion above the configurable maximum rejects the market.
+The original Phase 4 policy versions remain reproducible for historical artifacts. Current NCAAF production pricing uses `proportional-v1`, `unweighted-median-ml_empirical-cross-line-v1`, `market-baseline-v2`, and `baseline-qualification-v2`. Proportional no-vig probabilities use Decimal arithmetic and sum exactly to one. Moneyline remains an unweighted median of complete paired book probabilities. Spread/total use the committed `ncaaf-empirical-cross-line-v1` curve and `overround-weighted-huber-center-v1`; inverse-overround weights are bounded and Huber influence prevents one distant book from defining the center. No unsupported empirical “sharp book” weights exist.
 
-Exact pairing uses canonical event, market, period, and line. A spread pair requires opposite signed points; a total pair requires the identical point. The consensus source may only include complete pairs. The best executable offer is selected separately from the same eligible exact market, so it cannot become its own fair-probability source.
+Exact pairing remains mandatory within each sportsbook: a spread pair requires opposite signed points and a total pair requires the identical point. Across sportsbooks, different coherent main lines contribute to one event/market/period curve rather than fragmenting into unrelated consensus groups. Each book's line plus no-vig probability implies a market center; the robust center is projected back to every executable line. The best executable offer is selected separately by push-aware EV, so neither its line nor its price becomes its own fair-probability source.
 
-The initial binary EV qualification supports two-outcome moneylines and half-point spreads/totals. Integer spread/total lines are rejected with `push_probability_not_modeled`; Phase 4 does not invent a push probability. Default operational thresholds are two books, 1% EV per unit, 0.5 percentage-point edge, 3 percentage-point outlier deviation, and 8 percentage-point maximum dispersion. All are environment-configurable starting values, not evidence-backed permanent standards.
+The current NCAAF spread/total curve distributes probability over integer football outcomes, so integer lines carry explicit push mass while half-points have zero push mass. Production recommendation gates remain two complete books, 0.75 percentage-point edge, 1.5% EV per unit, and 6 percentage-point maximum dispersion. The 2020–2024 chronological audit did not support lowering or splitting those thresholds by market; it is documented in `NCAAF_MARKET_VALUE_CALIBRATION.md`.
 
 `POST /opportunities` is authenticated and reads stored observations only. It labels outputs `market_consensus_baseline`, keeps proprietary probability null, returns no stake, and accepts an optional historical cutoff/date. The replay CLI uses the same service and policy code.
 
@@ -348,7 +349,7 @@ Each decision run also freezes `analysis_summary` and `watchlist_items`. Phase 4
 
 Actionable ordering is owned by `app.domain.portfolio_engine`, not Phase 4's bankroll-free EV projection or the frontend. `expected-log-growth-risk-budget-v2` computes a projected standalone adjusted-Kelly fraction under current risk capacity, evaluates consensus and worst-contributing-book expected log growth at the executable price, and applies Top N afterward. Phase 6 treats consensus-outlier labels as audit metadata while continuing to reject excessive dispersion and hard quote-integrity failures. `ncaaf-qualification-v3` additionally preserves but marks any executable price above `+500` as diagnostic-only because no longshot sleeve exists; it does not alter pricing math or impose a negative-odds band. Recommendation provenance persists the score, Kelly values, quote-integrity state, explicit rank, and rejection reasons; repository reads restore that rank instead of ordering by generated hashes.
 
-The funnel records games and observations received/considered, latest/eligible observations, exact paired book markets, comparable exact-line groups, calculable sides, positive edge/EV, pricing-qualified, Watchlist, Phase 6-qualified, and PASS counts. Structural failures remain reason-coded before candidate construction. Spread pairing canonicalizes home `-3.5` with away `+3.5`; inconsistent opposing points are diagnosed explicitly. Distinct points remain distinct groups and integer spread/total lines remain stored but unpriced until push probability is validated.
+The funnel records games and observations received/considered, latest/eligible observations, exact paired book markets, comparable market groups, calculable sides, positive edge/EV, pricing-qualified, Watchlist, Phase 6-qualified, and PASS counts. Structural failures remain reason-coded before candidate construction. Spread pairing canonicalizes home `-3.5` with away `+3.5`; inconsistent opposing points inside a book are diagnosed explicitly. Different coherent supported-book main lines contribute to a robust cross-line center, and integer lines use the committed empirical push-aware curve. Candidate diagnostics are segmented by market and fixed odds bands without changing scoring or imposing quotas.
 
 Recommendation timing uses a pure versioned domain policy. Each slate derives its primary cutoff from its first scheduled kickoff. Exact decision and cutoff timestamps remain distinct, and `EARLY_LOOKAHEAD`, `OFFICIAL_PRIMARY_HORIZON`, and `POST_HORIZON` are presentation/audit metadata rather than changes to pricing math.
 

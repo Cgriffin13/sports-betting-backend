@@ -81,6 +81,13 @@ class PricingOpportunityResponse(BaseModel):
     snapshot_ids: tuple[UUID, ...]
     book_probabilities: tuple[BookNoVigPriceResponse, ...]
     calculated_at: datetime
+    consensus_fair_point: Decimal | None = None
+    line_advantage: Decimal | None = None
+    push_probability: Decimal = Decimal(0)
+    loss_probability: Decimal | None = None
+    market_probability_policy_version: str
+    market_curve_artifact_hash: str | None = None
+    center_dispersion: Decimal | None = None
 
 
 class PricingAnalysisResponse(BaseModel):

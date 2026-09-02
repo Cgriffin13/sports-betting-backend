@@ -53,6 +53,8 @@ class WatchlistItemResponse(BaseModel):
     selection: str
     sportsbook: str
     point: float | None = None
+    consensus_fair_point: float | None = None
+    line_advantage: float | None = None
     odds: int
     fair_probability: float
     implied_probability: float
@@ -73,6 +75,8 @@ class WatchlistItemResponse(BaseModel):
     snapshot_ids: list[str]
     best_executable_observation_id: str
     watchlist_version: str
+    market_probability_policy_version: str
+    market_curve_artifact_hash: str | None = None
     actionable: bool = False
 
 

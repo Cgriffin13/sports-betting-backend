@@ -87,7 +87,8 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
         )
         replay = _SingleFetchReplayProvider(fetch)
         create_app = _load_create_app(isolated)
-        application = create_app(settings=isolated, provider=replay, clock=lambda: fetch.requested_at)
+        verification_clock = max(datetime.now(UTC), fetch.requested_at)
+        application = create_app(settings=isolated, provider=replay, clock=lambda: verification_clock)
         assert application.state.database_engine is not None
         Base.metadata.create_all(application.state.database_engine)
         recommendation_service = application.state.recommendation_service
@@ -96,7 +97,8 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
         bootstrap_ncaaf_registry(recommendation_service.registry_repository)
         principal = Principal("isolated-live-verification", "Isolated Live Verification")
         refresh = application.state.market_refresh_service.refresh(principal, portfolio_id="verification")
-        watchlist = recommendation_service.watchlist(principal, "verification", as_of=fetch.requested_at)
+        decision_as_of = _aware_datetime(refresh["decision_as_of"])
+        watchlist = recommendation_service.watchlist(principal, "verification", as_of=decision_as_of)
         if replay.calls != 1:
             raise RuntimeError("Replay provider call count was not exactly one")
 
@@ -105,7 +107,7 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
         upcoming = [
             (game, kickoff)
             for game in fetch.games
-            if (kickoff := commence_datetime_utc(game.commence_time)) is not None and kickoff > fetch.requested_at
+            if (kickoff := commence_datetime_utc(game.commence_time)) is not None and kickoff > decision_as_of
         ]
         dates = sorted({kickoff.date() for _, kickoff in upcoming})
         aggregate: Counter[str] = Counter()
@@ -116,7 +118,7 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
             analysis = application.state.pricing_service.analyze(
                 leagues=["NCAAF"],
                 market_types=CANONICAL_MARKETS,
-                as_of=fetch.requested_at,
+                as_of=decision_as_of,
                 event_date=slate_date,
                 top_n=50,
             )
@@ -126,7 +128,7 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
                 PricingObservationQuery(
                     leagues=("NCAAF",),
                     market_types=("moneyline", "spread", "total"),
-                    as_of=fetch.requested_at,
+                    as_of=decision_as_of,
                     event_date=slate_date,
                 )
             )
@@ -157,7 +159,7 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
                 {row.sportsbook_key for row in all_rows if row.sportsbook_key not in settings.pricing_supported_books}
             ),
             "snapshot_age_seconds": max(
-                (max(0, int((fetch.requested_at - row.snapshot_requested_at).total_seconds())) for row in all_rows),
+                (max(0, int((decision_as_of - row.snapshot_requested_at).total_seconds())) for row in all_rows),
                 default=0,
             ),
             "provider_quote_age_min_seconds": min(all_quote_ages, default=0),
@@ -167,7 +169,33 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
         }
         for key, value in aggregate_gauges.items():
             aggregate[key] = value
+        decision_summaries = [
+            recommendation_service.latest_decision(
+                principal,
+                "verification",
+                slate_date=slate_date,
+            )
+            for slate_date in dates
+        ]
+        candidate_diagnostics = _aggregate_candidate_diagnostics(
+            [
+                item["analysis_summary"]["candidate_diagnostics"]
+                for item in decision_summaries
+                if item is not None
+            ]
+        )
+        slate_summaries = _slate_summaries(
+            fetch,
+            dates,
+            analyses,
+            decision_summaries,
+        )
         closest = _closest_positive_ev(analyses, observation_quote_age, settings)
+        major_program_review = _major_program_review(
+            analyses,
+            watchlist["items"],
+            qualified,
+        )
         saturday_date = min(
             (
                 row.scheduled_start_utc.astimezone(UTC).date()
@@ -183,7 +211,7 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
         )
         saturday_analysis = build_pricing_analysis(
             saturday_rows,
-            as_of=fetch.requested_at,
+            as_of=decision_as_of,
             policy=build_pricing_policy(
                 minimum_books=settings.pricing_minimum_books,
                 minimum_ev=settings.pricing_minimum_ev,
@@ -229,10 +257,16 @@ def verify_fetch(fetch: ProviderFetchResult, settings: Settings) -> dict[str, An
             },
             "events_received": len(fetch.games),
             "upcoming_events": len(upcoming),
+            "request_started_at": fetch.requested_at,
+            "provider_retrieved_at": fetch.provider_retrieved_at,
+            "decision_as_of": decision_as_of,
             "saturday_games_received": saturday["games"],
             "observations_created": refresh["observations_created"],
             "pricing_funnel": dict(sorted(aggregate.items())),
+            "candidate_diagnostics": candidate_diagnostics,
+            "slates": slate_summaries,
             "saturday": saturday,
+            "major_program_review": major_program_review,
             "qualified_candidates": qualified,
             "closest_positive_ev_candidates": closest[:10] if not qualified else [],
             "watchlist_count": watchlist["watchlist_count"],
@@ -298,6 +332,8 @@ def _closest_positive_ev(
                 "sportsbook": candidate.best_sportsbook_key,
                 "odds": candidate.best_american_odds,
                 "point": candidate.point,
+                "consensus_fair_point": candidate.consensus_fair_point,
+                "line_advantage": candidate.line_advantage,
                 "fair_probability": candidate.final_fair_probability,
                 "implied_probability": candidate.raw_implied_probability,
                 "edge": candidate.probability_edge,
@@ -306,6 +342,8 @@ def _closest_positive_ev(
                 "dispersion": candidate.consensus_dispersion,
                 "provider_quote_age_seconds": quote_age,
                 "quality_warnings": list(candidate.quality_warnings),
+                "market_probability_policy_version": candidate.market_probability_policy_version,
+                "market_curve_artifact_hash": candidate.market_curve_artifact_hash,
                 "blockers": blockers,
             }
             values.append(
@@ -361,6 +399,183 @@ def _saturday_summary(
 
 def _integer(value: Any) -> int | None:
     return value if isinstance(value, int) else None
+
+
+def _aggregate_candidate_diagnostics(values: list[dict[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "by_market": {},
+        "by_odds_band": {},
+        "practical_core_odds_band": {
+            "minimum_american_odds": -220,
+            "maximum_american_odds": 220,
+        },
+    }
+    for value in values:
+        for group_name in ("by_market", "by_odds_band"):
+            for label, counts in value.get(group_name, {}).items():
+                target = result[group_name].setdefault(label, {})
+                for key, count in counts.items():
+                    target[key] = int(target.get(key, 0)) + int(count)
+        core = value.get("practical_core_odds_band", {})
+        target_core = result["practical_core_odds_band"]
+        for key, count in core.items():
+            if key not in {"minimum_american_odds", "maximum_american_odds"}:
+                target_core[key] = int(target_core.get(key, 0)) + int(count)
+    return result
+
+
+def _slate_summaries(
+    fetch: ProviderFetchResult,
+    dates: list[date],
+    analyses: list[Any],
+    decisions: list[dict[str, Any] | None],
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for slate_date, analysis, decision in zip(dates, analyses, decisions, strict=True):
+        candidates = list(analysis.candidates)
+        market_groups: dict[str, set[tuple[str, str, str]]] = {
+            market: set() for market in ("moneyline", "spread", "total")
+        }
+        paired_books: Counter[str] = Counter()
+        group_books: dict[tuple[str, ...], int] = {}
+        for candidate in candidates:
+            point_key = (
+                str(candidate.consensus_fair_point)
+                if candidate.consensus_fair_point is not None
+                else "none"
+            )
+            key = (str(candidate.event_id), candidate.period, point_key)
+            market_groups[candidate.market_type].add(key)
+            group_key = (candidate.market_type, *key)
+            group_books[group_key] = max(
+                group_books.get(group_key, 0),
+                candidate.books_contributing,
+            )
+        for (market, *_), count in group_books.items():
+            paired_books[market] += count
+        summary = decision["analysis_summary"] if decision is not None else {}
+        diagnostics = summary.get("candidate_diagnostics", {})
+        results.append(
+            {
+                "slate_date_utc": slate_date.isoformat(),
+                "weekday_utc": slate_date.strftime("%A"),
+                "games_received": sum(
+                    1
+                    for game in fetch.games
+                    if (kickoff := commence_datetime_utc(game.commence_time)) is not None
+                    and kickoff.astimezone(UTC).date() == slate_date
+                ),
+                "pricing_funnel": dict(sorted(analysis.funnel.items())),
+                "market_groups": {
+                    market: len(groups) for market, groups in market_groups.items()
+                },
+                "paired_book_markets": dict(sorted(paired_books.items())),
+                "candidate_diagnostics": diagnostics,
+                "watchlist_count": int(summary.get("watchlist_markets", 0)),
+                "actionable_count": int(summary.get("qualified_straights", 0)),
+            }
+        )
+    return results
+
+
+def _major_program_review(
+    analyses: list[Any],
+    watchlist: list[dict[str, Any]],
+    qualified: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    names = ("oregon", "boise state", "ole miss", "lsu")
+    watchlist_keys = {_serialized_candidate_key(item) for item in watchlist}
+    qualified_keys = {_serialized_candidate_key(item) for item in qualified}
+    by_event: dict[str, list[Any]] = {}
+    for analysis in analyses:
+        for candidate in analysis.candidates:
+            matchup = f"{candidate.away_team} @ {candidate.home_team}".lower()
+            if not any(name in matchup for name in names):
+                continue
+            by_event.setdefault(str(candidate.event_id), []).append(candidate)
+    results: list[dict[str, Any]] = []
+    for event_id, candidates in sorted(by_event.items()):
+        ordered = sorted(
+            candidates,
+            key=lambda item: (
+                -item.ev_per_unit,
+                -item.probability_edge,
+                item.market_type,
+                item.selection_side,
+            ),
+        )
+        rows = []
+        for candidate in ordered:
+            key = _opportunity_key(candidate)
+            status = (
+                "QUALIFIED"
+                if key in qualified_keys
+                else "WATCHLIST"
+                if key in watchlist_keys
+                else "PASS"
+            )
+            blockers = list(candidate.pricing_gate_failures)
+            if status == "PASS" and not blockers:
+                if candidate.ev_per_unit <= 0:
+                    blockers.append("non_positive_ev")
+                if candidate.probability_edge <= 0:
+                    blockers.append("non_positive_edge")
+                if candidate.best_american_odds > MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS:
+                    blockers.append("outside_main_board_odds_profile")
+            rows.append(
+                {
+                    "market": candidate.market_type,
+                    "side": candidate.selection_side,
+                    "point": candidate.point,
+                    "consensus_fair_point": candidate.consensus_fair_point,
+                    "line_advantage": candidate.line_advantage,
+                    "sportsbook": candidate.best_sportsbook_key,
+                    "odds": candidate.best_american_odds,
+                    "fair_probability": candidate.final_fair_probability,
+                    "edge": candidate.probability_edge,
+                    "ev": candidate.ev_per_unit,
+                    "books": candidate.books_contributing,
+                    "dispersion": candidate.consensus_dispersion,
+                    "status": status,
+                    "reasons": sorted(set(blockers)),
+                }
+            )
+        first = ordered[0]
+        results.append(
+            {
+                "event_id": event_id,
+                "matchup": f"{first.away_team} @ {first.home_team}",
+                "scheduled_start": first.scheduled_start_utc,
+                "highest_ev_candidate": rows[0],
+                "markets": rows,
+            }
+        )
+    return results
+
+
+def _serialized_candidate_key(item: dict[str, Any]) -> tuple[str, str, str, str]:
+    return (
+        str(item.get("event_id")),
+        str(item.get("market") or item.get("market_type")),
+        str(item.get("side") or item.get("selection_side")),
+        str(item.get("point")),
+    )
+
+
+def _opportunity_key(candidate: Any) -> tuple[str, str, str, str]:
+    return (
+        str(candidate.event_id),
+        candidate.market_type,
+        candidate.selection_side,
+        str(float(candidate.point)) if candidate.point is not None else "None",
+    )
+
+
+def _aware_datetime(value: Any) -> datetime:
+    parsed = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def _percentile(values: list[int], fraction: float) -> int:

@@ -161,14 +161,16 @@ def test_realistic_ncaaf_fixture_prices_moneyline_spread_and_total_exactly(
     assert moneyline.best_sportsbook_key == "betmgm"
     assert moneyline.best_american_odds == -150
     assert moneyline.ev_per_unit == Decimal("-0.0196474229583333333333333331")
-    assert spread.no_vig_consensus_probability == Decimal("0.502164877035")
+    assert spread.no_vig_consensus_probability == Decimal("0.5029839670475148483901219131")
     assert spread.best_sportsbook_key == "draftkings"
     assert spread.best_american_odds == -110
-    assert spread.ev_per_unit == Decimal("-0.0413215983877272727272727273")
-    assert total.no_vig_consensus_probability == Decimal("0.503252241058")
+    assert spread.ev_per_unit == Decimal("-0.0397578810911080167097672569")
+    assert spread.consensus_fair_point == Decimal("-3.588530577")
+    assert total.no_vig_consensus_probability == Decimal("0.5075592296317411402157164869")
     assert total.best_sportsbook_key == "draftkings"
     assert total.best_american_odds == -108
-    assert total.ev_per_unit == Decimal("-0.0307734616660740740740740740")
+    assert total.ev_per_unit == Decimal("-0.0224785207092392855104719511")
+    assert total.consensus_fair_point == Decimal("52.659172943")
 
 
 def test_replay_repository_prevents_future_snapshot_leakage_and_replaces_moved_line(
@@ -231,7 +233,9 @@ def test_replay_repository_prevents_future_snapshot_leakage_and_replaces_moved_l
     )
 
     assert {item.point for item in at_eleven.opportunities} == {Decimal("-3.5"), Decimal("3.5")}
-    assert {item.point for item in at_fourteen.opportunities} == {Decimal("-4.5"), Decimal("4.5")}
+    # The 13:00 snapshot is selected exclusively, while the cross-line engine
+    # correctly keeps FanDuel's better executable -3.5 home-side alternative.
+    assert {item.point for item in at_fourteen.opportunities} == {Decimal("-3.5"), Decimal("4.5")}
     assert not set(at_eleven.opportunities[0].snapshot_ids) & set(at_fourteen.opportunities[0].snapshot_ids)
 
 
