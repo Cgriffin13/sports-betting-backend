@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.cli.verify_live_pricing import verify_fetch
 from app.db.base import Base
 from app.main import create_app
 from app.providers.base import MarketGame, MarketOffer, ProviderFetchResult
@@ -45,7 +46,13 @@ def _offer(
     *,
     point: Decimal | None = None,
 ) -> MarketOffer:
-    titles = {"draftkings": "DraftKings", "fanduel": "FanDuel", "betmgm": "BetMGM"}
+    titles = {
+        "draftkings": "DraftKings",
+        "fanduel": "FanDuel",
+        "betmgm": "BetMGM",
+        "williamhill_us": "Caesars Sportsbook",
+        "bovada": "Bovada",
+    }
     return MarketOffer(
         book=titles[book_key],
         book_key=book_key,
@@ -54,7 +61,7 @@ def _offer(
         odds=odds,
         point=point,
         has_point=point is not None,
-        provider_updated_at=NOW,
+        provider_updated_at=NOW - timedelta(minutes=5),
     )
 
 
@@ -96,7 +103,11 @@ def _saturday_fetch() -> ProviderFetchResult:
     )
     true_pass = tuple(
         _offer(book, "h2h", selection, -110)
-        for book in ("draftkings", "fanduel")
+        for book in ("draftkings", "williamhill_us")
+        for selection in ("Pass Home", "Pass Away")
+    )
+    unsupported = tuple(
+        _offer("bovada", "h2h", selection, -110)
         for selection in ("Pass Home", "Pass Away")
     )
     fragmented_spread = tuple(
@@ -136,7 +147,7 @@ def _saturday_fetch() -> ProviderFetchResult:
     games = (
         _game(1, "Qualified Home", "Qualified Away", qualified),
         _game(2, "Watch Home", "Watch Away", watchlist),
-        _game(3, "Pass Home", "Pass Away", true_pass),
+        _game(3, "Pass Home", "Pass Away", (*true_pass, *unsupported)),
         _game(4, "Fragment Home", "Fragment Away", fragmented_spread),
         _game(5, "Integer Home", "Integer Away", integer_spread),
         _game(6, "Half Total Home", "Half Total Away", half_total),
@@ -186,7 +197,6 @@ def test_realistic_saturday_slate_reaches_dashboard_with_auditable_funnel(
     assert watchlist.status_code == 200, watchlist.text
     assert system.status_code == 200, system.text
     assert provider.calls == [("NCAAF", ["h2h", "spreads", "totals"])]
-
     actionable = recommendations.json()["recommendations"]
     assert len(actionable) == 1
     qualified = actionable[0]
@@ -211,9 +221,18 @@ def test_realistic_saturday_slate_reaches_dashboard_with_auditable_funnel(
     assert funnel == {
         "games_received": 7,
         "games_analyzed": 7,
-        "observations_received": 34,
-        "observations_considered": 34,
-        "latest_observations": 34,
+        "observations_received": 36,
+        "observations_considered": 36,
+        "latest_observations": 36,
+        "supported_book_observations": 34,
+        "unsupported_book_observations": 2,
+        "supported_books_seen": 4,
+        "unsupported_books_seen": 1,
+        "snapshot_age_seconds": 0,
+        "provider_quote_age_min_seconds": 300,
+        "provider_quote_age_median_seconds": 300,
+        "provider_quote_age_p90_seconds": 300,
+        "provider_quote_age_max_seconds": 300,
         "eligible_observations": 34,
         "exact_paired_book_markets": 17,
         "comparable_market_groups": 11,
@@ -229,6 +248,8 @@ def test_realistic_saturday_slate_reaches_dashboard_with_auditable_funnel(
     assert research["rejection_counts"]["push_probability_not_modeled"] == 2
     assert research["rejection_counts"]["below_minimum_ev"] >= 2
     assert research["rejection_counts"]["below_minimum_edge"] >= 2
+    assert research["rejection_counts"]["unsupported_or_inactive_book"] == 2
+    assert research["pricing_pipeline_status"] == "HEALTHY"
     assert len(research["slates"]) == 1
     assert research["slates"][0]["weekday"] == "Saturday"
     assert research["slates"][0]["pricing_funnel"]["watchlist_candidates"] == 2
@@ -239,3 +260,26 @@ def test_realistic_saturday_slate_reaches_dashboard_with_auditable_funnel(
     assert approval.status_code == 404
     assert refresh.json()["decisions"][0]["parlay_status"] == "PASS"
     assert provider.calls == [("NCAAF", ["h2h", "spreads", "totals"])]
+
+
+def test_isolated_live_verification_contract_uses_the_same_healthy_pipeline(tmp_path: Path) -> None:
+    report = verify_fetch(
+        _saturday_fetch(),
+        Settings(
+            database_url=f"sqlite+pysqlite:///{(tmp_path / 'source.sqlite3').as_posix()}",
+            app_api_key="verification-source-key",
+            data_dir=tmp_path,
+        ),
+    )
+
+    assert report["acceptance_passed"] is True
+    assert report["integrity_status"] == "HEALTHY WITH QUALIFIED"
+    assert report["provider_calls"] == 1
+    assert report["ledger_or_bet_mutation"] is False
+    assert report["pricing_funnel"]["eligible_observations"] == 34
+    assert report["pricing_funnel"]["exact_paired_book_markets"] == 17
+    assert report["pricing_funnel"]["calculable_candidate_sides"] == 8
+    assert report["saturday_games_received"] == 7
+    assert report["saturday"]["slate_date_utc"] == "2026-09-05"
+    assert report["saturday"]["games"] == 7
+    assert report["saturday"]["qualified_candidates"] == 1

@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
+from math import ceil
 from typing import TypeAlias
 from uuid import UUID
 
@@ -68,6 +69,36 @@ def build_pricing_analysis(
     opportunities = _top_n_by_league(qualified, top_n_per_league)
     games_received = len({item.event_id for item in observations})
     games_analyzed = len({item.event_id for item in latest})
+    quote_ages = sorted(_provider_quote_age_seconds(item) for item in latest)
+    snapshot_ages = sorted(max(0, int((cutoff - _as_utc(item.snapshot_requested_at)).total_seconds())) for item in latest)
+    supported = [item for item in latest if item.sportsbook_key in policy.supported_books and item.sportsbook_active]
+    unsupported = [
+        item for item in latest if item.sportsbook_key not in policy.supported_books or not item.sportsbook_active
+    ]
+    funnel = {
+        "games_received": games_received,
+        "games_analyzed": games_analyzed,
+        "observations_received": len(observations),
+        "observations_considered": len(time_bound),
+        "latest_observations": len(latest),
+        "supported_book_observations": len(supported),
+        "unsupported_book_observations": len(unsupported),
+        "supported_books_seen": len({item.sportsbook_key for item in supported}),
+        "unsupported_books_seen": len({item.sportsbook_key for item in unsupported}),
+        "snapshot_age_seconds": max(snapshot_ages, default=0),
+        "provider_quote_age_min_seconds": min(quote_ages, default=0),
+        "provider_quote_age_median_seconds": _percentile(quote_ages, 0.5),
+        "provider_quote_age_p90_seconds": _percentile(quote_ages, 0.9),
+        "provider_quote_age_max_seconds": max(quote_ages, default=0),
+        "eligible_observations": len(eligible),
+        "exact_paired_book_markets": len(paired),
+        "comparable_market_groups": comparable_groups,
+        "calculable_candidate_sides": len(candidates),
+        "positive_edge_candidates": sum(item.probability_edge > 0 for item in candidates),
+        "positive_ev_candidates": sum(item.ev_per_unit > 0 for item in candidates),
+        "pricing_qualified_candidates": len(qualified),
+    }
+    pipeline_status, pipeline_reason = _pipeline_integrity(funnel)
     return PricingAnalysis(
         as_of=cutoff,
         pricing_policy_version=policy.pricing_version,
@@ -84,25 +115,18 @@ def build_pricing_analysis(
         opportunities_qualified=len(qualified),
         top_n_per_league=top_n_per_league,
         rejection_counts=dict(sorted(rejections.items())),
-        funnel={
-            "games_received": games_received,
-            "games_analyzed": games_analyzed,
-            "observations_received": len(observations),
-            "observations_considered": len(time_bound),
-            "latest_observations": len(latest),
-            "eligible_observations": len(eligible),
-            "exact_paired_book_markets": len(paired),
-            "comparable_market_groups": comparable_groups,
-            "calculable_candidate_sides": len(candidates),
-            "positive_edge_candidates": sum(item.probability_edge > 0 for item in candidates),
-            "positive_ev_candidates": sum(item.ev_per_unit > 0 for item in candidates),
-            "pricing_qualified_candidates": len(qualified),
-        },
+        funnel=funnel,
+        pipeline_status=pipeline_status,
+        pipeline_status_reason=pipeline_reason,
     )
 
 
 def _is_known_by(item: PricingObservation, cutoff: datetime, rejections: Counter[str]) -> bool:
-    if _as_utc(item.observed_at) > cutoff or _as_utc(item.ingested_at) > cutoff:
+    if (
+        _as_utc(item.observed_at) > cutoff
+        or _as_utc(item.snapshot_requested_at) > cutoff
+        or _as_utc(item.ingested_at) > cutoff
+    ):
         rejections["after_cutoff"] += 1
         return False
     return True
@@ -118,8 +142,8 @@ def _latest_market_states(observations: list[PricingObservation]) -> list[Pricin
         latest = max(
             items,
             key=lambda item: (
-                _as_utc(item.observed_at),
                 _as_utc(item.snapshot_requested_at),
+                _as_utc(item.observed_at),
                 _as_utc(item.ingested_at),
                 str(item.snapshot_id),
             ),
@@ -146,11 +170,36 @@ def _is_eligible(
     if _as_utc(item.scheduled_start_utc) <= cutoff:
         rejections["event_started"] += 1
         return False
-    age_seconds = int((cutoff - _as_utc(item.observed_at)).total_seconds())
-    if age_seconds > item.stale_after_seconds:
-        rejections["stale_observation"] += 1
+    snapshot_age_seconds = max(0, int((cutoff - _as_utc(item.snapshot_requested_at)).total_seconds()))
+    if snapshot_age_seconds > item.stale_after_seconds:
+        rejections["stale_snapshot"] += 1
+        return False
+    if _provider_quote_age_seconds(item) > policy.maximum_provider_quote_age_seconds:
+        rejections["pathologically_old_provider_quote"] += 1
         return False
     return True
+
+
+def _provider_quote_age_seconds(item: PricingObservation) -> int:
+    return max(0, int((_as_utc(item.snapshot_requested_at) - _as_utc(item.observed_at)).total_seconds()))
+
+
+def _percentile(values: list[int], fraction: float) -> int:
+    if not values:
+        return 0
+    return values[max(0, ceil(len(values) * fraction) - 1)]
+
+
+def _pipeline_integrity(funnel: dict[str, int]) -> tuple[str, str | None]:
+    if funnel["games_received"] > 0 and funnel["observations_received"] > 0 and funnel["eligible_observations"] == 0:
+        return "DEGRADED", "observations_present_but_none_eligible"
+    if (
+        funnel["games_analyzed"] >= 10
+        and funnel["latest_observations"] >= 20
+        and funnel["exact_paired_book_markets"] == 0
+    ):
+        return "DEGRADED", "material_slate_has_no_exact_book_pairs"
+    return "HEALTHY", None
 
 
 def _pair_book_markets(
@@ -305,7 +354,11 @@ def _build_opportunities(
                     key=str,
                 )
             )
-            warnings = tuple(["material_book_outlier"] if outliers else [])
+            warnings: tuple[str, ...] = ()
+            if outliers:
+                warnings = ("material_book_outlier",)
+                if best.sportsbook_key in outliers:
+                    warnings += ("best_executable_book_outlier",)
             first = book_markets[0]
             opportunity = PricingOpportunity(
                 event_id=first.event_id,

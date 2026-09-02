@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, date, datetime
 from decimal import ROUND_DOWN, Decimal
 from enum import StrEnum
@@ -10,18 +10,23 @@ from typing import Any, Mapping, Sequence
 from app.domain.model_registry import FairValueQuote, ModelStatus, canonical_hash
 from app.domain.pricing import (
     PricingOpportunity,
+    american_or_decimal_price,
     american_odds_to_decimal,
     american_odds_to_implied_probability,
     expected_value_with_push,
     probability_edge,
 )
 
-QUALIFICATION_POLICY_VERSION = "ncaaf-qualification-v1"
-RISK_POLICY_VERSION = "fractional-kelly-risk-budget-v1"
-PARLAY_POLICY_VERSION = "cross-event-parlay-v1"
-RECOMMENDATION_VERSION = "ncaaf-portfolio-recommendation-v1"
+QUALIFICATION_POLICY_VERSION = "ncaaf-qualification-v3"
+RISK_POLICY_VERSION = "expected-log-growth-risk-budget-v2"
+PARLAY_POLICY_VERSION = "cross-event-parlay-v2"
+RECOMMENDATION_VERSION = "ncaaf-portfolio-recommendation-v3"
 SIMULATOR_VERSION = "portfolio-simulator-v1"
 MONEY_QUANTUM = Decimal("0.01")
+MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS = 500
+INFORMATIONAL_PRICING_WARNINGS = frozenset(
+    {"material_book_outlier", "best_executable_book_outlier"}
+)
 
 
 class PortfolioState(StrEnum):
@@ -44,6 +49,7 @@ class QualificationPolicy:
     maximum_market_age_seconds: int = 120
     core_minimum_ev: Decimal = Decimal("0.03")
     core_minimum_edge: Decimal = Decimal("0.015")
+    maximum_actionable_positive_american_odds: int = MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS
     allowed_model_statuses: frozenset[ModelStatus] = frozenset({ModelStatus.RETAINED_BENCHMARK})
     version: str = QUALIFICATION_POLICY_VERSION
 
@@ -58,6 +64,8 @@ class QualificationPolicy:
             _finite_nonnegative(value, name)
         if self.minimum_books < 2 or self.maximum_market_age_seconds <= 0:
             raise ValueError("Qualification book and freshness limits must be positive")
+        if self.maximum_actionable_positive_american_odds < 100:
+            raise ValueError("Maximum actionable positive American odds must be at least +100")
         if any(value > 1 for value in (self.minimum_edge, self.maximum_dispersion, self.core_minimum_edge)):
             raise ValueError("Qualification probability fractions cannot exceed one")
         if self.core_minimum_ev < self.minimum_ev or self.core_minimum_edge < self.minimum_edge:
@@ -199,6 +207,10 @@ class CandidateEvaluation:
     qualified: bool
     rejection_reasons: tuple[str, ...]
     quality_multiplier: Decimal
+    ranking_kelly_fraction: Decimal
+    expected_log_growth: Decimal
+    robust_expected_log_growth: Decimal
+    quote_integrity: str
     ranking_score: Decimal
 
 
@@ -284,6 +296,32 @@ def fractional_kelly_with_push(
     return max(Decimal(0), (b * win - loss) / (b * resolved))
 
 
+def expected_log_growth(
+    win_probability: Decimal,
+    push_probability: Decimal,
+    decimal_odds: Decimal,
+    bankroll_fraction: Decimal,
+) -> Decimal:
+    """Expected log wealth growth for one push-aware wager.
+
+    The wager fraction is the fraction of current equity risked. A push has a
+    wealth multiplier of one and therefore contributes zero log growth.
+    """
+    win = _probability(win_probability, "win_probability")
+    push = _probability(push_probability, "push_probability")
+    if win + push > 1:
+        raise ValueError("Win and push probabilities cannot exceed one")
+    if not bankroll_fraction.is_finite() or bankroll_fraction < 0 or bankroll_fraction >= 1:
+        raise ValueError("Bankroll fraction must be finite and between zero and one")
+    price = american_or_decimal_price(decimal_odds)
+    if bankroll_fraction == 0:
+        return Decimal(0)
+    loss = Decimal(1) - win - push
+    win_wealth = Decimal(1) + bankroll_fraction * (price - Decimal(1))
+    loss_wealth = Decimal(1) - bankroll_fraction
+    return win * win_wealth.ln() + loss * loss_wealth.ln()
+
+
 def evaluate_candidate(
     fair_value: FairValueQuote,
     opportunity: PricingOpportunity,
@@ -310,7 +348,8 @@ def evaluate_candidate(
     age = (_utc(as_of) - _utc(fair_value.source_as_of)).total_seconds()
     if age < 0 or age > policy.maximum_market_age_seconds:
         reasons.append("stale_or_future_fair_value")
-    if opportunity.quality_warnings:
+    hard_quality_warnings = set(opportunity.quality_warnings) - INFORMATIONAL_PRICING_WARNINGS
+    if hard_quality_warnings:
         reasons.append("pricing_quality_warning")
 
     win = fair_value.fair_probability or Decimal(0)
@@ -327,6 +366,11 @@ def evaluate_candidate(
         reasons.append("below_minimum_edge")
     if ev < policy.minimum_ev:
         reasons.append("below_minimum_ev")
+    # POLARIS does not yet have a separately budgeted and validated longshot
+    # sleeve. Preserve the price, fair value, edge, and EV for research, but do
+    # not allow extreme positive prices onto the actionable main board.
+    if opportunity.best_american_odds > policy.maximum_actionable_positive_american_odds:
+        reasons.append("outside_main_board_odds_profile")
 
     uncertainty = str(fair_value.uncertainty_quality.get("uncertainty", opportunity.uncertainty_indicator))
     multiplier = {"low": Decimal(1), "moderate": Decimal("0.75"), "high": Decimal("0.40")}.get(
@@ -348,7 +392,14 @@ def evaluate_candidate(
             "point": opportunity.point,
         }
     )
-    score = ev * multiplier / (Decimal(1) + (dispersion or Decimal(0)) * Decimal(10))
+    best_is_outlier = opportunity.best_sportsbook_key in opportunity.outlier_sportsbooks
+    quote_integrity = (
+        "verified_best_price_consensus_outlier"
+        if best_is_outlier
+        else "verified_with_consensus_outlier"
+        if opportunity.outlier_sportsbooks
+        else "verified"
+    )
     return CandidateEvaluation(
         candidate_id=candidate_id,
         fair_value=fair_value,
@@ -363,7 +414,11 @@ def evaluate_candidate(
         qualified=not reasons,
         rejection_reasons=tuple(reasons),
         quality_multiplier=multiplier,
-        ranking_score=score,
+        ranking_kelly_fraction=Decimal(0),
+        expected_log_growth=Decimal(0),
+        robust_expected_log_growth=Decimal(0),
+        quote_integrity=quote_integrity,
+        ranking_score=Decimal(0),
     )
 
 
@@ -380,12 +435,22 @@ def construct_portfolio(
     if top_n < 1 or top_n > 10:
         raise ValueError("Top N must be between one and ten")
     state = portfolio_state(snapshot, risk_policy)
+    ranked_candidates = tuple(
+        _with_portfolio_ranking(item, snapshot, state, risk_policy) if item.qualified else item
+        for item in candidates
+    )
     qualified = sorted(
-        (item for item in candidates if item.qualified),
+        (item for item in ranked_candidates if item.qualified),
         key=lambda item: (
-            item.classification != PositionClass.CORE,
             -item.ranking_score,
+            -item.expected_log_growth,
+            -item.ranking_kelly_fraction,
+            _quote_integrity_rank(item.quote_integrity),
+            -item.opportunity.books_contributing,
+            item.opportunity.consensus_dispersion,
+            abs(item.implied_probability - Decimal("0.5")),
             -item.ev_per_unit,
+            -item.edge,
             item.opportunity.scheduled_start_utc,
             item.candidate_id,
         ),
@@ -433,12 +498,93 @@ def construct_portfolio(
         straight_recommendations=tuple(recommendations),
         parlay=parlay,
         pass_reasons=tuple(pass_reasons),
-        evaluated_candidates=tuple(candidates),
+        evaluated_candidates=ranked_candidates,
         qualification_policy_version=qualification_policy.version,
         risk_policy_version=risk_policy.version,
         parlay_policy_version=parlay_policy.version,
         decision_hash=canonical_hash(payload),
     )
+
+
+def _with_portfolio_ranking(
+    candidate: CandidateEvaluation,
+    snapshot: PortfolioSnapshot,
+    state: PortfolioState,
+    policy: RiskPolicy,
+) -> CandidateEvaluation:
+    if snapshot.equity <= 0:
+        return replace(
+            candidate,
+            ranking_kelly_fraction=Decimal(0),
+            expected_log_growth=Decimal(0),
+            robust_expected_log_growth=Decimal(0),
+            ranking_score=Decimal(0),
+        )
+    _, adjusted, _ = _kelly_allocation(candidate, state, policy)
+    opportunity = candidate.opportunity
+    event_id = str(opportunity.event_id)
+    current = snapshot.open_exposures
+    per_bet_fraction = (
+        policy.maximum_core_bet_fraction
+        if candidate.classification == PositionClass.CORE
+        else policy.maximum_opportunistic_bet_fraction
+    )
+    caps = (
+        per_bet_fraction,
+        policy.maximum_stake / snapshot.equity,
+        snapshot.cash / snapshot.equity,
+        policy.maximum_daily_fraction
+        - _exposure_sum(current, lambda item: item.slate_date == snapshot.slate_date) / snapshot.equity,
+        policy.maximum_game_fraction
+        - _exposure_sum(current, lambda item: item.event_id == event_id) / snapshot.equity,
+        min(
+            policy.maximum_team_fraction
+            - _exposure_sum(current, lambda item, team=team: team in item.teams) / snapshot.equity
+            for team in (opportunity.home_team, opportunity.away_team)
+        ),
+        policy.maximum_market_fraction
+        - _exposure_sum(current, lambda item: item.market_type == opportunity.market_type) / snapshot.equity,
+        policy.maximum_correlated_fraction
+        - _exposure_sum(current, lambda item: item.event_id == event_id) / snapshot.equity,
+    )
+    fraction = max(Decimal(0), min(adjusted, *caps))
+    growth = expected_log_growth(
+        candidate.win_probability,
+        candidate.push_probability,
+        opportunity.best_decimal_odds,
+        fraction,
+    )
+    robust_probabilities = tuple(
+        min(item.selection_probability, Decimal(1) - candidate.push_probability)
+        for item in opportunity.book_probabilities
+    )
+    robust_growth = min(
+        (
+            expected_log_growth(
+                probability,
+                candidate.push_probability,
+                opportunity.best_decimal_odds,
+                fraction,
+            )
+            for probability in robust_probabilities
+        ),
+        default=growth,
+    )
+    return replace(
+        candidate,
+        ranking_kelly_fraction=fraction,
+        expected_log_growth=growth,
+        robust_expected_log_growth=robust_growth,
+        ranking_score=robust_growth,
+    )
+
+
+def _quote_integrity_rank(value: str) -> int:
+    return {
+        "verified": 0,
+        "verified_with_consensus_outlier": 1,
+        "verified_best_price_consensus_outlier": 2,
+    }.get(value, 3)
 
 
 def optimize_parlay(
@@ -541,7 +687,16 @@ def optimize_parlay(
         )
         if stake < risk_policy.minimum_stake:
             continue
-        selection_score = joint_ev - Decimal("0.01") * duplicate_count
+        growth = expected_log_growth(
+            joint,
+            Decimal(0),
+            decimal_odds,
+            stake / snapshot.equity,
+        )
+        duplicate_ratio = Decimal(duplicate_count) / Decimal(len(legs))
+        selection_score = growth * (
+            Decimal(1) - policy.duplicate_exposure_penalty * duplicate_ratio
+        )
         payload = {
             "offer_id": offer.offer_id,
             "legs": [item.recommendation_hash for item in legs],
@@ -570,8 +725,38 @@ def optimize_parlay(
         )
     if not eligible:
         return None, "no_verified_positive_ev_joint_quote"
-    eligible.sort(key=lambda item: (-item.selection_score, item.recommendation_hash))
+    eligible.sort(
+        key=lambda item: (
+            -item.selection_score,
+            -item.joint_fair_probability,
+            -min(leg.candidate.win_probability for leg in item.legs),
+            -sum((leg.candidate.win_probability for leg in item.legs), Decimal(0)),
+            -item.joint_ev_per_unit,
+            item.recommendation_hash,
+        )
+    )
     return eligible[0], "selected"
+
+
+def _kelly_allocation(
+    candidate: CandidateEvaluation,
+    state: PortfolioState,
+    policy: RiskPolicy,
+) -> tuple[Decimal, Decimal, list[str]]:
+    raw_kelly = fractional_kelly_with_push(
+        candidate.win_probability,
+        candidate.push_probability,
+        candidate.opportunity.best_decimal_odds,
+    )
+    multiplier = candidate.quality_multiplier
+    adjustments = [f"quality_multiplier:{multiplier}", f"fractional_kelly:{policy.kelly_fraction}"]
+    if candidate.classification == PositionClass.OPPORTUNISTIC:
+        multiplier *= policy.opportunistic_multiplier
+        adjustments.append(f"opportunistic_multiplier:{policy.opportunistic_multiplier}")
+    if state == PortfolioState.REDUCED_RISK:
+        multiplier *= policy.reduced_risk_multiplier
+        adjustments.append(f"reduced_risk_multiplier:{policy.reduced_risk_multiplier}")
+    return raw_kelly, raw_kelly * policy.kelly_fraction * multiplier, adjustments
 
 
 def _size_candidate(
@@ -605,17 +790,7 @@ def _size_candidate(
     if opposing:
         return None, f"opposing_position_rejected:{candidate.candidate_id}"
 
-    decimal_odds = opportunity.best_decimal_odds
-    raw_kelly = fractional_kelly_with_push(candidate.win_probability, candidate.push_probability, decimal_odds)
-    multiplier = candidate.quality_multiplier
-    adjustments = [f"quality_multiplier:{multiplier}", f"fractional_kelly:{policy.kelly_fraction}"]
-    if candidate.classification == PositionClass.OPPORTUNISTIC:
-        multiplier *= policy.opportunistic_multiplier
-        adjustments.append(f"opportunistic_multiplier:{policy.opportunistic_multiplier}")
-    if state == PortfolioState.REDUCED_RISK:
-        multiplier *= policy.reduced_risk_multiplier
-        adjustments.append(f"reduced_risk_multiplier:{policy.reduced_risk_multiplier}")
-    adjusted = raw_kelly * policy.kelly_fraction * multiplier
+    raw_kelly, adjusted, adjustments = _kelly_allocation(candidate, state, policy)
     per_bet_fraction = (
         policy.maximum_core_bet_fraction
         if candidate.classification == PositionClass.CORE

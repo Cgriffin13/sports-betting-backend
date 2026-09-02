@@ -5,7 +5,7 @@ from typing import Final
 
 CANONICAL_MARKET_TYPES: Final = {"h2h": "moneyline", "spreads": "spread", "totals": "total"}
 FULL_GAME_PERIOD: Final = "full_game"
-FRESHNESS_POLICY_VERSION: Final = "market-freshness-v1"
+FRESHNESS_POLICY_VERSION: Final = "snapshot-and-provider-quote-freshness-v2"
 
 
 def canonical_market_type(provider_market: str) -> str:

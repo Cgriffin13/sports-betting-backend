@@ -11,7 +11,11 @@ function renderApp(path = "/") {
 }
 
 describe("portfolio dashboard", () => {
-  beforeEach(() => { demoData.system.stale = false; });
+  beforeEach(() => {
+    demoData.system.stale = false;
+    demoData.watchlist.pricing_pipeline_status = "HEALTHY";
+    demoData.watchlist.pricing_pipeline_status_reason = null;
+  });
 
   it("renders the paper-trading shell, core and opportunistic picks, risk state, and parlay PASS", async () => {
     renderApp();
@@ -33,6 +37,9 @@ describe("portfolio dashboard", () => {
     const expand = await screen.findByLabelText("Expand Redwood State -3.5");
     fireEvent.click(expand);
     expect(screen.getByText("Recommended → Approved → Open → Settled")).toBeInTheDocument();
+    expect(screen.getByText("Full Kelly")).toBeInTheDocument();
+    expect(screen.getByText("Robust log-growth score")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
     expect(screen.getByText("Stored market history appears here when connected to the backend.")).toBeInTheDocument();
     const approve = screen.getByRole("button", { name: "Approve paper bet" });
     fireEvent.click(approve);
@@ -47,13 +54,21 @@ describe("portfolio dashboard", () => {
     expect(screen.getByText(/Use Refresh Markets before approving/)).toBeInTheDocument();
   });
 
+  it("renders a pricing collapse as DEGRADED rather than a successful PASS", async () => {
+    demoData.watchlist.pricing_pipeline_status = "DEGRADED";
+    demoData.watchlist.pricing_pipeline_status_reason = "observations_present_but_none_eligible";
+    renderApp();
+    expect(await screen.findByText("Pricing pipeline degraded")).toBeInTheDocument();
+    expect(screen.getByText(/not a successful PASS/)).toBeInTheDocument();
+  });
+
   it("provides the seven primary destinations and nests methodology under settings", async () => {
     renderApp("/settings");
     expect(await screen.findByText("System / Methodology")).toBeInTheDocument();
     expect(screen.getAllByText("Market consensus supplies fair value").length).toBeGreaterThan(0);
     expect(screen.getByText("Latest Pricing Funnel")).toBeInTheDocument();
     expect(screen.getByText("calculable_candidate_sides")).toBeInTheDocument();
-    expect(screen.getByText(/60 games.*280 calculable sides.*34 positive EV.*7 watchlist.*3 qualified/)).toBeInTheDocument();
+    expect(screen.getByText(/60 games.*eligible observations.*paired markets.*280 calculable sides.*34 positive EV.*7 watchlist.*3 qualified/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Today" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Watchlist" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio" }).length).toBeGreaterThan(0);

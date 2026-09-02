@@ -133,3 +133,31 @@ def test_watchlist_candidate_cannot_enter_parlay_optimizer() -> None:
 
     assert decision.straight_recommendations == ()
     assert decision.parlay is None
+
+
+def test_extreme_longshot_is_research_visible_but_not_watchlist_or_actionable() -> None:
+    policy = QualificationPolicy()
+    opportunity = _opportunity(odds=1000, fair=Decimal("0.13"), home="Longshot", away="Favorite")
+    evaluation = evaluate_candidate(_quote(opportunity), opportunity, policy, as_of=NOW)
+
+    assert evaluation.ev_per_unit > 0
+    assert evaluation.edge > 0
+    assert evaluation.rejection_reasons == ("outside_main_board_odds_profile",)
+    assert build_watchlist(
+        [evaluation],
+        policy,
+        as_of=NOW,
+        timing=classify_recommendation_timing(NOW, opportunity.scheduled_start_utc),
+    ) == []
+
+    decision = construct_portfolio(
+        [evaluation],
+        _snapshot(),
+        top_n=10,
+        risk_policy=RiskPolicy(),
+        qualification_policy=policy,
+        parlay_policy=ParlayPolicy(),
+    )
+    assert decision.evaluated_candidates == (evaluation,)
+    assert decision.straight_recommendations == ()
+    assert decision.parlay is None

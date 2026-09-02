@@ -39,13 +39,14 @@ Activate `.venv`, copy `.env.example` to `.env`, and replace all placeholders. P
 | `PROVIDER_BACKOFF_SECONDS` | No | Initial exponential-backoff delay; defaults to `0.25`. |
 | `PROVIDER_CACHE_TTL_SECONDS` | No | Process-local successful-fetch cache TTL; defaults to `15.0`. |
 | `PROVIDER_LOW_QUOTA_THRESHOLD` | No | Remaining-request threshold for a structured quota warning; defaults to `10`. |
-| `MARKET_FRESHNESS_SECONDS` | No | Versioned v1 stale-price threshold; defaults to `120`. |
+| `MARKET_FRESHNESS_SECONDS` | No | Hard age limit for the current POLARIS snapshot; defaults to `120`. |
+| `PROVIDER_QUOTE_MAX_AGE_SECONDS` | No | Separate fail-closed ceiling for pathological provider `last_update` ages; defaults to seven days. |
 | `PRICING_MINIMUM_BOOKS` | No | Complete paired books required for consensus; defaults to `2`. |
 | `PRICING_MINIMUM_EV` | No | Minimum EV per unit for baseline opportunity qualification; defaults to `0.01`. |
 | `PRICING_MINIMUM_PROBABILITY_EDGE` | No | Minimum probability-point edge; defaults to `0.005`. |
 | `PRICING_OUTLIER_THRESHOLD` | No | Absolute no-vig probability deviation from consensus that raises an outlier warning; defaults to `0.03`. |
 | `PRICING_MAXIMUM_DISPERSION` | No | Maximum eligible across-book no-vig probability range; defaults to `0.08`. |
-| `PRICING_SUPPORTED_BOOKS` | No | Comma-separated canonical book keys; defaults to `draftkings,fanduel,betmgm`. |
+| `PRICING_SUPPORTED_BOOKS` | No | Comma-separated canonical US book keys; defaults to BetMGM, BetRivers, Caesars, DraftKings, Fanatics, and FanDuel provider keys. |
 | `PORTFOLIO_MINIMUM_EV` / `PORTFOLIO_MINIMUM_EDGE` | No | Phase 6 straight qualification defaults `0.015` / `0.0075`. |
 | `PORTFOLIO_KELLY_FRACTION` | No | Conservative Kelly multiplier; defaults to `0.25` and must remain below one. |
 | `PORTFOLIO_MAXIMUM_CORE_BET_FRACTION` / `PORTFOLIO_MAXIMUM_OPPORTUNISTIC_BET_FRACTION` | No | Per-position equity caps; defaults `0.02` / `0.01`. |
@@ -140,7 +141,7 @@ python -m pytest
 
 The flattened `/odds` game/offer shape remains compatible and now adds `snapshot_ids` plus `snapshot_id` for a single successful league fetch. Raw provider payloads never include locally supplied credentials, and persisted request parameters omit `apiKey`.
 
-`/opportunities` remains the pricing-only baseline and returns no stake. The Phase 6 recommendation route independently consumes the retained registry fair value and exact executable observation, then applies stricter qualification, quarter-Kelly risk budgeting, CORE/OPPORTUNISTIC classification, Top-N/PASS behavior, and human approval. See [`PORTFOLIO_RISK_AND_RECOMMENDATIONS.md`](docs/PORTFOLIO_RISK_AND_RECOMMENDATIONS.md).
+`/opportunities` remains the pricing-only baseline and returns no stake. The Phase 6 recommendation route independently consumes the retained registry fair value and exact executable observation, then applies stricter qualification, quarter-Kelly risk budgeting, robust expected-log-growth ordering, CORE/OPPORTUNISTIC classification, Top-N/PASS behavior, and human approval. Because no separately risk-budgeted longshot sleeve exists, prices above `+500` remain calculable diagnostics but cannot become ordinary actionable recommendations; this safety guardrail does not alter fair value or EV. See [`PORTFOLIO_RISK_AND_RECOMMENDATIONS.md`](docs/PORTFOLIO_RISK_AND_RECOMMENDATIONS.md) and the bounded [`LIVE_PRICING_METHODOLOGY_AUDIT.md`](docs/LIVE_PRICING_METHODOLOGY_AUDIT.md).
 
 Opportunity reads preserve all raw snapshot history for audit while using a bounded scalar SQL projection of only the latest time-eligible market state. Raw snapshot JSON is never selected or deserialized by the pricing path. Historical cutoffs continue to require both observation time and ingestion time at or before `as_of`.
 

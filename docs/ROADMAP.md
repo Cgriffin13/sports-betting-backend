@@ -204,6 +204,8 @@ Goal: turn positive-EV observations into conservative, reviewable portfolio reco
 
 Status: **Implemented for NCAAF v1 paper trading on 2026-09-01.** The retained Phase 5 market-consensus benchmark is compared separately with exact executable prices; versioned qualification, push-aware EV, fractional Kelly, CORE/OPPORTUNISTIC allocation, exposure/drawdown states, immutable recommendations, approval-time risk revalidation, ledger integration, attribution, and an offline simulator are implemented. The cross-event parlay optimizer is implemented but correctly returns PASS until a trusted executable combined-price adapter supplies a verified quote; same-game parlays remain excluded.
 
+Production methodology follow-up (2026-09-02): qualified straights now use robust expected log growth at the projected adjusted-Kelly fraction instead of the former EV-dominated heuristic. Consensus-outlier warnings remain visible but no longer reject a current, supported, validly paired executable quote solely for differing from the median; hard integrity and dispersion gates remain. Ranked order and its Kelly/growth provenance persist through API reads. `ncaaf-qualification-v3` adds only the explicit no-longshot-sleeve safety guardrail: a price above `+500` remains calculable but cannot enter the main board, staking, approval, or parlays. There is no additional `-300/+300` hard band, and fair value, EV, sizing multipliers, and exposure limits did not change.
+
 - [x] Define a fractional-Kelly candidate policy; never use full Kelly.
 - [x] Scale stake recommendations from current portfolio equity rather than fixed dollars.
 - [x] Define a versioned unit display policy tied to current equity.

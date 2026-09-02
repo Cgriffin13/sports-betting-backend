@@ -80,6 +80,8 @@ def build_pricing_policy(
     outlier_threshold: Decimal,
     maximum_dispersion: Decimal,
     supported_books: tuple[str, ...],
+    snapshot_freshness_seconds: int = 120,
+    maximum_provider_quote_age_seconds: int = 604_800,
 ) -> PricingPolicy:
     return PricingPolicy(
         minimum_books=minimum_books,
@@ -88,6 +90,8 @@ def build_pricing_policy(
         outlier_threshold=outlier_threshold,
         maximum_dispersion=maximum_dispersion,
         supported_books=frozenset(book.strip().lower() for book in supported_books if book.strip()),
+        snapshot_freshness_seconds=snapshot_freshness_seconds,
+        maximum_provider_quote_age_seconds=maximum_provider_quote_age_seconds,
     )
 
 

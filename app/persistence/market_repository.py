@@ -40,11 +40,13 @@ class SqlAlchemyMarketDataRepository:
         session_factory: sessionmaker[Session],
         *,
         freshness_seconds: int,
+        provider_quote_max_age_seconds: int = 604_800,
         clock: Callable[[], datetime] = utc_now,
         id_factory: Callable[[], UUID] = uuid4,
     ) -> None:
         self._session_factory = session_factory
         self._freshness_seconds = freshness_seconds
+        self._provider_quote_max_age_seconds = provider_quote_max_age_seconds
         self._clock = clock
         self._id_factory = id_factory
 
@@ -341,7 +343,7 @@ class SqlAlchemyMarketDataRepository:
             observation_age_seconds=age_seconds,
             freshness_policy_version=FRESHNESS_POLICY_VERSION,
             stale_after_seconds=self._freshness_seconds,
-            is_stale=age_seconds > self._freshness_seconds,
+            is_stale=age_seconds > self._provider_quote_max_age_seconds,
             observation_status="active",
             match_review_status=event.review_status,
             raw_source={

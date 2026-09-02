@@ -34,12 +34,20 @@ class Settings:
     provider_cache_ttl_seconds: float = 15.0
     provider_low_quota_threshold: int = 10
     market_freshness_seconds: int = 120
+    provider_quote_max_age_seconds: int = 604_800
     pricing_minimum_books: int = 2
     pricing_minimum_ev: Decimal = Decimal("0.01")
     pricing_minimum_probability_edge: Decimal = Decimal("0.005")
     pricing_outlier_threshold: Decimal = Decimal("0.03")
     pricing_maximum_dispersion: Decimal = Decimal("0.08")
-    pricing_supported_books: tuple[str, ...] = ("draftkings", "fanduel", "betmgm")
+    pricing_supported_books: tuple[str, ...] = (
+        "betmgm",
+        "betrivers",
+        "williamhill_us",
+        "draftkings",
+        "fanatics",
+        "fanduel",
+    )
     portfolio_minimum_ev: Decimal = Decimal("0.015")
     portfolio_minimum_edge: Decimal = Decimal("0.0075")
     portfolio_maximum_dispersion: Decimal = Decimal("0.06")
@@ -98,6 +106,8 @@ class Settings:
             raise ValueError("Provider low quota threshold must be nonnegative")
         if self.market_freshness_seconds <= 0:
             raise ValueError("Market freshness threshold must be positive")
+        if self.provider_quote_max_age_seconds <= self.market_freshness_seconds:
+            raise ValueError("Provider quote maximum age must exceed market snapshot freshness")
         if self.pricing_minimum_books < 2:
             raise ValueError("Pricing minimum books must be at least 2")
         pricing_decimals = (
@@ -215,6 +225,7 @@ class Settings:
             provider_cache_ttl_seconds=float(os.getenv("PROVIDER_CACHE_TTL_SECONDS", "15.0")),
             provider_low_quota_threshold=int(os.getenv("PROVIDER_LOW_QUOTA_THRESHOLD", "10")),
             market_freshness_seconds=int(os.getenv("MARKET_FRESHNESS_SECONDS", "120")),
+            provider_quote_max_age_seconds=int(os.getenv("PROVIDER_QUOTE_MAX_AGE_SECONDS", "604800")),
             pricing_minimum_books=int(os.getenv("PRICING_MINIMUM_BOOKS", "2")),
             pricing_minimum_ev=_decimal_environment("PRICING_MINIMUM_EV", "0.01"),
             pricing_minimum_probability_edge=_decimal_environment(
@@ -224,7 +235,10 @@ class Settings:
             pricing_maximum_dispersion=_decimal_environment("PRICING_MAXIMUM_DISPERSION", "0.08"),
             pricing_supported_books=tuple(
                 book.strip().lower()
-                for book in os.getenv("PRICING_SUPPORTED_BOOKS", "draftkings,fanduel,betmgm").split(",")
+                for book in os.getenv(
+                    "PRICING_SUPPORTED_BOOKS",
+                    "betmgm,betrivers,williamhill_us,draftkings,fanatics,fanduel",
+                ).split(",")
                 if book.strip()
             ),
             portfolio_minimum_ev=_decimal_environment("PORTFOLIO_MINIMUM_EV", "0.015"),

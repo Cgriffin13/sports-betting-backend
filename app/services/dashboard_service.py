@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from app.config import Settings
+from app.domain.portfolio_engine import MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS
 from app.persistence.dashboard_repository import SqlAlchemyDashboardRepository
 
 
@@ -54,6 +55,7 @@ class DashboardService:
             "snapshot_age_seconds": age,
             "stale": stale,
             "next_scheduled_refresh": None,
+            "supported_sportsbooks": list(self.settings.pricing_supported_books),
             "policies": self._safe_policies(),
             "models": models,
         }
@@ -148,7 +150,9 @@ class DashboardService:
             "minimum_edge": self.settings.portfolio_minimum_edge,
             "maximum_dispersion": self.settings.portfolio_maximum_dispersion,
             "minimum_books": self.settings.portfolio_minimum_books,
+            "maximum_actionable_positive_american_odds": MAXIMUM_ACTIONABLE_POSITIVE_AMERICAN_ODDS,
             "freshness_seconds": self.settings.market_freshness_seconds,
+            "provider_quote_max_age_seconds": self.settings.provider_quote_max_age_seconds,
             "kelly_fraction": self.settings.portfolio_kelly_fraction,
             "minimum_stake": self.settings.portfolio_minimum_stake,
             "maximum_stake": self.settings.portfolio_maximum_stake,

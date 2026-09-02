@@ -25,6 +25,13 @@ const recommendation = (values: Partial<Recommendation> & Pick<Recommendation, "
   stake: 4,
   bankroll_fraction: 0.0182,
   units: 0.45,
+  raw_kelly_fraction: 0.0728,
+  adjusted_kelly_fraction: 0.0182,
+  portfolio_rank: 1,
+  ranking_score: 0.0016,
+  expected_log_growth: 0.0018,
+  robust_expected_log_growth: 0.0016,
+  quote_integrity: "verified",
   classification: "CORE",
   risk_adjustments: ["quarter_kelly", "daily_exposure_cap_checked"],
   executable_alternatives: [
@@ -40,7 +47,7 @@ const recommendation = (values: Partial<Recommendation> & Pick<Recommendation, "
   },
   explanation: "Best executable price clears the EV and data-quality gates across three complete books.",
   model_version: "ncaaf-market-consensus-v1@1.0.0",
-  policy_version: "fractional-kelly-risk-budget-v1",
+  policy_version: "expected-log-growth-risk-budget-v2",
   recommendation_hash: `hash-${values.recommendation_id}`,
   decision_as_of: iso(3),
   timing_classification: "OFFICIAL_PRIMARY_HORIZON",
@@ -79,6 +86,7 @@ export const demoData: DashboardData & { equitySeries: typeof equity } = {
     snapshot_age_seconds: 180,
     stale: false,
     next_scheduled_refresh: new Date(now.getTime() + 12 * 60_000).toISOString(),
+    supported_sportsbooks: ["betmgm", "betrivers", "williamhill_us", "draftkings", "fanatics", "fanduel"],
     policies: {
       minimum_ev: 0.015,
       minimum_edge: 0.0075,
@@ -161,6 +169,8 @@ export const demoData: DashboardData & { equitySeries: typeof equity } = {
     qualified_recommendations: 3,
     watchlist_count: 7,
     watchlist_version: "ncaaf-watchlist-v2",
+    pricing_pipeline_status: "HEALTHY",
+    pricing_pipeline_status_reason: null,
     pricing_funnel: {
       games_received: 98,
       games_analyzed: 98,
@@ -181,7 +191,7 @@ export const demoData: DashboardData & { equitySeries: typeof equity } = {
       insufficient_books: 184,
       push_probability_not_modeled: 72,
       below_minimum_ev: 41,
-      stale_observation: 18,
+      stale_snapshot: 18,
     },
     slates: [{
       slate_date: slateDate,
@@ -192,6 +202,8 @@ export const demoData: DashboardData & { equitySeries: typeof equity } = {
       watchlist_count: 7,
       pricing_funnel: { games_analyzed: 60, calculable_candidate_sides: 280, positive_ev_candidates: 34, watchlist_candidates: 7, qualified_candidates: 3, pass_candidates: 270 },
       rejection_counts: { insufficient_books: 112, push_probability_not_modeled: 40, below_minimum_ev: 25 },
+      pricing_pipeline_status: "HEALTHY",
+      pricing_pipeline_status_reason: null,
     }],
     items: Array.from({ length: 7 }, (_, index) => ({
       watchlist_id: `watch-${index + 1}`,

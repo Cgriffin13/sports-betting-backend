@@ -168,6 +168,8 @@ class RecommendationService:
             "watchlist_markets": len(watchlist),
             "pricing_funnel": pricing_funnel,
             "rejection_counts": dict(sorted(rejection_counts.items())),
+            "pricing_pipeline_status": pricing.pipeline_status,
+            "pricing_pipeline_status_reason": pricing.pipeline_status_reason,
         }
         input_hash = canonical_hash(
             {
@@ -175,6 +177,9 @@ class RecommendationService:
                 "slate_date": slate_date,
                 "as_of": as_of,
                 "pricing_policy": pricing.pricing_policy_version,
+                "qualification_policy": self.qualification_policy.version,
+                "risk_policy": self.risk_policy.version,
+                "parlay_policy": self.parlay_policy.version,
                 "candidate_ids": [item.candidate_id for item in evaluations],
                 "parlay_offer_ids": [item.offer_id for item in verified_offers],
                 "portfolio_equity": snapshot.equity,

@@ -24,6 +24,13 @@ export interface Recommendation {
   stake: number;
   bankroll_fraction: number | null;
   units: number | null;
+  raw_kelly_fraction: number | null;
+  adjusted_kelly_fraction: number | null;
+  portfolio_rank: number | null;
+  ranking_score: number | null;
+  expected_log_growth: number | null;
+  robust_expected_log_growth: number | null;
+  quote_integrity: string | null;
   classification: "CORE" | "OPPORTUNISTIC" | null;
   risk_adjustments: string[];
   executable_alternatives: Array<Record<string, unknown>>;
@@ -100,6 +107,8 @@ export interface WatchlistState {
   watchlist_version: string;
   pricing_funnel: Record<string, number>;
   rejection_counts: Record<string, number>;
+  pricing_pipeline_status: "HEALTHY" | "DEGRADED";
+  pricing_pipeline_status_reason: string | null;
   slates: Array<{
     slate_date: string;
     weekday: string;
@@ -109,6 +118,8 @@ export interface WatchlistState {
     watchlist_count: number;
     pricing_funnel: Record<string, number>;
     rejection_counts: Record<string, number>;
+    pricing_pipeline_status: "HEALTHY" | "DEGRADED";
+    pricing_pipeline_status_reason: string | null;
   }>;
   items: WatchlistItem[];
 }
@@ -209,6 +220,7 @@ export interface SystemStatus {
   snapshot_age_seconds: number | null;
   stale: boolean;
   next_scheduled_refresh: string | null;
+  supported_sportsbooks: string[];
   policies: Record<string, number | boolean>;
   models: ModelEntry[];
 }

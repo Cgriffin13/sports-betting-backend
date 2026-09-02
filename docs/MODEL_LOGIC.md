@@ -166,7 +166,7 @@ V2 should represent uncertainty through defensible evidence such as:
 - sample size and out-of-sample stability; and
 - known data-quality flags.
 
-The uncertainty representation and any adjustment to ranking or staking must be versioned and tested. Phase 6 implements `ncaaf-qualification-v1`, `fractional-kelly-risk-budget-v1`, and `cross-event-parlay-v1`; the exact current rules are documented in `PORTFOLIO_RISK_AND_RECOMMENDATIONS.md`.
+The uncertainty representation and any adjustment to ranking or staking must be versioned and tested. Phase 6 implements `ncaaf-qualification-v3`, `expected-log-growth-risk-budget-v2`, and `cross-event-parlay-v2`; the exact current rules are documented in `PORTFOLIO_RISK_AND_RECOMMENDATIONS.md`.
 
 ## Initial V2 pricing philosophy
 
@@ -231,7 +231,11 @@ Recommendations must not be ranked by edge alone. A ranking policy should consid
 - correlated open positions; and
 - operational/data-quality warnings.
 
-The precise score is an open decision. Prefer explicit filters and interpretable components over an unexplained composite score.
+The implemented NCAAF paper policy uses an interpretable expected-log-growth score after qualification. At projected bankroll fraction `f` and net decimal profit `b`, `g = p_win ln(1 + f*b) + p_loss ln(1 - f)`; pushes contribute zero. The projected fraction uses the existing push-aware quarter-Kelly sizing multipliers and current standalone exposure caps. The primary robustness score is the minimum `g` across the contributing books' paired no-vig probabilities at the same executable price and fraction. This makes raw EV a qualification/tie-break input rather than the sole definition of “best.” Book depth, dispersion, quote-integrity labels, and a late moderate-odds tie-break resolve otherwise similar candidates without market-type quotas.
+
+This risk-adjusted ranking—not an odds band—is the primary treatment of high-variance prices. A `-110` spread can outrank a `+1000` or `+2000` moneyline with higher raw EV when the spread supports more prudent Kelly capital and stronger worst-book expected growth. Separately, because no longshot sleeve exists, `ncaaf-qualification-v3` keeps prices above `+500` as calculable research rows but excludes them from ordinary recommendations. The guardrail does not modify fair probability, edge, EV, or the ranking score and does not apply a hard negative-odds boundary.
+
+`material_book_outlier` means one complete book's no-vig probability differs from the unweighted median by more than the configured 3-point diagnostic threshold. The median still defines fair value, and the label alone is informational. A best executable price with that label is not automatically bad data: it remains actionable only if the book is supported/active, the quote is current, the pair is valid, and total dispersion remains within hard limits. Unknown integrity warnings and excessive dispersion remain hard failures.
 
 ### Qualified Top N behavior
 
@@ -534,3 +538,11 @@ Prospective shadow predictions beginning in 2026 are immutable pregame records a
 Phase 6.5 is a rendering and human-approval surface, not another pricing engine. Every displayed fair probability, implied probability, edge, push-aware EV, stake, bankroll fraction, unit value, classification, exposure decision, and parlay status comes from the backend decision snapshot. Formatting percentages, currency, chart points, and stored line history in the browser does not create a competing calculation policy.
 
 The UI always labels retained market consensus separately from the best executable sportsbook offer. Diagnostic football models remain visible as evidence but cannot supply the fair-value fields. A dashboard approval is not assumed successful until the server transaction completes and the client re-fetches portfolio/recommendation state.
+
+## Live snapshot freshness versus provider quote age
+
+Live eligibility uses two clocks under `snapshot-and-provider-quote-freshness-v2`. `MarketSnapshot.requested_at` is when POLARIS fetched the current response and is subject to the hard 120-second snapshot guard. `MarketObservation.observed_at` is the provider's sportsbook/market `last_update`; an unchanged but still-current quote may legitimately be several minutes old, so quote age is quality metadata rather than the snapshot cutoff.
+
+A fresh snapshot with a five-minute-old quote remains eligible. A separate configurable seven-day quote-age ceiling fails closed on pathological source timestamps. Historical replay still enforces observation, snapshot, and ingestion cutoffs and selects the newest eligible snapshot first.
+
+The default live allowlist is `betmgm`, `betrivers`, `williamhill_us` (Caesars), `draftkings`, `fanatics`, and `fanduel`. The earlier three-book list was a configurable MVP starting set, not a frozen fair-value requirement. Proportional no-vig, unweighted-median consensus, and the minimum two-complete-book rule remain unchanged.

@@ -26,6 +26,7 @@ def main() -> None:
     repository = SqlAlchemyMarketDataRepository(
         session_factory,
         freshness_seconds=settings.market_freshness_seconds,
+        provider_quote_max_age_seconds=settings.provider_quote_max_age_seconds,
     )
     result = MarketIngestionService(provider, repository).ingest(args.sport.upper(), args.markets)
     persisted = result.persisted

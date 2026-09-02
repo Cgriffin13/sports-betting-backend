@@ -143,7 +143,8 @@ time-bounded stored observations
   -> separate best executable offer
   -> probability edge and binary EV
   -> versioned qualification
-  -> deterministic EV/data-quality ranking
+  -> production qualification
+  -> robust expected-log-growth portfolio ranking
   -> Top N per league (ceiling, never quota)
 ```
 
@@ -345,6 +346,8 @@ The dashboard now has one explicit write-like market workflow: `POST /dashboard/
 
 Each decision run also freezes `analysis_summary` and `watchlist_items`. Phase 4 now returns two projections: externally compatible Top-N `opportunities` that meet its baseline policy and an internal untruncated `candidates` collection containing every structurally calculable side before edge/EV/dispersion qualification. Recommendation evaluation consumes the latter, so top-N and baseline threshold filters cannot erase research visibility. Watchlist construction retains only positive-edge/positive-EV candidates that narrowly fail research-safe production gates. It never creates a `Recommendation`, stake, approval route, bet, ledger entry, or parlay leg. `GET /portfolio/{id}/watchlist` selects the newest decision per upcoming UTC slate and aggregates persisted funnel/rejection diagnostics; reads never invoke ingestion.
 
+Actionable ordering is owned by `app.domain.portfolio_engine`, not Phase 4's bankroll-free EV projection or the frontend. `expected-log-growth-risk-budget-v2` computes a projected standalone adjusted-Kelly fraction under current risk capacity, evaluates consensus and worst-contributing-book expected log growth at the executable price, and applies Top N afterward. Phase 6 treats consensus-outlier labels as audit metadata while continuing to reject excessive dispersion and hard quote-integrity failures. `ncaaf-qualification-v3` additionally preserves but marks any executable price above `+500` as diagnostic-only because no longshot sleeve exists; it does not alter pricing math or impose a negative-odds band. Recommendation provenance persists the score, Kelly values, quote-integrity state, explicit rank, and rejection reasons; repository reads restore that rank instead of ordering by generated hashes.
+
 The funnel records games and observations received/considered, latest/eligible observations, exact paired book markets, comparable exact-line groups, calculable sides, positive edge/EV, pricing-qualified, Watchlist, Phase 6-qualified, and PASS counts. Structural failures remain reason-coded before candidate construction. Spread pairing canonicalizes home `-3.5` with away `+3.5`; inconsistent opposing points are diagnosed explicitly. Distinct points remain distinct groups and integer spread/total lines remain stored but unpriced until push probability is validated.
 
 Recommendation timing uses a pure versioned domain policy. Each slate derives its primary cutoff from its first scheduled kickoff. Exact decision and cutoff timestamps remain distinct, and `EARLY_LOOKAHEAD`, `OFFICIAL_PRIMARY_HORIZON`, and `POST_HORIZON` are presentation/audit metadata rather than changes to pricing math.
@@ -388,3 +391,9 @@ Phase 6                                               -> edge / EV / risk / appr
 `ShadowPredictionService` plans the UTC slate cutoff at first kickoff minus three hours, appends immutable pregame states, and attaches outcomes in a separate table. It does not schedule itself, call providers implicitly, update the bankroll, or create recommendations. New market state creates a new hash/row; registry updates do not alter the version stored on an older prediction.
 
 The migration is additive and PostgreSQL-compatible. FastAPI routes and `uvicorn main:app` remain unchanged. Registry/shadow CLIs explicitly use `DATABASE_URL`; provider access is a separate explicit operation.
+
+## Live pricing integrity
+
+The pricing read path separates current-snapshot freshness from provider quote age. SQL latest-state selection prioritizes `market_snapshots.requested_at`, projects only normalized scalar fields, and enforces `observed_at`, `requested_at`, and `ingested_at` cutoffs. The domain layer applies the snapshot policy while reporting provider quote-age min/median/p90/max and a distinct pathological-age rejection.
+
+Every decision records a pricing funnel plus `HEALTHY` or `DEGRADED`. Observations with zero eligible rows always degrade. A slate with at least ten games and twenty latest observations but zero exact book pairs also degrades. Dashboard reads remain stored-data-only and cannot present that pre-candidate collapse as intentional PASS.

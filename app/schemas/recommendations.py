@@ -84,6 +84,8 @@ class WatchlistResponse(BaseModel):
     watchlist_version: str
     pricing_funnel: dict[str, int]
     rejection_counts: dict[str, int]
+    pricing_pipeline_status: str
+    pricing_pipeline_status_reason: str | None
     slates: list[dict[str, Any]]
     items: list[WatchlistItemResponse]
 
