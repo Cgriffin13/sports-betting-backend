@@ -82,6 +82,9 @@ class WatchlistResponse(BaseModel):
     qualified_recommendations: int
     watchlist_count: int
     watchlist_version: str
+    pricing_funnel: dict[str, int]
+    rejection_counts: dict[str, int]
+    slates: list[dict[str, Any]]
     items: list[WatchlistItemResponse]
 
 

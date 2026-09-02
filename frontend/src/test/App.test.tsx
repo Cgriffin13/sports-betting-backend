@@ -51,6 +51,9 @@ describe("portfolio dashboard", () => {
     renderApp("/settings");
     expect(await screen.findByText("System / Methodology")).toBeInTheDocument();
     expect(screen.getAllByText("Market consensus supplies fair value").length).toBeGreaterThan(0);
+    expect(screen.getByText("Latest Pricing Funnel")).toBeInTheDocument();
+    expect(screen.getByText("calculable_candidate_sides")).toBeInTheDocument();
+    expect(screen.getByText(/60 games.*280 calculable sides.*34 positive EV.*7 watchlist.*3 qualified/)).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Today" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Watchlist" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio" }).length).toBeGreaterThan(0);

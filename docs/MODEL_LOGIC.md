@@ -24,6 +24,8 @@ This document defines shared terminology and intended mathematical semantics. It
 
 The legacy direct bet-entry `model_prob`, `book_prob`, `edge`, and `ev_per_1` fields remain passive metadata supplied by the caller. Their names do not prove that the Phase 4 engine produced them. The Phase 6 recommendation path is separate: it reconstructs pricing from stored observations, obtains retained fair value through the registry, freezes both inputs in a proposed recommendation, and copies that snapshot into an official bet only after explicit approval.
 
+Phase 4 distinguishes a **calculable candidate** from a **qualified opportunity**. A calculable side has a valid supported-book pair, exact event/market/period/line identity, at least two books, fresh unambiguous observations, a no-vig consensus fair probability, and a best executable price. Its edge, EV, dispersion, provenance, and failed pricing gates are retained even when edge or EV is below the baseline threshold. Phase 4's public `opportunities` response remains threshold-qualified and Top-N bounded; the Phase 6 decision service consumes the internal untruncated calculable set. This separation changes visibility, not fair-value mathematics or qualification thresholds.
+
 The prototype supports both NCAAF and NCAAB as distinct canonical leagues. NCAAB is college basketball; it must never be substituted for college football in model data, league identifiers, or evaluation.
 
 ## League and market modeling sequence

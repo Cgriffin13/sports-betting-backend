@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
@@ -337,6 +337,47 @@ class SqlAlchemyRecommendationRepository:
                     )
                     or 0
                 )
+            slates = []
+            aggregate_funnel: Counter[str] = Counter()
+            aggregate_rejections: Counter[str] = Counter()
+            for run in runs:
+                summary = dict(run.analysis_summary)
+                funnel = {
+                    key: int(value)
+                    for key, value in dict(summary.get("pricing_funnel", {})).items()
+                    if isinstance(value, int)
+                }
+                aggregate_funnel.update(funnel)
+                rejections = {
+                    key: int(value)
+                    for key, value in dict(run.rejection_summary).items()
+                    if isinstance(value, int)
+                }
+                aggregate_rejections.update(rejections)
+                slate_items = [item for item in items if item.get("slate_date") == run.slate_date.isoformat()]
+                slate_qualified = int(
+                    session.scalar(
+                        select(func.count())
+                        .select_from(Recommendation)
+                        .where(
+                            Recommendation.decision_run_id == run.id,
+                            Recommendation.recommendation_kind == "straight",
+                        )
+                    )
+                    or 0
+                )
+                slates.append(
+                    {
+                        "slate_date": run.slate_date.isoformat(),
+                        "weekday": run.slate_date.strftime("%A"),
+                        "as_of": _iso(run.as_of),
+                        "games_analyzed": int(summary.get("games_analyzed", 0)),
+                        "qualified_recommendations": slate_qualified,
+                        "watchlist_count": len(slate_items),
+                        "pricing_funnel": funnel,
+                        "rejection_counts": dict(sorted(rejections.items())),
+                    }
+                )
             return {
                 "as_of": _iso(as_of),
                 "upcoming_games_analyzed": sum(
@@ -344,7 +385,10 @@ class SqlAlchemyRecommendationRepository:
                 ),
                 "qualified_recommendations": qualified,
                 "watchlist_count": len(items),
-                "watchlist_version": "ncaaf-watchlist-v1",
+                "watchlist_version": "ncaaf-watchlist-v2",
+                "pricing_funnel": dict(sorted(aggregate_funnel.items())),
+                "rejection_counts": dict(sorted(aggregate_rejections.items())),
+                "slates": slates,
                 "items": items,
             }
 
@@ -910,7 +954,10 @@ def _empty_watchlist(as_of: datetime) -> dict[str, Any]:
         "upcoming_games_analyzed": 0,
         "qualified_recommendations": 0,
         "watchlist_count": 0,
-        "watchlist_version": "ncaaf-watchlist-v1",
+        "watchlist_version": "ncaaf-watchlist-v2",
+        "pricing_funnel": {},
+        "rejection_counts": {},
+        "slates": [],
         "items": [],
     }
 

@@ -98,6 +98,18 @@ export interface WatchlistState {
   qualified_recommendations: number;
   watchlist_count: number;
   watchlist_version: string;
+  pricing_funnel: Record<string, number>;
+  rejection_counts: Record<string, number>;
+  slates: Array<{
+    slate_date: string;
+    weekday: string;
+    as_of: string;
+    games_analyzed: number;
+    qualified_recommendations: number;
+    watchlist_count: number;
+    pricing_funnel: Record<string, number>;
+    rejection_counts: Record<string, number>;
+  }>;
   items: WatchlistItem[];
 }
 

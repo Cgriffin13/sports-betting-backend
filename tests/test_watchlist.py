@@ -30,10 +30,44 @@ def test_watchlist_is_non_actionable_stakeless_and_deterministic() -> None:
     second = build_watchlist(tuple(reversed(candidates)), policy, as_of=NOW, timing=timing)
 
     assert first == second
-    assert [item["home_team"] for item in first] == ["Near", "Far"]
+    assert [item["home_team"] for item in first] == ["Near"]
     assert all(item["actionable"] is False for item in first)
     assert all("stake" not in item for item in first)
-    assert first[0]["distance_to_qualification"] < first[1]["distance_to_qualification"]
+    assert first[0]["distance_to_qualification"] < 0.2
+
+
+def test_exact_qualification_watchlist_and_pass_boundaries() -> None:
+    policy = QualificationPolicy()
+    candidate_a = _opportunity(odds=100, fair=Decimal("0.508"), home="A", away="Line")
+    b_implied = Decimal(133) / Decimal(233)
+    candidate_b = _opportunity(odds=-133, fair=b_implied + Decimal("0.008"), home="B", away="Line")
+    c_implied = Decimal(100) / Decimal(229)
+    candidate_c = _opportunity(odds=129, fair=c_implied + Decimal("0.007"), home="C", away="Line")
+    candidate_d = _opportunity(odds=100, fair=Decimal("0.49"), home="D", away="Line")
+    evaluations = [
+        evaluate_candidate(_quote(item, fair=item.final_fair_probability), item, policy, as_of=NOW)
+        for item in (candidate_a, candidate_b, candidate_c, candidate_d)
+    ]
+
+    watchlist = build_watchlist(
+        evaluations,
+        policy,
+        as_of=NOW,
+        timing=classify_recommendation_timing(NOW, candidate_a.scheduled_start_utc),
+    )
+
+    assert evaluations[0].qualified is True
+    assert evaluations[0].ev_per_unit == Decimal("0.016")
+    assert evaluations[0].edge == Decimal("0.008")
+    assert evaluations[1].qualified is False
+    assert Decimal("0.014") < evaluations[1].ev_per_unit < Decimal("0.0141")
+    assert evaluations[1].edge.quantize(Decimal("0.000001")) == Decimal("0.008000")
+    assert evaluations[2].qualified is False
+    assert evaluations[2].ev_per_unit.quantize(Decimal("0.000001")) == Decimal("0.016030")
+    assert evaluations[2].edge == Decimal("0.007")
+    assert evaluations[3].ev_per_unit < 0
+    assert {item["home_team"] for item in watchlist} == {"B", "C"}
+    assert all(item["actionable"] is False and "stake" not in item for item in watchlist)
 
 
 def test_qualified_and_structurally_invalid_candidates_do_not_enter_watchlist() -> None:

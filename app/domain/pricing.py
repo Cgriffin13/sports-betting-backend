@@ -231,6 +231,7 @@ class PricingOpportunity:
     snapshot_ids: tuple[UUID, ...]
     book_probabilities: tuple[BookNoVigPrice, ...]
     calculated_at: datetime
+    pricing_gate_failures: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -268,6 +269,8 @@ class PricingAnalysis:
     as_of: datetime
     pricing_policy_version: str
     qualification_policy_version: str
+    first_scheduled_start_utc: datetime | None
+    candidates: tuple[PricingOpportunity, ...]
     opportunities: tuple[PricingOpportunity, ...]
     events_analyzed: int
     observations_considered: int
@@ -275,3 +278,4 @@ class PricingAnalysis:
     opportunities_qualified: int
     top_n_per_league: int
     rejection_counts: dict[str, int]
+    funnel: dict[str, int]

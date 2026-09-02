@@ -139,17 +139,21 @@ def test_exact_market_grouping_pairs_moneyline_spread_and_total_without_mixing_p
     assert result.rejection_counts["insufficient_books"] == 1
 
 
-def test_inconsistent_spread_points_and_missing_opposing_side_are_not_paired() -> None:
+def test_inconsistent_points_and_missing_opposing_side_are_not_paired() -> None:
     observations = (
         observation("draftkings", "spread", "home", -110, point="-3.5"),
         observation("draftkings", "spread", "away", -110, point="4.0"),
+        observation("betmgm", "total", "over", -110, point="51.5"),
+        observation("betmgm", "total", "under", -110, point="52.5"),
         observation("fanduel", "total", "over", -110, point="52.5"),
     )
 
     result = build_pricing_analysis(observations, as_of=AS_OF, policy=policy())
 
     assert result.opportunities == ()
-    assert result.rejection_counts["incomplete_or_malformed_pair"] == 3
+    assert result.rejection_counts["inconsistent_spread_points"] == 1
+    assert result.rejection_counts["inconsistent_total_points"] == 1
+    assert result.rejection_counts["incomplete_or_malformed_pair"] == 1
 
 
 def test_stale_ambiguous_suspended_and_unsupported_observations_are_excluded() -> None:
@@ -214,6 +218,8 @@ def test_excessive_dispersion_rejects_market_instead_of_averaging_blindly() -> N
     result = build_pricing_analysis(observations, as_of=AS_OF, policy=policy())
 
     assert result.opportunities == ()
+    assert len(result.candidates) == 2
+    assert all("excessive_consensus_dispersion" in item.pricing_gate_failures for item in result.candidates)
     assert result.rejection_counts["excessive_consensus_dispersion"] == 2
 
 
@@ -246,10 +252,69 @@ def test_zero_qualified_is_valid_and_top_n_is_a_per_league_ceiling() -> None:
     limited = build_pricing_analysis(markets, as_of=AS_OF, policy=policy(), top_n_per_league=2)
 
     assert zero.opportunities == ()
+    assert len(zero.candidates) == 4
     assert zero.opportunities_qualified == 0
     assert len(limited.opportunities) == 2
     assert limited.opportunities_qualified == 4
     assert limited.top_n_per_league == 2
+
+
+def test_calculable_below_threshold_sides_survive_before_top_n_qualification() -> None:
+    observations = (
+        *pair("draftkings", "moneyline", 102, 102),
+        *pair("fanduel", "moneyline", -110, -110),
+    )
+
+    result = build_pricing_analysis(
+        observations,
+        as_of=AS_OF,
+        policy=policy(minimum_ev="0.015", minimum_edge="0.0075"),
+        top_n_per_league=1,
+    )
+
+    assert result.opportunities == ()
+    assert len(result.candidates) == 2
+    assert all(item.final_fair_probability == Decimal("0.5") for item in result.candidates)
+    assert all(item.best_american_odds == 102 for item in result.candidates)
+    assert all(item.ev_per_unit == Decimal("0.010") for item in result.candidates)
+    assert all(set(item.pricing_gate_failures) == {"below_minimum_edge", "below_minimum_ev"} for item in result.candidates)
+    assert result.funnel["calculable_candidate_sides"] == 2
+    assert result.funnel["positive_edge_candidates"] == 2
+    assert result.funnel["positive_ev_candidates"] == 2
+
+
+def test_exact_line_fragmentation_and_integer_push_attrition_are_counted_not_merged() -> None:
+    observations = (
+        *pair("draftkings", "spread", -110, -110, first_point="-17", second_point="17"),
+        *pair("fanduel", "spread", -110, -110, first_point="-17.5", second_point="17.5"),
+        *pair("betmgm", "spread", -110, -110, first_point="-18", second_point="18"),
+        *pair("draftkings", "total", -110, -110, first_point="51", second_point="51"),
+        *pair("fanduel", "total", -110, -110, first_point="51.5", second_point="51.5"),
+        *pair("betmgm", "total", -110, -110, first_point="52", second_point="52"),
+    )
+
+    result = build_pricing_analysis(observations, as_of=AS_OF, policy=policy())
+
+    assert result.opportunities == ()
+    assert result.candidates == ()
+    assert result.funnel["exact_paired_book_markets"] == 6
+    assert result.funnel["comparable_market_groups"] == 6
+    assert result.rejection_counts["insufficient_books"] == 6
+    assert "push_probability_not_modeled" not in result.rejection_counts
+
+    whole_number = build_pricing_analysis(
+        (
+            *pair("draftkings", "spread", -110, -110, first_point="-17", second_point="17"),
+            *pair("fanduel", "spread", -110, -110, first_point="-17", second_point="17"),
+            *pair("draftkings", "total", -110, -110, first_point="51", second_point="51"),
+            *pair("fanduel", "total", -110, -110, first_point="51", second_point="51"),
+        ),
+        as_of=AS_OF,
+        policy=policy(),
+    )
+    assert whole_number.funnel["comparable_market_groups"] == 2
+    assert whole_number.funnel["calculable_candidate_sides"] == 0
+    assert whole_number.rejection_counts["push_probability_not_modeled"] == 4
 
 
 def test_replay_cutoff_uses_old_snapshot_before_move_and_latest_snapshot_after_move() -> None:

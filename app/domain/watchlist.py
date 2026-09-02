@@ -6,7 +6,10 @@ from typing import Any, Sequence
 
 from app.domain.portfolio_engine import CandidateEvaluation, QualificationPolicy
 
-WATCHLIST_VERSION = "ncaaf-watchlist-v1"
+WATCHLIST_VERSION = "ncaaf-watchlist-v2"
+MAXIMUM_FAILED_GATES = 2
+MAXIMUM_TOTAL_DISTANCE = Decimal("0.75")
+MAXIMUM_SINGLE_GATE_DISTANCE = Decimal("0.50")
 WATCHLIST_BLOCKERS = frozenset(
     {
         "below_minimum_ev",
@@ -45,6 +48,12 @@ def build_watchlist(
             continue
         distances = _distances(candidate, policy, cutoff)
         total_distance = sum(distances.values(), Decimal(0))
+        if (
+            len(blockers) > MAXIMUM_FAILED_GATES
+            or total_distance > MAXIMUM_TOTAL_DISTANCE
+            or max(distances.values(), default=Decimal(0)) > MAXIMUM_SINGLE_GATE_DISTANCE
+        ):
+            continue
         primary = max(blockers, key=lambda reason: (distances.get(reason, Decimal(1)), reason))
         observed_times = [item.selection_observed_at for item in opportunity.book_probabilities if item.selection_observed_at]
         latest_observed = max((_utc(value) for value in observed_times), default=cutoff)

@@ -1318,3 +1318,20 @@ Consequences:
 - Manual refresh creates a new current state; the latest run per upcoming slate can promote, demote, or remove a row without rewriting prior decisions.
 - Today uses the persisted analysis count rather than inferring analyzed games from qualified recommendations.
 - Browser reads remain stored-data-only and cannot consume provider credits.
+
+## ADR-095 — Separate calculable pricing candidates from qualified opportunities
+
+- Date: 2026-09-01
+- Status: Accepted and implemented; refines ADR-094
+
+Phase 4 must retain every structurally calculable candidate side before applying its edge, EV, dispersion, and Top-N opportunity filters. Its external `opportunities` contract remains the qualified Top-N projection, while Phase 6 consumes the untruncated calculable collection and assigns each side to QUALIFIED, WATCHLIST, or PASS under unchanged production gates. `ncaaf-watchlist-v2` admits only future, positive-edge, positive-EV near misses under a bounded deterministic gate-distance rule.
+
+Every decision run persists a safe stage funnel and rejection counts. Latest-upcoming retrieval aggregates these counts and supplies UTC-date/weekday slate summaries to Settings → System / Methodology. This diagnostic path is stored-data-only and never logs raw payloads, credentials, or credential-bearing URLs.
+
+Consequences:
+
+- A side at 1.40% EV and 0.80% edge is visible as research instead of disappearing before Watchlist classification; thresholds remain 1.50% EV and 0.75% edge.
+- Clearly negative, materially distant, structurally invalid, stale, ambiguous, singleton-book, or unknown-push candidates remain PASS/non-calculable and cannot be approved or used in parlays.
+- Exact spread/total points remain separate. The system diagnoses fragmented line depth rather than interpolating across `-17`, `-17.5`, and `-18`.
+- Whole-number spread/total observations remain preserved but fail closed until validated push-aware pricing exists.
+- The pricing funnel exposes whether a zero-recommendation slate is an honest result or pipeline attrition without changing fair value, staking, exposure, or approval behavior.
