@@ -57,7 +57,8 @@ class MarketRefreshService:
                 raise MarketRefreshUnavailableError(exc.public_message) from exc
             if ingestion.persisted is None:
                 raise MarketRefreshUnavailableError("Market persistence is unavailable")
-            as_of = _utc(ingestion.fetch.requested_at)
+            request_started_at = _utc(ingestion.fetch.requested_at)
+            as_of = _utc(ingestion.persisted.ingestion_completed_at)
             upcoming = [
                 (game, kickoff)
                 for game in ingestion.fetch.games
@@ -107,7 +108,14 @@ class MarketRefreshService:
             return {
                 "status": "completed",
                 "snapshot_id": str(ingestion.persisted.snapshot_id),
-                "requested_at": as_of,
+                "requested_at": request_started_at,
+                "provider_retrieved_at": (
+                    _utc(ingestion.fetch.provider_retrieved_at)
+                    if ingestion.fetch.provider_retrieved_at is not None
+                    else None
+                ),
+                "ingestion_completed_at": as_of,
+                "decision_as_of": as_of,
                 "provider": ingestion.fetch.provider_name,
                 "provider_metadata": safe_metadata,
                 "from_cache": ingestion.fetch.from_cache,

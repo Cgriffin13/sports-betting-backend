@@ -1388,3 +1388,17 @@ Consequences:
 - Prices above `+500` remain visible in the evaluated-candidate/funnel diagnostics and retain unchanged economics.
 - Watchlist does not promote them, because Watchlist is near-production research rather than a substitute longshot sleeve.
 - Parlay construction still begins only from actionable straights, so excluded extreme prices cannot enter parlays indirectly.
+
+## ADR-098 — Price explicit refreshes after their ingestion transaction commits
+
+- Date: 2026-09-02
+- Status: Accepted and implemented as a production correctness hotfix
+
+Provider `requested_at` is request-start time, not proof that the response has returned or its normalized observations have committed. An explicit live refresh therefore uses the repository's post-commit `ingestion_completed_at` as its recommendation/pricing `as_of`. The refresh response exposes request start, provider retrieval, ingestion completion, and decision cutoff separately. `MarketSnapshot.requested_at`, provider quote timestamps, and observation `ingested_at` remain unchanged audit facts.
+
+Consequences:
+
+- The snapshot fetched by a manual refresh satisfies `observed_at <= as_of`, `requested_at <= as_of`, and `ingested_at <= as_of` for the decision it triggered.
+- The SQL and historical replay cutoffs are not weakened; caller-supplied historical cutoffs still exclude later observations and later ingestion.
+- Snapshot freshness remains based on request start, so normal HTTP/persistence elapsed time is visible rather than backdated to zero.
+- The multi-slate Watchlist diagnostic reports the freshest/latest snapshot-age gauge, while quote-age maximum and p90 remain conservative cross-slate maxima.

@@ -1075,7 +1075,10 @@ def _normalize_aggregate_funnel_gauges(
 ) -> None:
     if not samples:
         return
-    for key in ("snapshot_age_seconds", "provider_quote_age_max_seconds", "provider_quote_age_p90_seconds"):
+    snapshot_ages = [item["snapshot_age_seconds"] for item in samples if "snapshot_age_seconds" in item]
+    if snapshot_ages:
+        aggregate["snapshot_age_seconds"] = min(snapshot_ages)
+    for key in ("provider_quote_age_max_seconds", "provider_quote_age_p90_seconds"):
         aggregate[key] = max((item.get(key, 0) for item in samples), default=0)
     minimums = [item["provider_quote_age_min_seconds"] for item in samples if "provider_quote_age_min_seconds" in item]
     if minimums:
