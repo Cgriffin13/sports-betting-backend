@@ -9,9 +9,10 @@ from uuid import UUID
 from app.domain.validation import validate_american_odds
 
 VIG_REMOVAL_POLICY_VERSION: Final = "proportional-v1"
-CONSENSUS_POLICY_VERSION: Final = "unweighted-median-v1"
-PRICING_POLICY_VERSION: Final = "market-baseline-v1"
-QUALIFICATION_POLICY_VERSION: Final = "baseline-qualification-v1"
+CONSENSUS_POLICY_VERSION: Final = "unweighted-median-ml_empirical-cross-line-v1"
+UNWEIGHTED_MEDIAN_POLICY_VERSION: Final = "unweighted-median-v1"
+PRICING_POLICY_VERSION: Final = "market-baseline-v2"
+QUALIFICATION_POLICY_VERSION: Final = "baseline-qualification-v2"
 FAIR_PROBABILITY_SOURCE: Final = "market_consensus"
 PROBABILITY_QUANTUM: Final = Decimal("0.000000000001")
 
@@ -127,7 +128,7 @@ class ConsensusResult:
     probability: Decimal
     dispersion: Decimal
     outlier_indexes: tuple[int, ...]
-    policy_version: str = CONSENSUS_POLICY_VERSION
+    policy_version: str = UNWEIGHTED_MEDIAN_POLICY_VERSION
 
 
 def unweighted_median_consensus(
@@ -232,6 +233,13 @@ class PricingOpportunity:
     book_probabilities: tuple[BookNoVigPrice, ...]
     calculated_at: datetime
     pricing_gate_failures: tuple[str, ...] = ()
+    consensus_fair_point: Decimal | None = None
+    line_advantage: Decimal | None = None
+    push_probability: Decimal = Decimal(0)
+    loss_probability: Decimal | None = None
+    market_probability_policy_version: str = "exact-line-moneyline-v1"
+    market_curve_artifact_hash: str | None = None
+    center_dispersion: Decimal | None = None
 
 
 @dataclass(frozen=True, slots=True)

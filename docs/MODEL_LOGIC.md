@@ -151,7 +151,7 @@ The push contributes zero net profit. Rules for half-wins, half-losses, voids, a
 
 Positive edge does not always imply positive EV across differently priced opportunities, and a large uncertain edge should not automatically outrank a smaller reliable EV estimate.
 
-Phase 4 uses the binary identity only for two-outcome moneylines and half-point spreads/totals. Integer spread/total observations remain stored and replayable, but they are excluded from EV qualification under `baseline-qualification-v1` because push probability is not yet modeled. This is a conservative Phase 4 limitation, not a permanent product decision. A later version may qualify integer lines only after explicit win/loss/push probabilities and settlement conventions are implemented and tested.
+The original Phase 4 policy used the binary identity for moneylines and half-point spreads/totals and excluded integer lines. Current NCAAF `market-baseline-v2` supersedes that production limitation without using a proprietary football model: `ncaaf-empirical-cross-line-v1` projects the robust market center onto an empirical integer football-score lattice and returns explicit `p_win`, `p_push`, and `p_loss`. The same push-aware EV identity therefore applies to integer and half-point NCAAF spreads/totals.
 
 ### Confidence and uncertainty
 
@@ -183,11 +183,13 @@ sportsbook odds
   -> recommend stake
 ```
 
-This is now the implemented `market-baseline-v1` path. It provides a testable baseline. An NCAAF predictive-model track should begin next; it does not wait until the final roadmap phase. NFL and NBA follow. Proprietary models should be promoted into final-fair-probability decisions only when out-of-sample evidence shows value relative to the consensus benchmark.
+This began as `market-baseline-v1`; current NCAAF scoring is the compatible `market-baseline-v2` cross-line extension. It remains a market-derived benchmark, not a proprietary predictive model. Proprietary models may enter final-fair-probability decisions only when out-of-sample evidence shows value relative to this benchmark; none currently does.
 
 ## Phase 4 qualification and replay
 
-`baseline-qualification-v1` defaults to a minimum of two books, EV per unit of 0.01, probability edge of 0.005, maximum consensus dispersion of 0.08, and canonical supported books DraftKings, FanDuel, and BetMGM. Thresholds and book keys are environment-configurable. These values are research starting points, not staking rules or evidence of profitability.
+The current NCAAF paper recommendation policy retains a minimum of two complete supported books, EV per unit of `0.015`, probability edge of `0.0075`, and maximum Phase 6 probability dispersion of `0.06`. A chronological 2020–2024 calibration audit evaluated these gates separately for spread, total, and moneyline and found the qualifying tails too sparse and unstable to justify a reduction or market-specific replacement. These remain conservative paper policies, not evidence of profitability.
+
+For spread and total, exact point coherence is enforced inside each book. Across books, coherent but different main lines contribute to one cross-line curve. Each book's no-vig probability and point imply a center; bounded inverse-overround weights and Huber influence form the robust center. The empirical residual lattice then supplies monotonic win/push/loss mass at every executable line. Line advantage uses `expected_margin + home_spread`, `-expected_margin + away_spread`, `expected_total - over_line`, or `under_line - expected_total`.
 
 Qualified opportunities rank deterministically by EV, contributing-book count, dispersion, event time, and stable identity. Top N is then applied independently per league; its default is 10 and it remains a ceiling. No threshold changes when fewer results qualify, and zero is correct.
 

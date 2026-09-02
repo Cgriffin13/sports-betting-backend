@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.db.base import Base
-from app.domain.portfolio_engine import fractional_kelly_with_push
 from app.main import create_app
 from app.providers.odds_api import TheOddsApiProvider
 
@@ -71,12 +70,12 @@ def _payload() -> list[dict[str, Any]]:
             {"name": "Spread Away", "price": 120, "point": 3.5},
         ],
         "fanduel": [
-            {"name": "Spread Home", "price": -135, "point": -3.5},
-            {"name": "Spread Away", "price": 115, "point": 3.5},
+            {"name": "Spread Home", "price": -135, "point": -4.5},
+            {"name": "Spread Away", "price": 115, "point": 4.5},
         ],
         "betmgm": [
-            {"name": "Spread Home", "price": -140, "point": -3.5},
-            {"name": "Spread Away", "price": 120, "point": 3.5},
+            {"name": "Spread Home", "price": -140, "point": -4.5},
+            {"name": "Spread Away", "price": 120, "point": 4.5},
         ],
     }
     total = {
@@ -85,12 +84,12 @@ def _payload() -> list[dict[str, Any]]:
             {"name": "Under", "price": 120, "point": 52.5},
         ],
         "fanduel": [
-            {"name": "Over", "price": -135, "point": 52.5},
-            {"name": "Under", "price": 115, "point": 52.5},
+            {"name": "Over", "price": -135, "point": 53.5},
+            {"name": "Under", "price": 115, "point": 53.5},
         ],
         "betmgm": [
-            {"name": "Over", "price": -140, "point": 52.5},
-            {"name": "Under", "price": 120, "point": 52.5},
+            {"name": "Over", "price": -140, "point": 53.5},
+            {"name": "Under", "price": 120, "point": 53.5},
         ],
     }
     moderate_moneyline = {
@@ -113,11 +112,11 @@ def _payload() -> list[dict[str, Any]]:
             {"name": "Longshot Away", "price": -1100},
         ],
         "fanduel": [
-            {"name": "Longshot Home", "price": 900},
+            {"name": "Longshot Home", "price": 800},
             {"name": "Longshot Away", "price": -1100},
         ],
         "betmgm": [
-            {"name": "Longshot Home", "price": 800},
+            {"name": "Longshot Home", "price": 750},
             {"name": "Longshot Away", "price": -1200},
         ],
     }
@@ -192,22 +191,22 @@ def test_moderate_odds_markets_survive_the_complete_today_path(tmp_path: Path) -
 
     recommendations = today.json()["recommendations"]
     assert [(item["market"], item["selection"], item["odds"]) for item in recommendations] == [
-        ("spread", "Spread Home", -110),
         ("total", "Over", -110),
+        ("spread", "Spread Home", -110),
         ("moneyline", "Moderate Home", 100),
     ]
     assert all(Decimal(item["stake"]) >= Decimal("1.00") for item in recommendations)
 
-    spread_item, total_item, moneyline_item = recommendations
+    total_item, spread_item, moneyline_item = recommendations
     assert [item["portfolio_rank"] for item in recommendations] == [1, 2, 3]
     assert [item["classification"] for item in recommendations] == [
-        "CORE",
-        "CORE",
+        "OPPORTUNISTIC",
+        "OPPORTUNISTIC",
         "OPPORTUNISTIC",
     ]
     assert [Decimal(str(item["stake"])) for item in recommendations] == [
-        Decimal("2.26"),
-        Decimal("2.26"),
+        Decimal("1.08"),
+        Decimal("1.03"),
         Decimal("1.02"),
     ]
     assert Decimal(str(spread_item["point"])) == Decimal("-3.5")
@@ -225,17 +224,16 @@ def test_moderate_odds_markets_survive_the_complete_today_path(tmp_path: Path) -
     assert longshot_item["best_american_odds"] == 1000
     assert Decimal(str(longshot_item["ev_per_unit"])) > Decimal(str(spread_item["ev_per_unit"]))
     assert Decimal(str(longshot_item["ev_per_unit"])) > Decimal(str(total_item["ev_per_unit"]))
-    longshot_raw_kelly = fractional_kelly_with_push(
-        Decimal(str(longshot_item["final_fair_probability"])),
-        Decimal(0),
-        Decimal(str(longshot_item["best_decimal_odds"])),
-    )
-    assert Decimal(str(spread_item["adjusted_kelly_fraction"])) > longshot_raw_kelly
-    assert Decimal(str(total_item["adjusted_kelly_fraction"])) > longshot_raw_kelly
     assert Decimal(str(spread_item["ranking_score"])) > Decimal(str(moneyline_item["ranking_score"]))
     assert Decimal(str(total_item["ranking_score"])) > Decimal(str(moneyline_item["ranking_score"]))
     analysis = today.json()["latest_decision"]["analysis_summary"]
     assert analysis["rejection_counts"]["outside_main_board_odds_profile"] == 1
+    diagnostics = analysis["candidate_diagnostics"]
+    assert diagnostics["by_market"]["spread"]["actionable"] == 1
+    assert diagnostics["by_market"]["total"]["actionable"] == 1
+    assert diagnostics["by_market"]["moneyline"]["actionable"] == 1
+    assert diagnostics["practical_core_odds_band"]["actionable"] == 3
+    assert diagnostics["by_odds_band"]["gt_+500"]["actionable"] == 0
 
     funnel = watchlist.json()["pricing_funnel"]
     assert funnel["games_received"] == 4

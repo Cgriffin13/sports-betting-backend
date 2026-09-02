@@ -665,6 +665,25 @@ class SqlAlchemyRecommendationRepository:
                 "quote_integrity": candidate.quote_integrity,
                 "books_contributing": opportunity.books_contributing,
                 "consensus_dispersion": str(opportunity.consensus_dispersion),
+                "consensus_fair_point": (
+                    str(opportunity.consensus_fair_point)
+                    if opportunity.consensus_fair_point is not None
+                    else None
+                ),
+                "line_advantage": (
+                    str(opportunity.line_advantage)
+                    if opportunity.line_advantage is not None
+                    else None
+                ),
+                "center_dispersion": (
+                    str(opportunity.center_dispersion)
+                    if opportunity.center_dispersion is not None
+                    else None
+                ),
+                "market_probability_policy_version": (
+                    opportunity.market_probability_policy_version
+                ),
+                "market_curve_artifact_hash": opportunity.market_curve_artifact_hash,
                 "outlier_sportsbooks": list(opportunity.outlier_sportsbooks),
                 "best_executable_is_consensus_outlier": (
                     opportunity.best_sportsbook_key in opportunity.outlier_sportsbooks

@@ -341,6 +341,77 @@ def test_robust_growth_uses_least_favorable_contributing_probability() -> None:
     )
 
 
+def test_liquid_minus_110_spread_outranks_thin_plus_400_moneyline_on_robust_growth() -> None:
+    spread_opportunity = _opportunity(
+        market="spread",
+        side="home",
+        point=Decimal("-3.5"),
+        odds=-110,
+        fair=Decimal("0.55"),
+        home="Liquid Spread",
+        away="Peer Spread",
+    )
+    longshot_base = _opportunity(
+        odds=400,
+        fair=Decimal("0.23"),
+        home="Thin Longshot",
+        away="Favorite",
+    )
+    probabilities = (Decimal("0.20"), Decimal("0.23"), Decimal("0.25"))
+    longshot_opportunity = replace(
+        longshot_base,
+        book_probabilities=tuple(
+            replace(
+                book,
+                selection_probability=probability,
+                opposing_probability=Decimal(1) - probability,
+            )
+            for book, probability in zip(
+                longshot_base.book_probabilities,
+                probabilities,
+                strict=True,
+            )
+        ),
+        consensus_dispersion=Decimal("0.05"),
+        outlier_sportsbooks=("draftkings",),
+        quality_warnings=("material_book_outlier",),
+    )
+    spread = evaluate_candidate(
+        _quote(spread_opportunity),
+        spread_opportunity,
+        QualificationPolicy(),
+        as_of=NOW,
+    )
+    longshot = evaluate_candidate(
+        replace(
+            _quote(longshot_opportunity),
+            consensus_dispersion=Decimal("0.05"),
+            uncertainty_quality={"uncertainty": "high"},
+        ),
+        longshot_opportunity,
+        QualificationPolicy(),
+        as_of=NOW,
+    )
+
+    assert longshot.ev_per_unit > spread.ev_per_unit
+    decision = construct_portfolio(
+        [longshot, spread],
+        _snapshot(),
+        top_n=2,
+        risk_policy=RiskPolicy(),
+        qualification_policy=QualificationPolicy(),
+        parlay_policy=ParlayPolicy(),
+    )
+    ranked = {item.candidate_id: item for item in decision.evaluated_candidates}
+    assert [item.candidate.candidate_id for item in decision.straight_recommendations] == [
+        spread.candidate_id
+    ]
+    assert (
+        ranked[spread.candidate_id].robust_expected_log_growth
+        > ranked[longshot.candidate_id].robust_expected_log_growth
+    )
+
+
 def test_unknown_pricing_warning_remains_a_hard_rejection() -> None:
     opportunity = replace(
         _opportunity(odds=120, fair=Decimal("0.55")),

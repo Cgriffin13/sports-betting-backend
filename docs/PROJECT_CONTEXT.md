@@ -197,7 +197,7 @@ The following are known current-state problems, not solved capabilities:
 - lightweight API-key authentication is suitable only for the private service, not a mature identity system;
 - SQLite unit tests do not reproduce PostgreSQL row-lock scheduling; production concurrency still needs PostgreSQL integration/load validation;
 - operational PostgreSQL backup/restore drills remain future hardening work;
-- integer spreads/totals are preserved but conservatively excluded from Phase 4 EV qualification because push probability is not yet modeled;
+- the NCAAF production market curve now prices integer spread/total pushes explicitly, but the empirical cross-line mapping and conservative qualification gates still require prospective paper validation on fresh slates;
 - no trusted executable parlay-quote adapter or validated same-game joint-probability model; the implemented parlay sleeve therefore commonly returns PASS;
 - no full outcome/closing-price backtest beyond deterministic pricing replay and the Phase 6 risk-policy simulator;
 - no CLV calculation;
@@ -225,5 +225,7 @@ V2 should first become a trustworthy paper-trading system: reproducible prices, 
 > Phase 6.5 adds the responsive paper-trading portfolio dashboard without changing the decision engine. It makes qualified CORE/OPPORTUNISTIC positions, PASS, risk state, approval lifecycle, ledger performance, market movement, and registry provenance visible. The browser never holds the backend API credential or calls an odds provider; Cloudflare Pages deployment and Access protection remain explicit operator steps.
 
 > POLARIS also exposes a research-only Watchlist derived from the same backend candidate evaluation. It shows structurally calculable positive-edge, positive-EV markets that narrowly missed unchanged production gates; below-threshold Phase 4 edge/EV no longer deletes these candidates before research classification. Watchlist rows carry no stake, cannot be approved, never enter the ledger or parlay optimizer, and do not count as qualified recommendations. A persisted aggregate and per-UTC-slate pricing funnel explains zero-activity runs without manufacturing bets.
+
+> The NCAAF scoring correction adds a market-only empirical cross-line curve for spreads and totals. Exact opposing sides remain mandatory inside each book, while different supported-book main lines inform a robust fair spread/total. Integer outcomes preserve push mass, every executable line is scored separately, and Watchlist/provenance now expose fair line and line advantage. Moneyline methodology, qualification thresholds, Kelly/risk policy, approval, and ledger semantics are unchanged.
 
 > The production-readiness pass brands this operational surface **POLARIS — NCAAF Portfolio**. Provider work remains an explicit human-triggered backend action: normal browsing only reads persisted state. Recommendations may cover upcoming slates and always disclose whether they are early look-ahead, within the validated morning horizon, or post-horizon. Stale market data, provider failure, application configuration, and portfolio risk are presented as separate states.

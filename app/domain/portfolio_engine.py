@@ -8,6 +8,7 @@ from itertools import combinations
 from typing import Any, Mapping, Sequence
 
 from app.domain.model_registry import FairValueQuote, ModelStatus, canonical_hash
+from app.domain.market_curve import probability_edge_with_push
 from app.domain.pricing import (
     PricingOpportunity,
     american_or_decimal_price,
@@ -360,7 +361,11 @@ def evaluate_candidate(
     else:
         loss = Decimal(1) - win - push
     implied = american_odds_to_implied_probability(opportunity.best_american_odds)
-    edge = probability_edge(win, implied)
+    edge = (
+        probability_edge(win, implied)
+        if push == 0
+        else probability_edge_with_push(win, push, implied)
+    )
     ev = expected_value_with_push(win, loss, opportunity.best_decimal_odds)
     if edge < policy.minimum_edge:
         reasons.append("below_minimum_edge")

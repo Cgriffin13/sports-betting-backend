@@ -18,13 +18,23 @@ from app.domain.pricing import (
     american_odds_to_decimal,
     american_odds_to_implied_probability,
     expected_value_binary,
+    expected_value_with_push,
     probability_edge,
     remove_vig_proportionally,
     unweighted_median_consensus,
 )
+from app.domain.market_curve import (
+    MARKET_CURVE_POLICY_VERSION,
+    BookCurvePoint,
+    EmpiricalMarketCurve,
+    SettlementProbability,
+    load_market_curve_artifact,
+    probability_edge_with_push,
+    robust_market_center,
+)
 
 FamilyKey: TypeAlias = tuple[UUID, UUID, str, str]
-LineKey: TypeAlias = tuple[UUID, str, str, str]
+MarketKey: TypeAlias = tuple[UUID, str, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,118 +302,277 @@ def _build_opportunities(
     policy: PricingPolicy,
     rejections: Counter[str],
 ) -> tuple[list[PricingOpportunity], list[PricingOpportunity], int]:
-    markets: dict[LineKey, list[_PairedBookMarket]] = defaultdict(list)
+    markets: dict[MarketKey, list[_PairedBookMarket]] = defaultdict(list)
     for pair in pairs:
-        markets[(pair.event_id, pair.market_type, pair.period, pair.line_key)].append(pair)
+        markets[(pair.event_id, pair.market_type, pair.period)].append(pair)
 
     candidates: list[PricingOpportunity] = []
     qualified: list[PricingOpportunity] = []
     for book_markets in markets.values():
-        book_markets.sort(key=lambda item: item.sportsbook_key)
+        book_markets = _one_main_pair_per_book(book_markets)
         if len(book_markets) < policy.minimum_books:
             rejections["insufficient_books"] += 1
-            # A singleton no-vig book pair is auditable market evidence, but it is
-            # not the frozen multi-book market-consensus fair-value method.
             continue
         market_type = book_markets[0].market_type
-        for side in _expected_sides(market_type):
-            failures: list[str] = []
-            probabilities = tuple(item.probabilities[side] for item in book_markets)
-            consensus_result = unweighted_median_consensus(
-                probabilities,
-                outlier_threshold=policy.outlier_threshold,
+        if market_type == "moneyline":
+            market_candidates = _moneyline_opportunities(
+                book_markets,
+                calculated_at,
+                policy,
+                rejections,
             )
-            consensus = consensus_result.probability
-            dispersion = consensus_result.dispersion
-            outliers = tuple(sorted(book_markets[index].sportsbook_key for index in consensus_result.outlier_indexes))
-            if dispersion > policy.maximum_dispersion:
-                rejections["excessive_consensus_dispersion"] += 1
-                failures.append("excessive_consensus_dispersion")
-            selections = [item.observations[side] for item in book_markets]
-            best = max(selections, key=lambda item: (american_odds_to_decimal(item.american_odds), item.sportsbook_key))
-            if market_type in {"spread", "total"} and not _is_half_point(best.point):
-                rejections["push_probability_not_modeled"] += 1
-                continue
-            implied = american_odds_to_implied_probability(best.american_odds)
-            decimal_odds = american_odds_to_decimal(best.american_odds)
-            edge = probability_edge(consensus, implied)
-            ev = expected_value_binary(consensus, decimal_odds)
-            if edge < policy.minimum_probability_edge:
-                rejections["below_minimum_edge"] += 1
-                failures.append("below_minimum_edge")
-            if ev < policy.minimum_ev:
-                rejections["below_minimum_ev"] += 1
-                failures.append("below_minimum_ev")
-            source_ids = tuple(
-                sorted(
-                    {
-                        observation.observation_id
-                        for item in book_markets
-                        for observation in item.observations.values()
-                    },
-                    key=str,
-                )
+        else:
+            market_candidates = _cross_line_opportunities(
+                book_markets,
+                calculated_at,
+                policy,
+                rejections,
             )
-            snapshot_ids = tuple(
-                sorted(
-                    {
-                        observation.snapshot_id
-                        for item in book_markets
-                        for observation in item.observations.values()
-                    },
-                    key=str,
-                )
-            )
-            warnings: tuple[str, ...] = ()
-            if outliers:
-                warnings = ("material_book_outlier",)
-                if best.sportsbook_key in outliers:
-                    warnings += ("best_executable_book_outlier",)
-            first = book_markets[0]
-            opportunity = PricingOpportunity(
-                event_id=first.event_id,
-                league=first.league,
-                home_team=first.home_team,
-                away_team=first.away_team,
-                scheduled_start_utc=first.scheduled_start_utc,
-                market_type=market_type,
-                period=first.period,
-                selection_side=side,
-                selection_name=best.selection_name,
-                point=best.point,
-                best_sportsbook_key=best.sportsbook_key,
-                best_sportsbook_name=best.sportsbook_name,
-                best_american_odds=best.american_odds,
-                best_decimal_odds=decimal_odds,
-                raw_implied_probability=implied,
-                no_vig_consensus_probability=consensus,
-                proprietary_model_probability=None,
-                final_fair_probability_source=FAIR_PROBABILITY_SOURCE,
-                final_fair_probability=consensus,
-                probability_edge=edge,
-                ev_per_unit=ev,
-                books_contributing=len(book_markets),
-                consensus_dispersion=dispersion,
-                uncertainty_indicator=_uncertainty_indicator(dispersion, policy),
-                outlier_sportsbooks=outliers,
-                quality_warnings=warnings,
-                vig_removal_policy_version=policy.vig_removal_version,
-                consensus_policy_version=policy.consensus_version,
-                pricing_policy_version=policy.pricing_version,
-                qualification_policy_version=policy.qualification_version,
-                source_observation_ids=source_ids,
-                best_executable_observation_id=best.observation_id,
-                snapshot_ids=snapshot_ids,
-                book_probabilities=tuple(_book_price(item, side) for item in book_markets),
-                calculated_at=calculated_at,
-                pricing_gate_failures=tuple(failures),
-            )
-            candidates.append(opportunity)
-            if not failures:
-                qualified.append(opportunity)
+        candidates.extend(market_candidates)
+        qualified.extend(item for item in market_candidates if not item.pricing_gate_failures)
     candidates.sort(key=_opportunity_sort_key)
     qualified.sort(key=_opportunity_sort_key)
     return candidates, qualified, len(markets)
+
+
+def _moneyline_opportunities(
+    book_markets: list[_PairedBookMarket],
+    calculated_at: datetime,
+    policy: PricingPolicy,
+    rejections: Counter[str],
+) -> list[PricingOpportunity]:
+    opportunities: list[PricingOpportunity] = []
+    for side in _expected_sides("moneyline"):
+        probabilities = tuple(item.probabilities[side] for item in book_markets)
+        consensus_result = unweighted_median_consensus(
+            probabilities,
+            outlier_threshold=policy.outlier_threshold,
+        )
+        selections = [item.observations[side] for item in book_markets]
+        best = max(
+            selections,
+            key=lambda item: (american_odds_to_decimal(item.american_odds), item.sportsbook_key),
+        )
+        consensus = consensus_result.probability
+        implied = american_odds_to_implied_probability(best.american_odds)
+        decimal_odds = american_odds_to_decimal(best.american_odds)
+        edge = probability_edge(consensus, implied)
+        ev = expected_value_binary(consensus, decimal_odds)
+        outliers = tuple(
+            sorted(book_markets[index].sportsbook_key for index in consensus_result.outlier_indexes)
+        )
+        opportunities.append(
+            _opportunity(
+                book_markets=book_markets,
+                side=side,
+                best=best,
+                fair_probability=consensus,
+                push_probability=Decimal(0),
+                loss_probability=Decimal(1) - consensus,
+                implied_probability=implied,
+                decimal_odds=decimal_odds,
+                edge=edge,
+                ev=ev,
+                dispersion=consensus_result.dispersion,
+                outliers=outliers,
+                calculated_at=calculated_at,
+                policy=policy,
+                rejections=rejections,
+                book_probabilities=tuple(_book_price(item, side) for item in book_markets),
+                consensus_fair_point=None,
+                line_advantage=None,
+                center_dispersion=None,
+                market_probability_policy_version="exact-line-moneyline-v1",
+                market_curve_artifact_hash=None,
+            )
+        )
+    return opportunities
+
+
+def _cross_line_opportunities(
+    book_markets: list[_PairedBookMarket],
+    calculated_at: datetime,
+    policy: PricingPolicy,
+    rejections: Counter[str],
+) -> list[PricingOpportunity]:
+    market_type = book_markets[0].market_type
+    curve_key = "spread" if market_type == "spread" else "total"
+    artifact = load_market_curve_artifact()
+    curve = artifact.curves[curve_key]
+    first_side = _expected_sides(market_type)[0]
+    curve_points = tuple(
+        BookCurvePoint(
+            sportsbook_key=item.sportsbook_key,
+            center=curve.infer_center(
+                item.observations[first_side].point,  # type: ignore[arg-type]
+                item.probabilities[first_side],
+            ),
+            overround=item.overround,
+        )
+        for item in book_markets
+    )
+    robust = robust_market_center(curve_points, outlier_distance=Decimal("3"))
+    center_by_book = {item.sportsbook_key: item.center for item in curve_points}
+    opportunities: list[PricingOpportunity] = []
+    for side in _expected_sides(market_type):
+        priced: list[
+            tuple[Decimal, Decimal, Decimal, PricingObservation, SettlementProbability]
+        ] = []
+        for item in book_markets:
+            observation = item.observations[side]
+            if observation.point is None:
+                continue
+            settlement = curve.settlement(robust.center, observation.point, side)  # type: ignore[arg-type]
+            decimal_odds = american_odds_to_decimal(observation.american_odds)
+            implied = american_odds_to_implied_probability(observation.american_odds)
+            edge = probability_edge_with_push(settlement.win, settlement.push, implied)
+            ev = expected_value_with_push(settlement.win, settlement.loss, decimal_odds)
+            priced.append((ev, edge, decimal_odds, observation, settlement))
+        if not priced:
+            continue
+        ev, edge, decimal_odds, best, settlement = max(
+            priced,
+            key=lambda item: (item[0], item[1], item[2], item[3].sportsbook_key),
+        )
+        assert best.point is not None
+        projected = tuple(
+            _projected_book_price(
+                item,
+                side,
+                best.point,
+                curve,
+                center_by_book[item.sportsbook_key],
+            )
+            for item in book_markets
+        )
+        conditional_probabilities = tuple(
+            value.selection_probability
+            / (value.selection_probability + value.opposing_probability)
+            for value in projected
+        )
+        dispersion = max(conditional_probabilities) - min(conditional_probabilities)
+        consensus_conditional = settlement.conditional_win
+        outliers = tuple(
+            sorted(
+                value.sportsbook_key
+                for value, probability in zip(projected, conditional_probabilities, strict=True)
+                if abs(probability - consensus_conditional) > policy.outlier_threshold
+            )
+        )
+        opportunities.append(
+            _opportunity(
+                book_markets=book_markets,
+                side=side,
+                best=best,
+                fair_probability=settlement.win,
+                push_probability=settlement.push,
+                loss_probability=settlement.loss,
+                implied_probability=american_odds_to_implied_probability(best.american_odds),
+                decimal_odds=decimal_odds,
+                edge=edge,
+                ev=ev,
+                dispersion=dispersion,
+                outliers=outliers,
+                calculated_at=calculated_at,
+                policy=policy,
+                rejections=rejections,
+                book_probabilities=projected,
+                consensus_fair_point=-robust.center if market_type == "spread" else robust.center,
+                line_advantage=_line_advantage(market_type, side, robust.center, best.point),
+                center_dispersion=robust.center_dispersion,
+                market_probability_policy_version=MARKET_CURVE_POLICY_VERSION,
+                market_curve_artifact_hash=artifact.artifact_hash,
+            )
+        )
+    return opportunities
+
+
+def _opportunity(
+    *,
+    book_markets: list[_PairedBookMarket],
+    side: str,
+    best: PricingObservation,
+    fair_probability: Decimal,
+    push_probability: Decimal,
+    loss_probability: Decimal,
+    implied_probability: Decimal,
+    decimal_odds: Decimal,
+    edge: Decimal,
+    ev: Decimal,
+    dispersion: Decimal,
+    outliers: tuple[str, ...],
+    calculated_at: datetime,
+    policy: PricingPolicy,
+    rejections: Counter[str],
+    book_probabilities: tuple[BookNoVigPrice, ...],
+    consensus_fair_point: Decimal | None,
+    line_advantage: Decimal | None,
+    center_dispersion: Decimal | None,
+    market_probability_policy_version: str,
+    market_curve_artifact_hash: str | None,
+) -> PricingOpportunity:
+    failures: list[str] = []
+    if dispersion > policy.maximum_dispersion:
+        rejections["excessive_consensus_dispersion"] += 1
+        failures.append("excessive_consensus_dispersion")
+    if edge < policy.minimum_probability_edge:
+        rejections["below_minimum_edge"] += 1
+        failures.append("below_minimum_edge")
+    if ev < policy.minimum_ev:
+        rejections["below_minimum_ev"] += 1
+        failures.append("below_minimum_ev")
+    source_ids, snapshot_ids = _source_ids(book_markets)
+    warnings: tuple[str, ...] = ()
+    if outliers:
+        warnings = ("material_book_outlier",)
+        if best.sportsbook_key in outliers:
+            warnings += ("best_executable_book_outlier",)
+    first = book_markets[0]
+    return PricingOpportunity(
+        event_id=first.event_id,
+        league=first.league,
+        home_team=first.home_team,
+        away_team=first.away_team,
+        scheduled_start_utc=first.scheduled_start_utc,
+        market_type=first.market_type,
+        period=first.period,
+        selection_side=side,
+        selection_name=best.selection_name,
+        point=best.point,
+        best_sportsbook_key=best.sportsbook_key,
+        best_sportsbook_name=best.sportsbook_name,
+        best_american_odds=best.american_odds,
+        best_decimal_odds=decimal_odds,
+        raw_implied_probability=implied_probability,
+        no_vig_consensus_probability=fair_probability,
+        proprietary_model_probability=None,
+        final_fair_probability_source=FAIR_PROBABILITY_SOURCE,
+        final_fair_probability=fair_probability,
+        probability_edge=edge,
+        ev_per_unit=ev,
+        books_contributing=len(book_markets),
+        consensus_dispersion=dispersion,
+        uncertainty_indicator=_uncertainty_indicator(dispersion, policy),
+        outlier_sportsbooks=outliers,
+        quality_warnings=warnings,
+        vig_removal_policy_version=policy.vig_removal_version,
+        consensus_policy_version=policy.consensus_version,
+        pricing_policy_version=policy.pricing_version,
+        qualification_policy_version=policy.qualification_version,
+        source_observation_ids=source_ids,
+        best_executable_observation_id=best.observation_id,
+        snapshot_ids=snapshot_ids,
+        book_probabilities=book_probabilities,
+        calculated_at=calculated_at,
+        pricing_gate_failures=tuple(failures),
+        consensus_fair_point=consensus_fair_point,
+        line_advantage=line_advantage,
+        push_probability=push_probability,
+        loss_probability=loss_probability,
+        market_probability_policy_version=market_probability_policy_version,
+        market_curve_artifact_hash=market_curve_artifact_hash,
+        center_dispersion=center_dispersion,
+    )
 
 
 def _book_price(item: _PairedBookMarket, side: str) -> BookNoVigPrice:
@@ -424,6 +593,113 @@ def _book_price(item: _PairedBookMarket, side: str) -> BookNoVigPrice:
         selection_point=selected_observation.point,
         selection_observed_at=selected_observation.observed_at,
     )
+
+
+def _projected_book_price(
+    item: _PairedBookMarket,
+    side: str,
+    candidate_point: Decimal,
+    curve: EmpiricalMarketCurve,
+    book_center: Decimal,
+) -> BookNoVigPrice:
+    opposing = _opposing_side(item.market_type, side)
+    selected_observation = item.observations[side]
+    opposing_observation = item.observations[opposing]
+    settlement = curve.settlement(book_center, candidate_point, side)  # type: ignore[arg-type]
+    return BookNoVigPrice(
+        sportsbook_key=item.sportsbook_key,
+        sportsbook_name=item.sportsbook_name,
+        selection_probability=settlement.win,
+        opposing_probability=settlement.loss,
+        raw_probability_sum=item.raw_probability_sum,
+        overround=item.overround,
+        selection_observation_id=selected_observation.observation_id,
+        opposing_observation_id=opposing_observation.observation_id,
+        snapshot_ids=tuple(
+            sorted(
+                {selected_observation.snapshot_id, opposing_observation.snapshot_id},
+                key=str,
+            )
+        ),
+        selection_american_odds=selected_observation.american_odds,
+        selection_point=selected_observation.point,
+        selection_observed_at=selected_observation.observed_at,
+    )
+
+
+def _one_main_pair_per_book(book_markets: list[_PairedBookMarket]) -> list[_PairedBookMarket]:
+    by_book: dict[str, list[_PairedBookMarket]] = defaultdict(list)
+    for item in book_markets:
+        by_book[item.sportsbook_key].append(item)
+    if all(len(items) == 1 for items in by_book.values()):
+        return sorted(book_markets, key=lambda item: item.sportsbook_key)
+    reference_points = sorted(_pair_reference_point(item) for item in book_markets)
+    reference = (
+        reference_points[len(reference_points) // 2]
+        if len(reference_points) % 2
+        else (
+            reference_points[len(reference_points) // 2 - 1]
+            + reference_points[len(reference_points) // 2]
+        )
+        / Decimal(2)
+    )
+    selected = [
+        min(
+            items,
+            key=lambda item: (
+                abs(_pair_reference_point(item) - reference),
+                abs(item.overround),
+                item.line_key,
+            ),
+        )
+        for items in by_book.values()
+    ]
+    return sorted(selected, key=lambda item: item.sportsbook_key)
+
+
+def _pair_reference_point(item: _PairedBookMarket) -> Decimal:
+    first_side = _expected_sides(item.market_type)[0]
+    point = item.observations[first_side].point
+    if point is None:
+        return Decimal(0)
+    return -point if item.market_type == "spread" else point
+
+
+def _source_ids(
+    book_markets: list[_PairedBookMarket],
+) -> tuple[tuple[UUID, ...], tuple[UUID, ...]]:
+    source_ids = tuple(
+        sorted(
+            {
+                observation.observation_id
+                for item in book_markets
+                for observation in item.observations.values()
+            },
+            key=str,
+        )
+    )
+    snapshot_ids = tuple(
+        sorted(
+            {
+                observation.snapshot_id
+                for item in book_markets
+                for observation in item.observations.values()
+            },
+            key=str,
+        )
+    )
+    return source_ids, snapshot_ids
+
+
+def _line_advantage(
+    market_type: str,
+    side: str,
+    center: Decimal,
+    point: Decimal,
+) -> Decimal:
+    if market_type == "spread":
+        return center + point if side == "home" else -center + point
+    return center - point if side == "over" else point - center
 
 
 def _canonical_line_key(item: PricingObservation) -> str:

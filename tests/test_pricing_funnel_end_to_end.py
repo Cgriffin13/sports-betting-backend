@@ -235,17 +235,17 @@ def test_realistic_saturday_slate_reaches_dashboard_with_auditable_funnel(
         "provider_quote_age_max_seconds": 300,
         "eligible_observations": 34,
         "exact_paired_book_markets": 17,
-        "comparable_market_groups": 11,
-        "calculable_candidate_sides": 8,
+        "comparable_market_groups": 7,
+        "calculable_candidate_sides": 14,
         "positive_edge_candidates": 3,
         "positive_ev_candidates": 3,
         "pricing_qualified_candidates": 1,
         "watchlist_candidates": 2,
         "qualified_candidates": 1,
-        "pass_candidates": 5,
+        "pass_candidates": 11,
     }
-    assert research["rejection_counts"]["insufficient_books"] == 6
-    assert research["rejection_counts"]["push_probability_not_modeled"] == 2
+    assert "insufficient_books" not in research["rejection_counts"]
+    assert "push_probability_not_modeled" not in research["rejection_counts"]
     assert research["rejection_counts"]["below_minimum_ev"] >= 2
     assert research["rejection_counts"]["below_minimum_edge"] >= 2
     assert research["rejection_counts"]["unsupported_or_inactive_book"] == 2
@@ -278,7 +278,7 @@ def test_isolated_live_verification_contract_uses_the_same_healthy_pipeline(tmp_
     assert report["ledger_or_bet_mutation"] is False
     assert report["pricing_funnel"]["eligible_observations"] == 34
     assert report["pricing_funnel"]["exact_paired_book_markets"] == 17
-    assert report["pricing_funnel"]["calculable_candidate_sides"] == 8
+    assert report["pricing_funnel"]["calculable_candidate_sides"] == 14
     assert report["saturday_games_received"] == 7
     assert report["saturday"]["slate_date_utc"] == "2026-09-05"
     assert report["saturday"]["games"] == 7
