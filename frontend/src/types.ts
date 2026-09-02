@@ -57,6 +57,50 @@ export interface RecommendationLeg {
   provenance: Record<string, unknown>;
 }
 
+export interface WatchlistItem {
+  watchlist_id: string;
+  event_id: string;
+  slate_date: string;
+  scheduled_start: string;
+  home_team: string;
+  away_team: string;
+  market: string;
+  side: string;
+  selection: string;
+  sportsbook: string;
+  point: number | null;
+  odds: number;
+  fair_probability: number;
+  implied_probability: number;
+  edge: number;
+  ev_per_unit: number;
+  books_count: number;
+  dispersion: number;
+  freshness_age_seconds: number;
+  fresh: boolean;
+  timing_classification: "EARLY_LOOKAHEAD" | "OFFICIAL_PRIMARY_HORIZON" | "POST_HORIZON";
+  primary_horizon_at: string;
+  rejection_reasons: string[];
+  primary_blocker: string;
+  failed_gate_count: number;
+  distance_to_qualification: number;
+  ranking_score: number;
+  source_observation_ids: string[];
+  snapshot_ids: string[];
+  best_executable_observation_id: string;
+  watchlist_version: string;
+  actionable: false;
+}
+
+export interface WatchlistState {
+  as_of: string;
+  upcoming_games_analyzed: number;
+  qualified_recommendations: number;
+  watchlist_count: number;
+  watchlist_version: string;
+  items: WatchlistItem[];
+}
+
 export interface Portfolio {
   portfolio_id: string;
   bankroll: number;
@@ -177,6 +221,8 @@ export interface MarketRefreshResult {
     horizon_version: string;
     decision_run_id: string;
     qualified_straights: number;
+    games_analyzed: number;
+    watchlist_count: number;
     parlay_status: string;
     pass_reasons: string[];
   }>;
@@ -227,6 +273,7 @@ export interface DashboardData {
   stats: PortfolioStats;
   risk: RiskExposure;
   recommendations: Recommendation[];
+  watchlist: WatchlistState;
   movement: MarketMovement;
   passReasons: string[];
   rejectionSummary: Record<string, number>;

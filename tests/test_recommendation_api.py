@@ -29,6 +29,7 @@ class StubPricingService:
             pricing_policy_version="market-baseline-v1",
             qualification_policy_version="baseline-qualification-v1",
             opportunities=(self.opportunity,),
+            events_analyzed=1,
             observations_considered=6,
             paired_book_markets=3,
             opportunities_qualified=1,
@@ -77,6 +78,8 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     assert response.status_code == 200
     body = response.json()
     assert len(body["straight_recommendations"]) == 1
+    assert body["analysis_summary"]["games_analyzed"] == 1
+    assert body["watchlist_count"] == 0
     assert body["parlay_of_the_day"]["status"] == "PASS"
     recommendation_id = body["straight_recommendations"][0]["recommendation_id"]
 
@@ -87,6 +90,12 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     assert listing["recommendations"][0]["recommendation_id"] == recommendation_id
     assert listing["latest_decision"]["decision_run_id"] == body["decision_run_id"]
     assert listing["latest_decision"]["policy_versions"] == body["policy_versions"]
+
+    watchlist = client.get("/portfolio/main/watchlist", params={"upcoming_only": True})
+    assert watchlist.status_code == 200
+    assert watchlist.json()["upcoming_games_analyzed"] == 1
+    assert watchlist.json()["qualified_recommendations"] == 1
+    assert watchlist.json()["items"] == []
 
     assert client.get("/portfolio/main").json()["bets"] == []
     approval = client.post(

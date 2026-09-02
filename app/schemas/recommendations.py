@@ -31,12 +31,58 @@ class RecommendationDecisionResponse(BaseModel):
     portfolio: dict[str, Any]
     straight_recommendations: list[dict[str, Any]]
     parlay_of_the_day: dict[str, Any]
+    analysis_summary: dict[str, Any]
+    watchlist_count: int
     decision_hash: str
 
 
 class RecommendationListResponse(BaseModel):
     recommendations: list[dict[str, Any]]
     latest_decision: dict[str, Any] | None = None
+
+
+class WatchlistItemResponse(BaseModel):
+    watchlist_id: str
+    event_id: str
+    slate_date: date
+    scheduled_start: datetime
+    home_team: str
+    away_team: str
+    market: str
+    side: str
+    selection: str
+    sportsbook: str
+    point: float | None = None
+    odds: int
+    fair_probability: float
+    implied_probability: float
+    edge: float
+    ev_per_unit: float
+    books_count: int
+    dispersion: float
+    freshness_age_seconds: int
+    fresh: bool
+    timing_classification: str
+    primary_horizon_at: datetime
+    rejection_reasons: list[str]
+    primary_blocker: str
+    failed_gate_count: int
+    distance_to_qualification: float
+    ranking_score: float
+    source_observation_ids: list[str]
+    snapshot_ids: list[str]
+    best_executable_observation_id: str
+    watchlist_version: str
+    actionable: bool = False
+
+
+class WatchlistResponse(BaseModel):
+    as_of: datetime
+    upcoming_games_analyzed: int
+    qualified_recommendations: int
+    watchlist_count: int
+    watchlist_version: str
+    items: list[WatchlistItemResponse]
 
 
 class RecommendationDispositionResponse(BaseModel):

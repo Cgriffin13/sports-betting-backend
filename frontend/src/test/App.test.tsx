@@ -20,6 +20,10 @@ describe("portfolio dashboard", () => {
     expect(screen.getByText("Paper trading")).toBeInTheDocument();
     expect(screen.getAllByText("Core picks").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Opportunistic picks").length).toBeGreaterThan(0);
+    expect(screen.getByText("98 games")).toBeInTheDocument();
+    expect(screen.getByText(/3 qualified · 7 watchlist markets/)).toBeInTheDocument();
+    expect(screen.getByText("On the radar")).toBeInTheDocument();
+    expect(screen.queryByText("Harbor A&M @ Western Plains")).not.toBeInTheDocument();
     expect(screen.getByText("No verified parlay quote")).toBeInTheDocument();
     expect(screen.getAllByText("NORMAL").length).toBeGreaterThan(0);
   });
@@ -43,11 +47,12 @@ describe("portfolio dashboard", () => {
     expect(screen.getByText(/Use Refresh Markets before approving/)).toBeInTheDocument();
   });
 
-  it("provides the six primary destinations and nests methodology under settings", async () => {
+  it("provides the seven primary destinations and nests methodology under settings", async () => {
     renderApp("/settings");
     expect(await screen.findByText("System / Methodology")).toBeInTheDocument();
     expect(screen.getAllByText("Market consensus supplies fair value").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Today" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Watchlist" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Portfolio" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Bets" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "Parlay" }).length).toBeGreaterThan(0);
@@ -56,6 +61,23 @@ describe("portfolio dashboard", () => {
     expect(screen.queryByRole("link", { name: "Models" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Research" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Market Movement" })).not.toBeInTheDocument();
+  });
+
+  it("renders every eligible watchlist market as non-actionable research with stored history expansion", async () => {
+    renderApp("/watchlist");
+    expect(await screen.findByText("RESEARCH ONLY — NOT RECOMMENDATIONS")).toBeInTheDocument();
+    expect(screen.getByText("Harbor A&M @ Western Plains")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Approve paper bet" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByLabelText("Expand Home -3.5")[0]);
+    expect(screen.getByText("Stored market history appears here when connected to the backend.")).toBeInTheDocument();
+    expect(screen.getByText("Not actionable")).toBeInTheDocument();
+  });
+
+  it("keeps watchlist markets out of the parlay sleeve", async () => {
+    renderApp("/parlay");
+    expect(await screen.findByText(/7 watchlist markets are nearing straight-bet qualification/)).toBeInTheDocument();
+    expect(screen.getByText(/They remain ineligible for parlays/)).toBeInTheDocument();
+    expect(screen.getByText("No verified parlay qualifies")).toBeInTheDocument();
   });
 
   it("runs a visible manual refresh workflow and disables duplicate clicks", async () => {

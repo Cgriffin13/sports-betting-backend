@@ -1,5 +1,5 @@
 import {
-  BookOpenCheck, BriefcaseBusiness, CircleDollarSign, Gauge, Layers3,
+  Binoculars, BookOpenCheck, BriefcaseBusiness, CircleDollarSign, Gauge, Layers3,
   Settings, ShieldCheck,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
@@ -8,6 +8,7 @@ import { formatAge } from "../utils/format";
 
 const nav = [
   { label: "Today", path: "/", icon: Gauge },
+  { label: "Watchlist", path: "/watchlist", icon: Binoculars },
   { label: "Portfolio", path: "/portfolio", icon: BriefcaseBusiness },
   { label: "Bets", path: "/bets", icon: CircleDollarSign },
   { label: "Parlay", path: "/parlay", icon: Layers3 },

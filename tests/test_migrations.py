@@ -35,6 +35,17 @@ def test_alembic_phase5b1_upgrade_downgrade_and_schema_drift(
         "recommendation_decision_runs",
         "recommendation_legs",
     } <= set(inspect(engine).get_table_names())
+    decision_columns = {column["name"] for column in inspect(engine).get_columns("recommendation_decision_runs")}
+    assert {"analysis_summary", "watchlist_items"} <= decision_columns
+    engine.dispose()
+
+    command.downgrade(config, "-1")
+    engine = create_engine(database_url)
+    watchlist_columns_after_downgrade = {
+        column["name"] for column in inspect(engine).get_columns("recommendation_decision_runs")
+    }
+    assert "analysis_summary" not in watchlist_columns_after_downgrade
+    assert "watchlist_items" not in watchlist_columns_after_downgrade
     engine.dispose()
 
     command.downgrade(config, "-1")

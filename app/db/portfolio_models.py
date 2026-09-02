@@ -40,6 +40,8 @@ class RecommendationDecisionRun(Base):
     parlay_policy_version: Mapped[str] = mapped_column(String(100), nullable=False)
     pass_reasons: Mapped[list[str]] = mapped_column(JSON_DOCUMENT, nullable=False)
     rejection_summary: Mapped[dict[str, int]] = mapped_column(JSON_DOCUMENT, nullable=False)
+    analysis_summary: Mapped[dict[str, Any]] = mapped_column(JSON_DOCUMENT, nullable=False, default=dict)
+    watchlist_items: Mapped[list[dict[str, Any]]] = mapped_column(JSON_DOCUMENT, nullable=False, default=list)
     input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     output_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)

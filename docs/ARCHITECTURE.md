@@ -53,6 +53,7 @@ private client -- X-API-Key / request ID --> FastAPI routers
 | `owners` | Stable UUID, external principal ID, display name, status, creation time. External ID is unique. |
 | `portfolios` | UUID, compatibility external ID, owner, starting capital, currency, status, creation time. Starting capital is not fixed at $200. |
 | `recommendation_decision_runs` | Immutable NCAAF slate decision context: equity/state, Top N, policy versions, PASS/rejection reasons, and deterministic input/output hashes. |
+| `recommendation_decision_runs` watchlist metadata | Immutable per-run analyzed-game summary and research-only near-qualification rows. Latest-upcoming retrieval changes current research visibility without creating or mutating a recommendation. |
 | `recommendations` | Proposed/approved/rejected strategy-book snapshot with exact fair value and executable offer kept separate, alternatives, probability/EV, stake/units/Kelly, classification, risk adjustments, and provenance. |
 | `recommendation_legs` | Immutable two/three-leg parlay component snapshots with exact event/market/side/point, marginal probability, price, EV, model version, and provenance. |
 | `bets` | Reconstructable official entry snapshot: recommendation kind/class/hash, canonical event/team/time, league/sport, market/period/side/point, book/price/stake, probability/version/decision metadata, approval/placement, closing, result, and realized P&L. |
@@ -341,6 +342,8 @@ The frontend uses a same-origin API path in every environment. Vite's local deve
 ### POLARIS production-readiness path
 
 The dashboard now has one explicit write-like market workflow: `POST /dashboard/portfolio/{portfolio_id}/refresh-markets`. The browser calls the Cloudflare Pages Function; the BFF injects `APP_API_KEY`; FastAPI acquires a process-local nonblocking refresh guard; the provider adapter performs its existing bounded retry/cache policy; `MarketIngestionService` persists raw and normalized state transactionally; `RecommendationService` evaluates each upcoming slate; and the client invalidates and rereads PostgreSQL-backed dashboard queries. Browser reads never call the provider.
+
+Each decision run also freezes `analysis_summary` and `watchlist_items`. Watchlist construction consumes the same Phase 4 `PricingOpportunity` and Phase 6 `CandidateEvaluation` objects as recommendations, then retains only structurally valid positive-edge/positive-EV candidates that fail research-safe production gates. It never creates a `Recommendation`, stake, approval route, bet, ledger entry, or parlay leg. `GET /portfolio/{id}/watchlist` selects the newest decision per upcoming slate and supplies authoritative analyzed-game counts to Today.
 
 Recommendation timing uses a pure versioned domain policy. Each slate derives its primary cutoff from its first scheduled kickoff. Exact decision and cutoff timestamps remain distinct, and `EARLY_LOOKAHEAD`, `OFFICIAL_PRIMARY_HORIZON`, and `POST_HORIZON` are presentation/audit metadata rather than changes to pricing math.
 
