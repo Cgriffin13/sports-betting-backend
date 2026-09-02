@@ -1284,3 +1284,22 @@ Consequences:
 - Settings are read-only until the backend owns a versioned mutation contract.
 - Development preview data is visibly labeled and disabled in production.
 - Cloudflare Pages deployment remains an explicit operator action, not an automatic repository side effect.
+
+## ADR-093 — Make POLARIS refresh explicit, timing-labeled, and registry-self-initializing
+
+- Date: 2026-09-01
+- Status: Accepted and implemented for production readiness
+
+The operational dashboard is branded `POLARIS — NCAAF Portfolio` and exposes only Today, Portfolio, Bets, Parlay, History, and Settings as primary destinations. Research/model evidence remains under Settings → System / Methodology; market movement is an exact stored-history detail. Browser reads never call a provider. The only dashboard-triggered provider operation is an authenticated manual refresh that fetches NCAAF h2h/spreads/totals once, persists raw and normalized data, analyzes every upcoming slate, and rejects concurrent execution.
+
+The morning decision convention remains first scheduled kickoff minus three hours. Runs before the cutoff are `EARLY_LOOKAHEAD`, runs within the 15-minute operational tolerance beginning at the cutoff are `OFFICIAL_PRIMARY_HORIZON`, and later runs are `POST_HORIZON`. All retain actual timestamps. Market freshness/provider failure is separate from application registry health and portfolio risk.
+
+The committed Phase 5 registry manifest is validated and idempotently registered during application startup. A content conflict fails closed; a normal deployment no longer depends on an undocumented manual sync.
+
+Consequences:
+
+- Navigation, page reload, background query revalidation, and history inspection incur no Odds API calls.
+- Manual refresh is deliberate, visibly in-flight, safely retry-bounded by the adapter, and followed by persisted-state revalidation.
+- Upcoming recommendations never masquerade as validated primary-horizon decisions.
+- Raw market snapshots remain available for audit but absent from dashboard query projections.
+- The POLARIS frontend remains a paper-trading control surface; fair value, EV, staking, risk, approval, and ledger authority stay in FastAPI.

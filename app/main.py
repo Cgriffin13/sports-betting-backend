@@ -23,6 +23,8 @@ from app.providers.base import MarketDataProvider
 from app.providers.odds_api import TheOddsApiProvider
 from app.services.odds_service import OddsService
 from app.services.dashboard_service import DashboardService
+from app.services.market_refresh_service import MarketRefreshService
+from app.services.model_registry_bootstrap import bootstrap_ncaaf_registry
 from app.services.pricing_service import PricingService, build_pricing_policy
 from app.services.portfolio_service import PortfolioService
 from app.services.recommendation_service import RecommendationService, build_recommendation_policies
@@ -69,6 +71,7 @@ def create_app(
             pricing_repository or SqlAlchemyPricingObservationRepository(session_factory)
         )
         registry_repository = SqlAlchemyModelRegistryRepository(session_factory)
+        registry_hash = None
         recommendation_repository = SqlAlchemyRecommendationRepository(
             session_factory,
             resolved_settings.starting_bankroll,
@@ -82,6 +85,7 @@ def create_app(
         resolved_market_repository = market_repository
         resolved_pricing_repository = pricing_repository or EmptyPricingObservationRepository()
         registry_repository = None
+        registry_hash = None
         recommendation_repository = None
         dashboard_service = None
     resolved_authenticator = authenticator or ApiKeyAuthenticator(
@@ -104,6 +108,7 @@ def create_app(
     application.state.authenticator = resolved_authenticator
     application.state.clock = clock
     application.state.odds_service = OddsService(resolved_provider, resolved_market_repository)
+    application.state.registry_hash = registry_hash
     pricing_service = PricingService(
         resolved_pricing_repository,
         build_pricing_policy(
@@ -127,8 +132,18 @@ def create_app(
             risk_policy=risk_policy,
             parlay_policy=parlay_policy,
         )
+        application.state.market_refresh_service = MarketRefreshService(
+            application.state.odds_service,
+            application.state.recommendation_service,
+        )
+
+        def bootstrap_registry() -> None:
+            application.state.registry_hash = bootstrap_ncaaf_registry(registry_repository)
+
+        application.add_event_handler("startup", bootstrap_registry)
     else:
         application.state.recommendation_service = None
+        application.state.market_refresh_service = None
     application.add_middleware(RequestIdMiddleware)
     application.include_router(health.router)
     application.include_router(odds.router)

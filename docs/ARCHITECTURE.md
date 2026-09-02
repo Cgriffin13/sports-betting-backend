@@ -338,6 +338,16 @@ Two bounded read projections support the UI: `/dashboard/system` exposes safe po
 
 The frontend uses a same-origin API path in every environment. Vite's local development proxy reads non-`VITE_` backend secrets server-side; Cloudflare Pages Functions do the same in deployment. Cloudflare Access is the required external identity gate for a private dashboard because the backend still uses the replaceable single-owner API-key boundary.
 
+### POLARIS production-readiness path
+
+The dashboard now has one explicit write-like market workflow: `POST /dashboard/portfolio/{portfolio_id}/refresh-markets`. The browser calls the Cloudflare Pages Function; the BFF injects `APP_API_KEY`; FastAPI acquires a process-local nonblocking refresh guard; the provider adapter performs its existing bounded retry/cache policy; `MarketIngestionService` persists raw and normalized state transactionally; `RecommendationService` evaluates each upcoming slate; and the client invalidates and rereads PostgreSQL-backed dashboard queries. Browser reads never call the provider.
+
+Recommendation timing uses a pure versioned domain policy. Each slate derives its primary cutoff from its first scheduled kickoff. Exact decision and cutoff timestamps remain distinct, and `EARLY_LOOKAHEAD`, `OFFICIAL_PRIMARY_HORIZON`, and `POST_HORIZON` are presentation/audit metadata rather than changes to pricing math.
+
+`SqlAlchemyDashboardRepository` exposes snapshot status and exact stored market history using scalar projections only. Raw payload JSON is never materialized on dashboard read paths. Application health, market freshness/provider status, and portfolio risk are three separate concerns.
+
+Production startup validates and idempotently installs `docs/reports/NCAAF_MODEL_REGISTRY_V1.json` into PostgreSQL. This closes the prior operational gap where deployment depended on a manual CLI sync. Conflicting immutable registry content fails closed.
+
 ### Phase 5B-3 baseline-model architecture (implemented offline)
 
 `app/research/ncaaf/modeling.py` consumes the immutable horizon-specific feature Parquet files and freezes a model-input manifest before training. Reusable expanding folds evaluate 2019–2023 as development seasons and 2024 as validation; 2025 is rejected. Every Ridge fold owns its median imputation, missing indicators, constant-column removal, scaling, and fit. Sequential power ratings predict before updating. Naive, power, and Ridge OOF rows plus JSON-safe fold parameters are written beneath ignored `.ncaaf-data/models/` with dataset, feature, preprocessing, fold, package, and artifact hashes.

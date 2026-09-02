@@ -26,7 +26,12 @@ class DashboardSystemResponse(BaseModel):
     league: str = "NCAAF"
     system_status: str
     model_status: str
+    market_status: str
+    market_status_reason: str
     last_odds_refresh: datetime | None = None
+    last_market_attempt: datetime | None = None
+    last_market_attempt_status: str | None = None
+    last_provider_error: str | None = None
     snapshot_age_seconds: int | None = None
     stale: bool
     next_scheduled_refresh: datetime | None = None
@@ -60,3 +65,41 @@ class MarketMovementResponse(BaseModel):
     as_of: datetime
     source_snapshot_count: int
     events: list[MarketMovementEventResponse]
+
+
+class MarketHistoryResponse(BaseModel):
+    event_id: str
+    market: str
+    side: str
+    as_of: datetime
+    home_team: str | None = None
+    away_team: str | None = None
+    scheduled_start: datetime | None = None
+    points: list[MarketMovementPointResponse] = Field(default_factory=list)
+
+
+class MarketRefreshDecisionResponse(BaseModel):
+    slate_date: date
+    first_kickoff: datetime
+    timing_classification: str
+    primary_horizon_at: datetime
+    horizon_delta_seconds: int
+    horizon_version: str
+    decision_run_id: str
+    qualified_straights: int
+    parlay_status: str
+    pass_reasons: list[str]
+
+
+class MarketRefreshResponse(BaseModel):
+    status: str
+    snapshot_id: str
+    requested_at: datetime
+    provider: str
+    provider_metadata: dict[str, Any]
+    from_cache: bool
+    events_received: int
+    upcoming_events: int
+    observations_created: int
+    warnings: list[dict[str, Any]]
+    decisions: list[MarketRefreshDecisionResponse]

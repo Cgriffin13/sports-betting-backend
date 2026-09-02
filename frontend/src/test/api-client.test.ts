@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { approveRecommendation, loadDashboard, rejectRecommendation } from "../api/client";
+import { approveRecommendation, loadDashboard, refreshMarkets, rejectRecommendation } from "../api/client";
 import { demoData } from "../data/demo";
 
 const jsonResponse = (value: unknown) => Promise.resolve(new Response(JSON.stringify(value), { status: 200, headers: { "Content-Type": "application/json" } }));
@@ -12,9 +12,18 @@ describe("typed API client", () => {
       if (url.includes("/risk")) return jsonResponse(demoData.risk);
       if (url.includes("/recommendations")) return jsonResponse({ recommendations: demoData.recommendations, latest_decision: { as_of: demoData.decisionAsOf, pass_reasons: demoData.passReasons, rejection_summary: demoData.rejectionSummary } });
       if (url.includes("/market-movement")) return jsonResponse(demoData.movement);
+      if (url.includes("/refresh-markets")) return jsonResponse({ status: "completed", snapshot_id: "snapshot-1" });
       if (url.includes("/portfolio/")) return jsonResponse(demoData.portfolio);
       return jsonResponse({});
     }));
+  });
+
+  it("uses one authenticated backend workflow for explicit market refresh", async () => {
+    const result = await refreshMarkets("paper-main");
+    expect(result.status).toBe("completed");
+    const call = vi.mocked(fetch).mock.calls[0];
+    expect(call[0]).toBe("/api/dashboard/portfolio/paper-main/refresh-markets");
+    expect(call[1]?.method).toBe("POST");
   });
 
   it("loads the Phase 6.5 contract from same-origin backend routes", async () => {

@@ -62,11 +62,19 @@ def list_recommendations(
     request: Request,
     principal: Annotated[Principal, Depends(require_principal)],
     slate_date: date | None = None,
+    upcoming_only: bool = False,
 ) -> dict[str, Any]:
     try:
+        if upcoming_only and slate_date is not None:
+            raise HTTPException(status_code=422, detail="slate_date and upcoming_only cannot be combined")
         service = _service(request)
         return {
-            "recommendations": service.list(principal, portfolio_id, slate_date=slate_date),
+            "recommendations": service.list(
+                principal,
+                portfolio_id,
+                slate_date=slate_date,
+                upcoming_as_of=request.app.state.clock() if upcoming_only else None,
+            ),
             "latest_decision": service.latest_decision(principal, portfolio_id, slate_date=slate_date),
         }
     except PortfolioAccessDeniedError:

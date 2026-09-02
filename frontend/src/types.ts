@@ -32,6 +32,12 @@ export interface Recommendation {
   model_version: string;
   policy_version: string;
   recommendation_hash: string;
+  slate_date?: string | null;
+  decision_as_of?: string | null;
+  timing_classification?: "EARLY_LOOKAHEAD" | "OFFICIAL_PRIMARY_HORIZON" | "POST_HORIZON";
+  primary_horizon_at?: string;
+  horizon_delta_seconds?: number;
+  horizon_version?: string;
   legs: RecommendationLeg[];
 }
 
@@ -138,12 +144,53 @@ export interface SystemStatus {
   league: "NCAAF";
   system_status: string;
   model_status: string;
+  market_status: "FRESH" | "STALE" | "UNAVAILABLE" | "ERROR";
+  market_status_reason: string;
   last_odds_refresh: string | null;
+  last_market_attempt: string | null;
+  last_market_attempt_status: string | null;
+  last_provider_error: string | null;
   snapshot_age_seconds: number | null;
   stale: boolean;
   next_scheduled_refresh: string | null;
   policies: Record<string, number | boolean>;
   models: ModelEntry[];
+}
+
+export interface MarketRefreshResult {
+  status: "completed";
+  snapshot_id: string;
+  requested_at: string;
+  provider: string;
+  provider_metadata: Record<string, number | string>;
+  from_cache: boolean;
+  events_received: number;
+  upcoming_events: number;
+  observations_created: number;
+  warnings: Array<Record<string, unknown>>;
+  decisions: Array<{
+    slate_date: string;
+    first_kickoff: string;
+    timing_classification: "EARLY_LOOKAHEAD" | "OFFICIAL_PRIMARY_HORIZON" | "POST_HORIZON";
+    primary_horizon_at: string;
+    horizon_delta_seconds: number;
+    horizon_version: string;
+    decision_run_id: string;
+    qualified_straights: number;
+    parlay_status: string;
+    pass_reasons: string[];
+  }>;
+}
+
+export interface MarketHistory {
+  event_id: string;
+  market: string;
+  side: string;
+  as_of: string;
+  home_team: string | null;
+  away_team: string | null;
+  scheduled_start: string | null;
+  points: MovementPoint[];
 }
 
 export interface MovementPoint {

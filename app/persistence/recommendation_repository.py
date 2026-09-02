@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Mapping
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.market_models import CanonicalEvent
@@ -32,6 +32,7 @@ from app.domain.portfolio_engine import (
     portfolio_state,
 )
 from app.domain.model_registry import canonical_hash
+from app.domain.recommendation_timing import classify_recommendation_timing
 from app.time import utc_now
 
 
@@ -158,6 +159,7 @@ class SqlAlchemyRecommendationRepository:
         portfolio_external_id: str,
         *,
         slate_date: date | None = None,
+        upcoming_as_of: datetime | None = None,
     ) -> list[dict[str, Any]]:
         with self.session_factory() as session:
             owner = session.scalar(select(Owner).where(Owner.external_id == principal.external_id))
@@ -174,6 +176,38 @@ class SqlAlchemyRecommendationRepository:
                     RecommendationDecisionRun,
                     Recommendation.decision_run_id == RecommendationDecisionRun.id,
                 ).where(RecommendationDecisionRun.slate_date == slate_date)
+            if upcoming_as_of is not None:
+                latest_by_slate = (
+                    select(
+                        RecommendationDecisionRun.slate_date.label("slate_date"),
+                        func.max(RecommendationDecisionRun.as_of).label("latest_as_of"),
+                    )
+                    .where(
+                        RecommendationDecisionRun.portfolio_id == portfolio.id,
+                        RecommendationDecisionRun.slate_date >= upcoming_as_of.date(),
+                    )
+                    .group_by(RecommendationDecisionRun.slate_date)
+                    .subquery()
+                )
+                statement = (
+                    statement.join(
+                        RecommendationDecisionRun,
+                        Recommendation.decision_run_id == RecommendationDecisionRun.id,
+                    )
+                    .join(
+                        latest_by_slate,
+                        and_(
+                            latest_by_slate.c.slate_date == RecommendationDecisionRun.slate_date,
+                            latest_by_slate.c.latest_as_of == RecommendationDecisionRun.as_of,
+                        ),
+                    )
+                    .where(
+                        or_(
+                            Recommendation.scheduled_start > upcoming_as_of,
+                            Recommendation.recommendation_kind == "parlay",
+                        )
+                    )
+                )
             rows = list(session.scalars(statement.order_by(Recommendation.created_at.desc(), Recommendation.external_id)))
             return [self._serialize_recommendation(session, row) for row in rows]
 
@@ -503,6 +537,20 @@ class SqlAlchemyRecommendationRepository:
 
     def _serialize_recommendation(self, session: Session, row: Recommendation) -> dict[str, Any]:
         legs = list(session.scalars(select(RecommendationLeg).where(RecommendationLeg.recommendation_id == row.id).order_by(RecommendationLeg.leg_index)))
+        timing: dict[str, Any] = {}
+        if row.decision_run_id is not None:
+            run = session.get(RecommendationDecisionRun, row.decision_run_id)
+            if run is not None:
+                start = datetime.combine(run.slate_date, time.min, UTC)
+                first_kickoff = session.scalar(
+                    select(func.min(CanonicalEvent.scheduled_start_utc)).where(
+                        CanonicalEvent.league == "NCAAF",
+                        CanonicalEvent.scheduled_start_utc >= start,
+                        CanonicalEvent.scheduled_start_utc < start + timedelta(days=1),
+                    )
+                )
+                if first_kickoff is not None:
+                    timing = classify_recommendation_timing(run.as_of, first_kickoff)
         return {
             "recommendation_id": row.external_id,
             "kind": row.recommendation_kind,
@@ -534,6 +582,12 @@ class SqlAlchemyRecommendationRepository:
             "model_version": row.model_version,
             "policy_version": row.policy_version,
             "recommendation_hash": row.recommendation_hash,
+            "slate_date": run.slate_date.isoformat() if row.decision_run_id is not None and run is not None else None,
+            "decision_as_of": _iso(run.as_of) if row.decision_run_id is not None and run is not None else None,
+            **{
+                key: (_iso(value) if isinstance(value, datetime) else value)
+                for key, value in timing.items()
+            },
             "legs": [
                 {
                     "event_id": str(item.canonical_event_id),

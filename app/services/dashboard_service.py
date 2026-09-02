@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
+from uuid import UUID
 
 from app.config import Settings
 from app.persistence.dashboard_repository import SqlAlchemyDashboardRepository
@@ -14,22 +15,91 @@ class DashboardService:
         self.settings = settings
 
     def system(self, now: datetime) -> dict[str, Any]:
-        latest = self.repository.latest_snapshot_at()
+        snapshot = self.repository.snapshot_state()
+        latest = snapshot["last_success_at"]
         age = None if latest is None else max(0, int((_utc(now) - _utc(latest)).total_seconds()))
         models = self.repository.list_models()
         retained = [item for item in models if item["status"] == "retained_benchmark"]
         stale = age is None or age > self.settings.market_freshness_seconds
+        last_attempt_failed = snapshot["last_attempt_status"] == "failed"
+        market_status = (
+            "ERROR"
+            if last_attempt_failed
+            else "UNAVAILABLE"
+            if latest is None
+            else "STALE"
+            if stale
+            else "FRESH"
+        )
         return {
             "paper_trading": True,
             "league": "NCAAF",
-            "system_status": "DEGRADED" if stale or not retained else "OPERATIONAL",
+            "system_status": "OPERATIONAL" if retained else "CONFIGURATION_ERROR",
             "model_status": "retained_benchmark" if retained else "unavailable",
+            "market_status": market_status,
+            "market_status_reason": (
+                snapshot["last_error"] or "The latest provider refresh failed"
+                if last_attempt_failed
+                else
+                "No successful NCAAF market snapshot is stored"
+                if latest is None
+                else f"Stored odds are {age} seconds old"
+                if stale
+                else "Stored NCAAF market data is within the active freshness policy"
+            ),
             "last_odds_refresh": latest,
+            "last_market_attempt": snapshot["last_attempt_at"],
+            "last_market_attempt_status": snapshot["last_attempt_status"],
+            "last_provider_error": snapshot["last_error"],
             "snapshot_age_seconds": age,
             "stale": stale,
             "next_scheduled_refresh": None,
             "policies": self._safe_policies(),
             "models": models,
+        }
+
+    def history(
+        self,
+        event_id: UUID,
+        market_type: str,
+        selection_side: str,
+        as_of: datetime,
+    ) -> dict[str, Any]:
+        rows = self.repository.market_history(event_id, market_type, selection_side, _utc(as_of))
+        if not rows:
+            return {
+                "event_id": str(event_id),
+                "market": market_type,
+                "side": selection_side,
+                "as_of": _utc(as_of),
+                "home_team": None,
+                "away_team": None,
+                "scheduled_start": None,
+                "points": [],
+            }
+        first = rows[0]
+        return {
+            "event_id": str(event_id),
+            "market": market_type,
+            "side": selection_side,
+            "as_of": _utc(as_of),
+            "home_team": first["home_team"],
+            "away_team": first["away_team"],
+            "scheduled_start": first["scheduled_start_utc"],
+            "points": [
+                {
+                    "snapshot_id": str(row["snapshot_id"]),
+                    "requested_at": row["requested_at"],
+                    "observed_at": row["observed_at"],
+                    "sportsbook": row["sportsbook"],
+                    "market": row["market_type"],
+                    "side": row["selection_side"],
+                    "point": float(row["point"]) if row["point"] is not None else None,
+                    "american_odds": row["american_odds"],
+                    "is_stale": row["is_stale"],
+                }
+                for row in rows
+            ],
         }
 
     def movement(self, slate_date: date, as_of: datetime) -> dict[str, Any]:
