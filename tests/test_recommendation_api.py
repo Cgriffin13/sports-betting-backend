@@ -28,6 +28,8 @@ class StubPricingService:
             as_of=NOW,
             pricing_policy_version="market-baseline-v1",
             qualification_policy_version="baseline-qualification-v1",
+            first_scheduled_start_utc=self.opportunity.scheduled_start_utc,
+            candidates=(self.opportunity,),
             opportunities=(self.opportunity,),
             events_analyzed=1,
             observations_considered=6,
@@ -35,6 +37,20 @@ class StubPricingService:
             opportunities_qualified=1,
             top_n_per_league=50,
             rejection_counts={},
+            funnel={
+                "games_received": 1,
+                "games_analyzed": 1,
+                "observations_received": 6,
+                "observations_considered": 6,
+                "latest_observations": 6,
+                "eligible_observations": 6,
+                "exact_paired_book_markets": 3,
+                "comparable_market_groups": 1,
+                "calculable_candidate_sides": 1,
+                "positive_edge_candidates": 1,
+                "positive_ev_candidates": 1,
+                "pricing_qualified_candidates": 1,
+            },
         )
 
 
@@ -79,6 +95,7 @@ def test_recommendation_api_is_approval_gated_and_authenticated(
     body = response.json()
     assert len(body["straight_recommendations"]) == 1
     assert body["analysis_summary"]["games_analyzed"] == 1
+    assert body["analysis_summary"]["pricing_funnel"]["qualified_candidates"] == 1
     assert body["watchlist_count"] == 0
     assert body["parlay_of_the_day"]["status"] == "PASS"
     recommendation_id = body["straight_recommendations"][0]["recommendation_id"]

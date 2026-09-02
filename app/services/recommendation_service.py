@@ -58,6 +58,8 @@ class RecommendationService:
         market_types: list[str],
         top_n: int,
         parlay_offers: Sequence[ParlayOffer] = (),
+        games_received: int | None = None,
+        observations_received: int | None = None,
     ) -> dict[str, Any]:
         pricing = self.pricing_service.analyze(
             leagues=["NCAAF"],
@@ -68,7 +70,7 @@ class RecommendationService:
         )
         evaluations = []
         rejection_counts: Counter[str] = Counter(pricing.rejection_counts)
-        for opportunity in pricing.opportunities:
+        for opportunity in pricing.candidates:
             try:
                 registration = self._registration(opportunity.market_type)
                 quote = self.fair_value_service.quote(
@@ -104,7 +106,11 @@ class RecommendationService:
                     as_of=as_of,
                 )
                 evaluations.append(evaluation)
-                rejection_counts.update(evaluation.rejection_reasons)
+                rejection_counts.update(
+                    reason
+                    for reason in evaluation.rejection_reasons
+                    if reason not in opportunity.pricing_gate_failures
+                )
             except RegistryError as exc:
                 rejection_counts[f"fair_value_registry:{exc}"] += 1
         snapshot = self.repository.portfolio_snapshot(principal, portfolio_id, slate_date)
@@ -127,11 +133,8 @@ class RecommendationService:
             parlay_offers=verified_offers,
         )
         timing = (
-            classify_recommendation_timing(
-                as_of,
-                min(item.scheduled_start_utc for item in pricing.opportunities),
-            )
-            if pricing.opportunities
+            classify_recommendation_timing(as_of, pricing.first_scheduled_start_utc)
+            if pricing.first_scheduled_start_utc is not None
             else None
         )
         watchlist = (
@@ -144,12 +147,27 @@ class RecommendationService:
             if timing is not None
             else []
         )
+        qualified_candidates = sum(item.qualified for item in evaluations)
+        pricing_funnel = {
+            **pricing.funnel,
+            "games_received": games_received
+            if games_received is not None
+            else pricing.funnel["games_received"],
+            "observations_received": observations_received
+            if observations_received is not None
+            else pricing.funnel["observations_received"],
+            "watchlist_candidates": len(watchlist),
+            "qualified_candidates": qualified_candidates,
+            "pass_candidates": max(0, len(pricing.candidates) - qualified_candidates - len(watchlist)),
+        }
         analysis_summary = {
             "games_analyzed": pricing.events_analyzed,
             "pricing_opportunities": pricing.opportunities_qualified,
             "candidates_evaluated": len(evaluations),
             "qualified_straights": len(decision.straight_recommendations),
             "watchlist_markets": len(watchlist),
+            "pricing_funnel": pricing_funnel,
+            "rejection_counts": dict(sorted(rejection_counts.items())),
         }
         input_hash = canonical_hash(
             {

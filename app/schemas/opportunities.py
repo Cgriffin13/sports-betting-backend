@@ -95,6 +95,7 @@ class PricingAnalysisResponse(BaseModel):
     opportunities_returned: int
     top_n_per_league: int
     rejection_counts: dict[str, int]
+    funnel: dict[str, int]
     opportunities: tuple[PricingOpportunityResponse, ...]
 
     @classmethod
@@ -109,6 +110,7 @@ class PricingAnalysisResponse(BaseModel):
             opportunities_returned=len(analysis.opportunities),
             top_n_per_league=analysis.top_n_per_league,
             rejection_counts=analysis.rejection_counts,
+            funnel=analysis.funnel,
             opportunities=tuple(
                 PricingOpportunityResponse.model_validate(opportunity, from_attributes=True)
                 for opportunity in analysis.opportunities

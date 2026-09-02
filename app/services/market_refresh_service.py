@@ -64,8 +64,12 @@ class MarketRefreshService:
                 if (kickoff := commence_datetime_utc(game.commence_time)) is not None and kickoff > as_of
             ]
             by_date: dict[date, list[datetime]] = {}
-            for _, kickoff in upcoming:
+            observations_by_date: dict[date, int] = {}
+            for game, kickoff in upcoming:
                 by_date.setdefault(kickoff.date(), []).append(kickoff)
+                observations_by_date[kickoff.date()] = observations_by_date.get(kickoff.date(), 0) + len(
+                    game.offers
+                )
             decisions: list[dict[str, Any]] = []
             for slate_date, kickoffs in sorted(by_date.items()):
                 timing = classify_recommendation_timing(as_of, min(kickoffs))
@@ -76,6 +80,8 @@ class MarketRefreshService:
                     as_of=as_of,
                     market_types=RECOMMENDATION_MARKETS,
                     top_n=top_n,
+                    games_received=len(kickoffs),
+                    observations_received=observations_by_date[slate_date],
                 )
                 decisions.append(
                     {
